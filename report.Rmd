@@ -563,6 +563,8 @@ THOUGHT %>%
                caption = paste0(ability_name, "得分简表"))
 ```
 
+从上表可以看出，各年级`r ability_name`得分与全国平均水平（100分）相当。从A，B，C，D四个等级人数分布看来，各年级都存在一部分在`r ability_name`方面具有发展潜力的学生。
+
 ```{r summary statistics for THOUGHT by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 THOUGHT %>% 
   group_by(学校, 年级, 班) %>% 
@@ -580,6 +582,8 @@ THOUGHT %>%
   knitr::kable(digits = 2, 
                caption = paste0("各年级各班", ability_name, "得分简表"))
 ```
+
+从上表可以看出，各个学校同一年级的不同班级学生之间的`r ability_name`整体表现差别不大，这说明学生们的`r ability_name`发展相对比较均衡。
 
 ## 各年级成绩与`r ability_name`的相关关系
 
@@ -618,6 +622,8 @@ ggplot(THOUGHT, aes_string("得分", exam_name, group = 1, color = "学校")) +
     plot.title = element_text(hjust = 0.5)
   )
 ```
+
+图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，虽然比不上BLAI指数的预测能力，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，`r ability_name`将在学生的学习过程中发挥越来越重要的价值。
 
 # 第七部分 发展建议
 
