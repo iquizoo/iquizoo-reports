@@ -65,7 +65,7 @@ user_data <- read_rds(file.path(data_folder, "user_data.rds")) %>%
 ```{r count users, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 user_data %>% 
   group_by(学校, 年级) %>% 
-  summarise(人数 = n()) %>% 
+  summarise(人数 = length(unique(userId))) %>% 
   knitr::kable(caption = "各学校各年级实测人数[^count]")
 ```
 
