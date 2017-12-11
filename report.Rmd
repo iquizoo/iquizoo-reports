@@ -381,6 +381,8 @@ REACTION %>%
                caption = paste0(ability_name, "得分简表"))
 ```
 
+从上表可以看出，各年级`r ability_name`得分相对差于全国平均水平（100分）。从A，B，C，D四个等级人数分布看来，各年级都存在较大比例在`r ability_name`方面具有发展潜力的学生。
+
 ```{r summary statistics for REACTION by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 REACTION %>% 
   group_by(学校, 年级, 班) %>% 
@@ -436,6 +438,8 @@ ggplot(REACTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
     plot.title = element_text(hjust = 0.5)
   )
 ```
+
+图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，`r ability_name`将在学生的学习过程中发挥越来越重要的价值。
 
 # 第五部分 自控力指数
 
