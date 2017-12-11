@@ -58,7 +58,7 @@ user_data <- read_rds(file.path(data_folder, "user_data.rds")) %>%
 
 ---
 
-**测评年级**：1-4年级
+**测评时间**：2016年12月
 
 **实测人数[^1]**：`r length(unique(user_data$userId))`人
 
@@ -68,8 +68,6 @@ user_data %>%
   summarise(人数 = n()) %>% 
   knitr::kable(caption = "各学校各年级实测人数[^count]")
 ```
-
-**测评时间**：2016年12月
 
 [^1]: 即实际测得数据中，至少包含五项能力中的一项的学生总数，可能会少于计划参加测评的学生总数。
 [^count]: 学校排名不分先后。
