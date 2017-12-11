@@ -5,7 +5,7 @@ date: "2017年12月8日"
 output:
   word_document:
     toc: true
-    reference_docx: ../Docs/word-styles-reference-report.docx
+    reference_docx: docs/word-styles-reference-report.docx
 toc-title: "目录"
 ---
 
@@ -14,13 +14,14 @@ toc-title: "目录"
 library(tidyverse)
 library(extrafont)
 # configuration settings
+data_folder <- "里水镇"
 school_name <- "和顺中心小学"
 ability_names <- c("反应力", "注意力", "记忆力", "自控力", "思维力")
 meta_vars <- c("userId", "姓名", "性别", "学校", "年级", "班")
 lesson_vars <- c("语文", "数学")
 rnk_cutedges_ability <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
 # load data
-user_data <- read_rds("user_data.rds") %>%
+user_data <- read_rds(file.path(data_folder, "user_data.rds")) %>%
   filter(
     学校 == school_name,
     !is.na(姓名)
