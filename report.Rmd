@@ -42,6 +42,7 @@ user_data <- read_rds(file.path(data_folder, "user_data.rds")) %>%
     ),
     班 = factor(班, 1:length(unique(班)))
   )
+schools <- unique(user_data$学校)
 ```
 
 # 报告说明
@@ -127,43 +128,35 @@ BLAI %>%
 
 ## 各年级成绩与BLAI指数的相关关系
 
-```{r Chinese and BLAI, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "语文"
-ggplot(BLAI, aes_string("BLAI", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0("BLAI与", exam_name, "成绩的关系"),
-    x = "BLAI指数",
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
+```{r lesson and BLAI, fig.cap="各学校学生成绩和BLAI指数相关关系", echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+for (exam_name in lesson_vars){
+  for (school in schools){
+    this_plot <- BLAI %>% 
+      filter(学校 == school) %>%
+      ggplot(aes_string("BLAI", exam_name, group = 1)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~ 年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0("BLAI与", exam_name, "成绩的关系"),
+        subtitle = school,
+        x = "BLAI指数",
+        y = paste0(exam_name, "成绩")
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)
+      )
+    print(this_plot)
+  }
+}
 ```
 
-```{r Math and BLAI, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "数学"
-ggplot(BLAI, aes_string("BLAI", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0("BLAI与", exam_name, "成绩的关系"),
-    x = "BLAI指数",
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
-```
+图中[^blank]每一个点代表一个学生。从图中可以看出，学校之间无论BLAI指数还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对BLAI指数和学习成绩的拟合情况来看，BLAI指数能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，大脑基本认知能力将在学生的学习过程中发挥越来越重要的价值。
 
-图中每一个点代表一个学生。从图中可以看出，学校之间无论BLAI指数还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对BLAI指数和学习成绩的拟合情况来看，BLAI指数能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，大脑基本认知能力将在学生的学习过程中发挥越来越重要的价值。
+[^blank]: 注意，旗峰小学一年级学生的语文和数学成绩都缺失，下同。
 
 # 第二部分 注意力指数
 
@@ -219,40 +212,30 @@ ATTENTION %>%
 
 ## 各年级成绩与`r ability_name`的相关关系
 
-```{r Chinese and ATTENTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "语文"
-ggplot(ATTENTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-
-```{r Math and ATTENTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "数学"
-ggplot(ATTENTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
+```{r lesson and ATTENTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+for (exam_name in lesson_vars){
+  for (school in schools){
+    this_plot <- ATTENTION %>% 
+      filter(学校 == school) %>%
+      ggplot(aes_string("得分", exam_name, group = 1)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~ 年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0(ability_name, "与", exam_name, "成绩的关系"),
+        subtitle = school,
+        x = paste0(ability_name, "得分"),
+        y = paste0(exam_name, "成绩")
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)
+      )
+    print(this_plot)
+  }
+}
 ```
 
 图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，虽然比不上BLAI指数的预测能力，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，`r ability_name`将在学生的学习过程中发挥越来越重要的价值。
@@ -311,40 +294,30 @@ MEMORY %>%
 
 ## 各年级成绩与`r ability_name`的相关关系
 
-```{r Chinese and MEMORY, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "语文"
-ggplot(MEMORY, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-
-```{r Math and MEMORY, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "数学"
-ggplot(MEMORY, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
+```{r lesson and MEMORY, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+for (exam_name in lesson_vars){
+  for (school in schools){
+    this_plot <- MEMORY %>% 
+      filter(学校 == school) %>%
+      ggplot(aes_string("得分", exam_name, group = 1)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~ 年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0(ability_name, "与", exam_name, "成绩的关系"),
+        subtitle = school,
+        x = paste0(ability_name, "得分"),
+        y = paste0(exam_name, "成绩")
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)
+      )
+    print(this_plot)
+  }
+}
 ```
 
 图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果基本相当。这表明`r ability_name`在学生的学习过程中一直发挥着重要作用。
@@ -401,40 +374,30 @@ REACTION %>%
 
 ## 各年级成绩与`r ability_name`的相关关系
 
-```{r Chinese and REACTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "语文"
-ggplot(REACTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-
-```{r Math and REACTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "数学"
-ggplot(REACTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
+```{r lesson and REACTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+for (exam_name in lesson_vars){
+  for (school in schools){
+    this_plot <- REACTION %>% 
+      filter(学校 == school) %>%
+      ggplot(aes_string("得分", exam_name, group = 1)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~ 年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0(ability_name, "与", exam_name, "成绩的关系"),
+        subtitle = school,
+        x = paste0(ability_name, "得分"),
+        y = paste0(exam_name, "成绩")
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)
+      )
+    print(this_plot)
+  }
+}
 ```
 
 图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，`r ability_name`将在学生的学习过程中发挥越来越重要的价值。
@@ -493,40 +456,30 @@ CONTROL %>%
 
 ## 各年级成绩与`r ability_name`的相关关系
 
-```{r Chinese and CONTROL, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "语文"
-ggplot(CONTROL, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-
-```{r Math and CONTROL, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "数学"
-ggplot(CONTROL, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
+```{r lesson and CONTROL, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+for (exam_name in lesson_vars){
+  for (school in schools){
+    this_plot <- CONTROL %>% 
+      filter(学校 == school) %>%
+      ggplot(aes_string("得分", exam_name, group = 1)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~ 年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0(ability_name, "与", exam_name, "成绩的关系"),
+        subtitle = school,
+        x = paste0(ability_name, "得分"),
+        y = paste0(exam_name, "成绩")
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)
+      )
+    print(this_plot)
+  }
+}
 ```
 
 图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，虽然比不上BLAI指数的预测能力，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，`r ability_name`将在学生的学习过程中发挥越来越重要的价值。
@@ -585,40 +538,30 @@ THOUGHT %>%
 
 ## 各年级成绩与`r ability_name`的相关关系
 
-```{r Chinese and THOUGHT, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "语文"
-ggplot(THOUGHT, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-
-```{r Math and THOUGHT, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-exam_name <- "数学"
-ggplot(THOUGHT, aes_string("得分", exam_name, group = 1, color = "学校")) +
-  geom_point() +
-  stat_smooth(method = "glm") +
-  facet_wrap(~ 年级, scales = "free") +
-  theme_minimal() +
-  labs(
-    title = paste0(ability_name, "与", exam_name, "成绩的关系"),
-    x = paste0(ability_name, "得分"),
-    y = paste0(exam_name, "成绩")
-  ) +
-  theme(
-    title = element_text(family = "SimHei"),
-    plot.title = element_text(hjust = 0.5)
-  )
+```{r lesson and THOUGHT, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+for (exam_name in lesson_vars){
+  for (school in schools){
+    this_plot <- THOUGHT %>% 
+      filter(学校 == school) %>%
+      ggplot(aes_string("得分", exam_name, group = 1)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~ 年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0(ability_name, "与", exam_name, "成绩的关系"),
+        subtitle = school,
+        x = paste0(ability_name, "得分"),
+        y = paste0(exam_name, "成绩")
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5)
+      )
+    print(this_plot)
+  }
+}
 ```
 
 图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对`r ability_name`得分和学习成绩的拟合情况来看，虽然比不上BLAI指数的预测能力，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，`r ability_name`将在学生的学习过程中发挥越来越重要的价值。
