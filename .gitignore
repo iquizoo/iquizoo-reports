@@ -1,0 +1,16 @@
+# RStudio project files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# folders
+/*/
+!docs
+
+# files
+*.doc[x]
+*.csv
+*.rar
+*.png
+*.jpg
