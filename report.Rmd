@@ -15,17 +15,13 @@ library(tidyverse)
 library(extrafont)
 # configuration settings
 data_folder <- "里水镇"
-school_name <- "和顺中心小学"
 ability_names <- c("反应力", "注意力", "记忆力", "自控力", "思维力")
 meta_vars <- c("userId", "姓名", "性别", "学校", "年级", "班")
 lesson_vars <- c("语文", "数学")
 rnk_cutedges_ability <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
 # load data
 user_data <- read_rds(file.path(data_folder, "user_data.rds")) %>%
-  filter(
-    学校 == school_name,
-    !is.na(姓名)
-  ) %>% 
+  filter(!is.na(姓名)) %>% 
   gather("能力", "得分", 持续注意:自控力, na.rm = TRUE) %>%
   # score of 0 indicates missing data
   mutate(得分 = ifelse(得分 == 0, NA, 得分)) %>%
@@ -58,17 +54,25 @@ user_data <- read_rds(file.path(data_folder, "user_data.rds")) %>%
 
 “大脑学习能力”测评提供多种能力维度指标，包含综合的大脑学习能力指数（Brain Learning Ablility Index, BLAI）和各个能力维度指数（注意力指数、记忆力指数、反应力指数、自控力指数）。
 
-## 学生参加测评的情况
+# 学生参加测评的情况
 
-**测评学校**：`r school_name`
+---
 
 **测评年级**：1-4年级
 
 **实测人数[^1]**：`r length(unique(user_data$userId))`人
 
+```{r count users, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+user_data %>% 
+  group_by(学校, 年级) %>% 
+  summarise(人数 = n()) %>% 
+  knitr::kable(caption = "各学校各年级实测人数[^count]")
+```
+
 **测评时间**：2016年12月
 
 [^1]: 即实际测得数据中，至少包含五项能力中的一项的学生总数，可能会少于计划参加测评的学生总数。
+[^count]: 学校排名不分先后。
 
 # 第一部分 大脑学习能力指数
 
@@ -85,7 +89,7 @@ BLAI <- user_data %>%
 
 ```{r summary statistics for BLAI by grade, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 BLAI %>% 
-  group_by(年级) %>% 
+  group_by(学校, 年级) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(BLAI),
@@ -97,7 +101,7 @@ BLAI %>%
     C = sum(rank == "C"),
     D = sum(rank == "D")
   ) %>%
-  knitr::kable(digits = 2, caption = paste0(school_name, "BLAI指数简表[^2]"))
+  knitr::kable(digits = 2, caption = "BLAI指数简表[^2]", longtable = TRUE)
 ```
 
 从上表可以看出，与全国平均水平（100分）相比，各年级BLAI指数得分略微偏低。从A，B，C，D四个等级人数分布看来，各年级BLAI指数有发展潜力的人数都比较多。如果对这些学生做进一步的针对性训练，预期会有很好的效果。
@@ -106,7 +110,7 @@ BLAI %>%
 
 ```{r summary statistics for BLAI by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 BLAI %>% 
-  group_by(年级, 班) %>% 
+  group_by(学校, 年级, 班) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(BLAI),
@@ -118,16 +122,16 @@ BLAI %>%
     C = sum(rank == "C"),
     D = sum(rank == "D")
   ) %>%
-  knitr::kable(digits = 2, caption = paste0(school_name, "各年级各班BLAI指数简表"))
+  knitr::kable(digits = 2, caption = "各年级各班BLAI指数简表", longtable = TRUE)
 ```
 
-从上表可以看出，在相同年级内，班级与班级之间也存在很大差异。有的班级整体水平较高，比如一年级2班，而有的班级则整体水平较差。
+从上表可以看出，在相同年级内，班级与班级之间也存在较大差异。其中和顺中心小学一年级9班整体水平明显较差，存在较多BLAI指数分数偏低的学生。
 
 ## 各年级成绩与BLAI指数的相关关系
 
 ```{r Chinese and BLAI, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "语文"
-ggplot(BLAI, aes_string("BLAI", exam_name)) +
+ggplot(BLAI, aes_string("BLAI", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -145,7 +149,7 @@ ggplot(BLAI, aes_string("BLAI", exam_name)) +
 
 ```{r Math and BLAI, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "数学"
-ggplot(BLAI, aes_string("BLAI", exam_name)) +
+ggplot(BLAI, aes_string("BLAI", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -161,7 +165,7 @@ ggplot(BLAI, aes_string("BLAI", exam_name)) +
   )
 ```
 
-图中可以看出，BLAI指数能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，大脑基本认知能力将在学生的学习过程中发挥越来越重要的价值。
+图中每一个点代表一个学生。从图中可以看出，学校之间无论BLAI指数还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对BLAI指数和学习成绩的拟合情况来看，BLAI指数能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，大脑基本认知能力将在学生的学习过程中发挥越来越重要的价值。
 
 # 第二部分 注意力指数
 
@@ -177,7 +181,7 @@ ATTENTION <- user_data %>%
 
 ```{r summary statistics for ATTENTION by grade, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 ATTENTION %>% 
-  group_by(年级) %>% 
+  group_by(学校, 年级) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -190,12 +194,14 @@ ATTENTION %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, ability_name, "得分简表"))
+               caption = paste0(ability_name, "得分简表"))
 ```
+
+从上表可以看出，大部分学校一二年级学生的`r ability_name`整体水平稍优于全国平均水平，而三四年级学生的`r ability_name`整体水平则稍显不足。
 
 ```{r summary statistics for ATTENTION by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 ATTENTION %>% 
-  group_by(年级, 班) %>% 
+  group_by(学校, 年级, 班) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -208,14 +214,16 @@ ATTENTION %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, "各年级各班", ability_name, "得分简表"))
+               caption = paste0("各年级各班", ability_name, "得分简表"))
 ```
+
+从上表可以看出，在相同年级内，学生的`r ability_name`表现班级与班级之间也存在较大差异。其中和顺中心小学一年级9班整体水平明显较差，存在较多`r ability_name`得分偏低的学生。但是从测评人数角度看，也存在较多学生数据缺失情况。
 
 ## 各年级成绩与`r ability_name`的相关关系
 
 ```{r Chinese and ATTENTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "语文"
-ggplot(ATTENTION, aes_string("得分", exam_name)) +
+ggplot(ATTENTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -233,7 +241,7 @@ ggplot(ATTENTION, aes_string("得分", exam_name)) +
 
 ```{r Math and ATTENTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "数学"
-ggplot(ATTENTION, aes_string("得分", exam_name)) +
+ggplot(ATTENTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -249,6 +257,8 @@ ggplot(ATTENTION, aes_string("得分", exam_name)) +
   )
 ```
 
+图中每一个点代表一个学生。从图中可以看出，学校之间无论`r ability_name`得分还是学习成绩都没有较大差异，可以说9所学校的学生发展比较均衡。同时，根据图中对BLAI指数和学习成绩的拟合情况来看，虽然比不上BLAI指数的预测能力，`r ability_name`得分也能较好预测学生的学习成绩，并且随着年级的增长，预测效果越来越好。这表明随着年龄的增长，大脑基本认知能力将在学生的学习过程中发挥越来越重要的价值。
+
 # 第三部分 记忆力指数
 
 ---
@@ -263,7 +273,7 @@ MEMORY <- user_data %>%
 
 ```{r summary statistics for MEMORY by grade, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 MEMORY %>% 
-  group_by(年级) %>% 
+  group_by(学校, 年级) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -276,12 +286,12 @@ MEMORY %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, ability_name, "得分简表"))
+               caption = paste0(ability_name, "得分简表"))
 ```
 
 ```{r summary statistics for MEMORY by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 MEMORY %>% 
-  group_by(年级, 班) %>% 
+  group_by(学校, 年级, 班) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -294,14 +304,14 @@ MEMORY %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, "各年级各班", ability_name, "得分简表"))
+               caption = paste0("各年级各班", ability_name, "得分简表"))
 ```
 
 ## 各年级成绩与`r ability_name`的相关关系
 
 ```{r Chinese and MEMORY, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "语文"
-ggplot(MEMORY, aes_string("得分", exam_name)) +
+ggplot(MEMORY, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -319,7 +329,7 @@ ggplot(MEMORY, aes_string("得分", exam_name)) +
 
 ```{r Math and MEMORY, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "数学"
-ggplot(MEMORY, aes_string("得分", exam_name)) +
+ggplot(MEMORY, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -349,7 +359,7 @@ REACTION <- user_data %>%
 
 ```{r summary statistics for REACTION by grade, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 REACTION %>% 
-  group_by(年级) %>% 
+  group_by(学校, 年级) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -362,12 +372,12 @@ REACTION %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, ability_name, "得分简表"))
+               caption = paste0(ability_name, "得分简表"))
 ```
 
 ```{r summary statistics for REACTION by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 REACTION %>% 
-  group_by(年级, 班) %>% 
+  group_by(学校, 年级, 班) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -380,14 +390,14 @@ REACTION %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, "各年级各班", ability_name, "得分简表"))
+               caption = paste0("各年级各班", ability_name, "得分简表"))
 ```
 
 ## 各年级成绩与`r ability_name`的相关关系
 
 ```{r Chinese and REACTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "语文"
-ggplot(REACTION, aes_string("得分", exam_name)) +
+ggplot(REACTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -405,7 +415,7 @@ ggplot(REACTION, aes_string("得分", exam_name)) +
 
 ```{r Math and REACTION, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "数学"
-ggplot(REACTION, aes_string("得分", exam_name)) +
+ggplot(REACTION, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -435,7 +445,7 @@ CONTROL <- user_data %>%
 
 ```{r summary statistics for CONTROL by grade, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 CONTROL %>% 
-  group_by(年级) %>% 
+  group_by(学校, 年级) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -448,12 +458,12 @@ CONTROL %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, ability_name, "得分简表"))
+               caption = paste0(ability_name, "得分简表"))
 ```
 
 ```{r summary statistics for CONTROL by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 CONTROL %>% 
-  group_by(年级, 班) %>% 
+  group_by(学校, 年级, 班) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -466,14 +476,14 @@ CONTROL %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, "各年级各班", ability_name, "得分简表"))
+               caption = paste0("各年级各班", ability_name, "得分简表"))
 ```
 
 ## 各年级成绩与`r ability_name`的相关关系
 
 ```{r Chinese and CONTROL, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "语文"
-ggplot(CONTROL, aes_string("得分", exam_name)) +
+ggplot(CONTROL, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -491,7 +501,7 @@ ggplot(CONTROL, aes_string("得分", exam_name)) +
 
 ```{r Math and CONTROL, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "数学"
-ggplot(CONTROL, aes_string("得分", exam_name)) +
+ggplot(CONTROL, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -521,7 +531,7 @@ THOUGHT <- user_data %>%
 
 ```{r summary statistics for THOUGHT by grade, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 THOUGHT %>% 
-  group_by(年级) %>% 
+  group_by(学校, 年级) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -534,12 +544,12 @@ THOUGHT %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, ability_name, "得分简表"))
+               caption = paste0(ability_name, "得分简表"))
 ```
 
 ```{r summary statistics for THOUGHT by class, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 THOUGHT %>% 
-  group_by(年级, 班) %>% 
+  group_by(学校, 年级, 班) %>% 
   summarise(
     人数 = n(),
     平均分 = mean(得分),
@@ -552,14 +562,14 @@ THOUGHT %>%
     D = sum(rank == "D")
   ) %>%
   knitr::kable(digits = 2, 
-               caption = paste0(school_name, "各年级各班", ability_name, "得分简表"))
+               caption = paste0("各年级各班", ability_name, "得分简表"))
 ```
 
 ## 各年级成绩与`r ability_name`的相关关系
 
 ```{r Chinese and THOUGHT, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "语文"
-ggplot(THOUGHT, aes_string("得分", exam_name)) +
+ggplot(THOUGHT, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
@@ -577,7 +587,7 @@ ggplot(THOUGHT, aes_string("得分", exam_name)) +
 
 ```{r Math and THOUGHT, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
 exam_name <- "数学"
-ggplot(THOUGHT, aes_string("得分", exam_name)) +
+ggplot(THOUGHT, aes_string("得分", exam_name, group = 1, color = "学校")) +
   geom_point() +
   stat_smooth(method = "glm") +
   facet_wrap(~ 年级, scales = "free") +
