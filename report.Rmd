@@ -100,7 +100,7 @@ BLAI %>%
     C = sum(rank == "C"),
     D = sum(rank == "D")
   ) %>%
-  knitr::kable(digits = 2, caption = "BLAI指数简表[^2]", longtable = TRUE)
+  knitr::kable(digits = 2, caption = "BLAI指数简表[^2]")
 ```
 
 从上表可以看出，与全国平均水平（100分）相比，各年级BLAI指数得分略微偏低。从A，B，C，D四个等级人数分布看来，各年级BLAI指数有发展潜力的人数都比较多。如果对这些学生做进一步的针对性训练，预期会有很好的效果。
@@ -121,7 +121,7 @@ BLAI %>%
     C = sum(rank == "C"),
     D = sum(rank == "D")
   ) %>%
-  knitr::kable(digits = 2, caption = "各年级各班BLAI指数简表", longtable = TRUE)
+  knitr::kable(digits = 2, caption = "各年级各班BLAI指数简表")
 ```
 
 从上表可以看出，学生的BLAI指数在相同年级的不同班级之间也存在较大差异。其中和顺中心小学一年级9班整体水平明显较差，存在较多BLAI指数偏低的学生。
