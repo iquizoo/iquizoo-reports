@@ -6,7 +6,7 @@ library(readxl)
 library(stringr)
 
 # configurations
-data_dir <- getSrcDirectory(function(x) x)
+data_dir <- "里水镇"
 user_files <- list.files(data_dir, "xls$", full.names = TRUE)
 exam_file <- list.files(data_dir, "xlsx$", full.names = TRUE)
 ability_file <- list.files(data_dir, "csv$", full.names = TRUE)
