@@ -21,13 +21,23 @@ params:
     label: "学生能力得分:"
     value: data/user_ability_test.rds
     input: file
+  time_tf:
+    label: "是否自动获得学生测评时间？"
+    value: true
+    input: checkbox
   time:
-    label: "学生测评时间:"
-    value: ""
+    label: "学生测评时间（取消勾选上一项后请认真填写）:"
+    value: !r date()
     input: date
+  abilities:
+    label: "请选择所有需要报告的能力:"
+    value: ["反应力", "注意力", "记忆力", "自控力", "思维力"]
+    input: select
+    choices: ["反应力", "注意力", "记忆力", "自控力", "思维力"]
+    multiple: true
 ---
 
-```{r load packages and data, include=FALSE}
+```{r load packages and configurations, include=FALSE}
 # load packages
 library(tidyverse)
 library(extrafont)
@@ -35,18 +45,30 @@ library(extrafont)
 user_info_file <- params$user_info
 user_exam_file <- params$user_exam
 user_ability_file <- params$user_ability
+assess_time_auto <- params$time_tf
 assess_time <- params$time
+abilities <- params$abilities
 # configuration settings
 meta_vars <- c("userId", "姓名", "性别", "学校", "年级", "班")
 rnk_cutedges_ability <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
+# all the candidate reported abilities
+ability_candidates <- c("反应力", "注意力", "记忆力", "自控力", "思维力")
+# get the last modification time of data files
+mtimes <- lapply(
+  Sys.glob(c(user_info_file, user_exam_file, user_ability_file)),
+  function(x) file.info(x)$mtime
+)
+```
+
+```{r load data, include=FALSE, cache=TRUE, cache.extra=mtimes}
 # load user information
 user_info <- read_rds(user_info_file)
 # load user exam information
 user_exam <- read_rds(user_exam_file)
 # load user ability score
 user_ability <- read_rds(user_ability_file)
-# if not input assess time, use the median of createDate
-if (assess_time == "")
+# # if not input assess time, use the median of createDate
+if (assess_time_auto)
   assess_time <- median(user_ability$createDate)
 # do some transformations
 schools <- unique(user_info$学校)
@@ -70,15 +92,14 @@ schools <- unique(user_info$学校)
 
 **实测人数[^1]**：`r length(unique(user_ability$userId))`人
 
-```{r count users, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r count users, echo=FALSE, message=FALSE, warning=FALSE}
 user_info %>%
   group_by(学校, 年级) %>%
   summarise(人数 = length(unique(userId))) %>%
-  knitr::kable(caption = "各学校各年级实测人数[^order]")
+  knitr::kable(caption = "各学校各年级实测人数")
 ```
 
-[^1]: 即实际测得数据中，至少包含五项能力中的一项的学生总数，可能会少于计划参加测评的学生总数。
-[^order]: 学校排名不分先后。
+[^1]: 即实际测得数据中，至少包含所测能力中的一项的学生总数，可能会少于计划参加测评的学生总数。
 
 # 详细报告
 
@@ -91,12 +112,12 @@ BLAI <- user_ability %>%
   group_by(userId) %>%
   summarise(BLAI = mean(abscore, na.rm = TRUE)) %>%
   mutate(rank = cut(BLAI, rnk_cutedges_ability, LETTERS[4:1])) %>%
-  left_join(user_info)
+  inner_join(user_info)
 ```
 
 综合能力分数由大脑学习能力指数（BLAI）表示，它反映了注意力、记忆力、自控力、反应力这四方面认知能力的综合水平。
 
-```{r summary statistics for BLAI by grade, cache=TRUE, echo=FALSE}
+```{r summary statistics for BLAI by grade, echo=FALSE}
 BLAI %>%
   group_by(学校, 年级) %>%
   summarise(
@@ -115,7 +136,7 @@ BLAI %>%
 
 [^2]: A，B，C，D四个等级分别表示优秀（全国同龄水平90%以上），良好（全国同龄水平70%-90%），普通（全国同龄水平30%-70%），不足（全国同年龄水平30%以下）。表中列出了处于各个等级的学生人数。
 
-```{r summary statistics for BLAI by class, cache=TRUE, echo=FALSE}
+```{r summary statistics for BLAI by class, echo=FALSE}
 BLAI %>%
   group_by(学校, 年级, 班) %>%
   summarise(
@@ -134,7 +155,7 @@ BLAI %>%
 
 ### 各年级成绩与BLAI指数的相关关系
 
-```{r lesson and BLAI, cache=TRUE, echo=FALSE, fig.cap=fig_captions, message=FALSE, warning=FALSE}
+```{r lesson and BLAI, echo=FALSE, fig.cap=fig_captions, message=FALSE, warning=FALSE}
 fig_captions <- paste0(schools, "学生成绩和BLAI指数的相关关系")
 BLAI_exam <- user_exam %>%
   inner_join(BLAI)
