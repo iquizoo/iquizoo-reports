@@ -172,3 +172,37 @@ for (school in schools){
   cat("\n\n")
 }
 ```
+
+```{r ATTENTION preamble, include=FALSE}
+ability_name <- "注意力"
+```
+
+```{r ATTENTION header, echo=FALSE, results='asis', eval=ability_name %in% abilities, warning=FALSE, message=FALSE}
+# header message
+cat("
+## 注意力指数
+
+注意是大脑接收和处理个体外部和内部信息的前提，只有被注意到的信息才能得到有效的分析和处理，并用来解决问题并形成持久的记忆。
+")
+# data extract
+ability_data <- user_ability %>%
+  filter(abname == ability_name) %>%
+  mutate(rank = cut(abscore, rnk_cutedges_ability, LETTERS[4:1])) %>%
+  inner_join(user_info)
+# score distribution by grade
+ability_data %>%
+  group_by(学校, 年级) %>%
+  summarise(
+    人数 = n(),
+    平均分 = mean(abscore),
+    标准差 = sd(abscore),
+    最高分 = max(abscore),
+    最低分 = min(abscore),
+    A = sum(rank == "A"),
+    B = sum(rank == "B"),
+    C = sum(rank == "C"),
+    D = sum(rank == "D")
+  ) %>%
+  knitr::kable(digits = 2,
+               caption = paste0(ability_name, "得分简表"))
+```
