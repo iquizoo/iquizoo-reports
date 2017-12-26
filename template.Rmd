@@ -48,11 +48,20 @@ user_ability_file <- params$user_ability
 assess_time_auto <- params$time_tf
 assess_time <- params$time
 abilities <- params$abilities
+# ability descriptions
+abdesc <- setNames(
+  c(
+    "注意是大脑接收和处理个体外部和内部信息的前提，只有被注意到的信息才能得到有效的分析和处理，并用来解决问题并形成持久的记忆。",
+    "记忆力是人脑智力的集中体现，也是人脑比电脑更聪明的重要原因。个体的生存和发展需要不断掌握新的知识，记忆能将这些知识经验存储下来并合理运用。记忆连接着人的过去和未来，丰富着我们的精神生活并塑造着我们的性格。",
+    "反应力是对各种信息、要求和指令等做出快速反应的能力。速度是衡量反应力最重要的指标,它体现了大脑各个系统的协调、整合发展的水平，与整个神经网络的效率有密切关系。",
+    "自控力是人们能够根据目标和环境的要求，控制和改变自己的思想和行为，克服冲动，并抵制诱惑，让自己的行为符合社会期许和长期目标。自控力主要体现为控制冲动的能力，抵制诱惑的能力以及信息更新的能力。",
+    "思维力指人脑对客观事物的概括反映能力。良好的思维力让我们能快速的掌握概念，进行推理，并更好的认识事物及事物间的关系。人的思维力在一生中不断发展，在顺应其客观发展规律的基础上重视对思维力的培养，对于学习和生活都尤为重要。"
+  ),
+  c("注意力", "记忆力", "反应力", "自控力", "思维力")
+)
 # configuration settings
 meta_vars <- c("userId", "姓名", "性别", "学校", "年级", "班")
 rnk_cutedges_ability <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
-# all the candidate reported abilities
-ability_candidates <- c("反应力", "注意力", "记忆力", "自控力", "思维力")
 # get the last modification time of data files
 mtimes <- lapply(
   Sys.glob(c(user_info_file, user_exam_file, user_ability_file)),
@@ -183,79 +192,82 @@ for (school in schools){
 }
 ```
 
-```{r ATTENTION preamble, include=FALSE}
-ability_name <- "注意力"
-fig_captions <- paste0(schools, "学生学业成绩和", ability_name, "指数的相关关系")
-```
-
-```{r ATTENTION header, echo=FALSE, warning=FALSE, message=FALSE, results='asis', eval=ability_name %in% abilities, fig.cap=fig_captions}
-# header message
-cat("
-## 注意力指数
-
-注意是大脑接收和处理个体外部和内部信息的前提，只有被注意到的信息才能得到有效的分析和处理，并用来解决问题并形成持久的记忆。
-")
-# data extract
-ability_data <- user_ability %>%
-  filter(abname == ability_name) %>%
-  mutate(rank = cut(abscore, rnk_cutedges_ability, LETTERS[4:1])) %>%
-  inner_join(user_info)
-# score statistics by grade
-ability_data %>%
-  group_by(学校, 年级) %>%
-  summarise(
-    人数 = n(),
-    平均分 = mean(abscore),
-    标准差 = sd(abscore),
-    最高分 = max(abscore),
-    最低分 = min(abscore),
-    A = sum(rank == "A"),
-    B = sum(rank == "B"),
-    C = sum(rank == "C"),
-    D = sum(rank == "D")
-  ) %>%
-  knitr::kable(digits = 2,
-               caption = paste0(ability_name, "得分简表"))
-# score statistics by class
-ability_data %>% 
-  group_by(学校, 年级, 班) %>% 
-  summarise(
-    人数 = n(),
-    平均分 = mean(abscore),
-    标准差 = sd(abscore),
-    最高分 = max(abscore),
-    最低分 = min(abscore),
-    A = sum(rank == "A"),
-    B = sum(rank == "B"),
-    C = sum(rank == "C"),
-    D = sum(rank == "D")
-  ) %>%
-  knitr::kable(digits = 2, 
-               caption = paste0("各年级各班", ability_name, "得分简表"))
-# figure header
-cat(paste0("### 各年级学业成绩与", ability_name, "的相关关系\n\n"))
-ability_exam <- user_exam %>%
-  inner_join(ability_data)
-for (school in schools){
-  schoolplot <- ability_exam %>%
-    filter(学校 == school) %>%
-    ggplot(aes(abscore, 成绩, color = 学科)) +
-    geom_point() +
-    stat_smooth(method = "glm") +
-    facet_wrap(~年级, scales = "free") +
-    theme_minimal() +
-    labs(
-      title = paste0(ability_name, "与学业成绩的关系"),
-      x = paste0(ability_name, "得分"),
-      y = "学业成绩"
-    ) +
-    theme(
-      title = element_text(family = "SimHei"),
-      plot.title = element_text(hjust = 0.5)
-    )
-  # render the plot
-  print(schoolplot)
-  # in order that the captions would render
-  cat("\n\n")
+```{r ability content, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.cap=fig_captions}
+count_ab2rep <- length(abilities)
+count_school <- length(schools)
+fig_captions <- paste0(
+  rep(schools, times = count_ab2rep),
+  "学生学业成绩和",
+  rep(abilities, each = count_school),
+  "指数的相关关系"
+)
+for (ability_name in abilities){
+  # header message
+  cat(paste0("## ", ability_name, "指数\n\n", abdesc[ability_name], "\n\n"))
+  # data extract
+  ability_data <- user_ability %>%
+    filter(abname == ability_name) %>%
+    mutate(rank = cut(abscore, rnk_cutedges_ability, LETTERS[4:1])) %>%
+    inner_join(user_info)
+  # score statistics by grade
+  ability_data %>%
+    group_by(学校, 年级) %>%
+    summarise(
+      人数 = n(),
+      平均分 = mean(abscore),
+      标准差 = sd(abscore),
+      最高分 = max(abscore),
+      最低分 = min(abscore),
+      A = sum(rank == "A"),
+      B = sum(rank == "B"),
+      C = sum(rank == "C"),
+      D = sum(rank == "D")
+    ) %>%
+    knitr::kable(digits = 2,
+                 caption = paste0(ability_name, "得分简表")) %>% 
+    print()
+  # score statistics by class
+  ability_data %>% 
+    group_by(学校, 年级, 班) %>% 
+    summarise(
+      人数 = n(),
+      平均分 = mean(abscore),
+      标准差 = sd(abscore),
+      最高分 = max(abscore),
+      最低分 = min(abscore),
+      A = sum(rank == "A"),
+      B = sum(rank == "B"),
+      C = sum(rank == "C"),
+      D = sum(rank == "D")
+    ) %>%
+    knitr::kable(digits = 2, 
+                 caption = paste0("各年级各班", ability_name, "得分简表")) %>% 
+    print()
+  # figure header
+  cat(paste0("\n\n### 各年级学业成绩与", ability_name, "的相关关系\n\n"))
+  ability_exam <- user_exam %>%
+    inner_join(ability_data)
+  for (school in schools){
+    schoolplot <- ability_exam %>%
+      filter(学校 == school) %>%
+      ggplot(aes(abscore, 成绩, color = 学科)) +
+      geom_point() +
+      stat_smooth(method = "glm") +
+      facet_wrap(~年级, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste0(ability_name, "与学业成绩的关系"),
+        x = paste0(ability_name, "得分"),
+        y = "学业成绩"
+      ) +
+      theme(
+        title = element_text(family = "SimHei"),
+        plot.title = element_text(hjust = 0.5)
+      )
+    # render the plot
+    print(schoolplot)
+    # in order that the captions would render
+    cat("\n\n")
+  }
 }
 ```
