@@ -107,7 +107,7 @@ user_info %>%
 
 ## 大脑学习能力指数
 
-```{r calculate BLAI, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+```{r calculate BLAI, echo=FALSE, message=FALSE, warning=FALSE}
 BLAI <- user_ability %>%
   group_by(userId) %>%
   summarise(BLAI = mean(abscore, na.rm = TRUE)) %>%
@@ -117,7 +117,7 @@ BLAI <- user_ability %>%
 
 综合能力分数由大脑学习能力指数（BLAI）表示，它反映了注意力、记忆力、自控力、反应力这四方面认知能力的综合水平。
 
-```{r summary statistics for BLAI by grade, echo=FALSE}
+```{r summary statistics for BLAI by grade, echo=FALSE, message=FALSE, warning=FALSE}
 BLAI %>%
   group_by(学校, 年级) %>%
   summarise(
@@ -136,7 +136,7 @@ BLAI %>%
 
 [^2]: A，B，C，D四个等级分别表示优秀（全国同龄水平90%以上），良好（全国同龄水平70%-90%），普通（全国同龄水平30%-70%），不足（全国同年龄水平30%以下）。表中列出了处于各个等级的学生人数。
 
-```{r summary statistics for BLAI by class, echo=FALSE}
+```{r summary statistics for BLAI by class, echo=FALSE, message=FALSE, warning=FALSE}
 BLAI %>%
   group_by(学校, 年级, 班) %>%
   summarise(
@@ -153,10 +153,10 @@ BLAI %>%
   knitr::kable(digits = 2, caption = "各年级各班BLAI指数简表")
 ```
 
-### 各年级成绩与BLAI指数的相关关系
+### 各年级学业成绩与BLAI指数的相关关系
 
-```{r lesson and BLAI, echo=FALSE, fig.cap=fig_captions, message=FALSE, warning=FALSE}
-fig_captions <- paste0(schools, "学生成绩和BLAI指数的相关关系")
+```{r lesson and BLAI, echo=FALSE, message=FALSE, warning=FALSE, fig.cap=fig_captions}
+fig_captions <- paste0(schools, "学生学业成绩和BLAI指数的相关关系")
 BLAI_exam <- user_exam %>%
   inner_join(BLAI)
 for (school in schools){
@@ -165,7 +165,17 @@ for (school in schools){
     ggplot(aes(BLAI, 成绩, color = 学科)) +
     geom_point() +
     stat_smooth(method = "glm") +
-    facet_wrap(~年级, scales = "free")
+    facet_wrap(~年级, scales = "free") +
+    theme_minimal() +
+    labs(
+      title = paste0("BLAI与学业成绩的关系"),
+      x = "BLAI指数",
+      y = "学业成绩"
+    ) +
+    theme(
+      title = element_text(family = "SimHei"),
+      plot.title = element_text(hjust = 0.5)
+    )
   # render the plot
   print(schoolplot)
   # in order that the captions would render
@@ -175,9 +185,10 @@ for (school in schools){
 
 ```{r ATTENTION preamble, include=FALSE}
 ability_name <- "注意力"
+fig_captions <- paste0(schools, "学生学业成绩和", ability_name, "指数的相关关系")
 ```
 
-```{r ATTENTION header, echo=FALSE, results='asis', eval=ability_name %in% abilities, warning=FALSE, message=FALSE}
+```{r ATTENTION header, echo=FALSE, warning=FALSE, message=FALSE, results='asis', eval=ability_name %in% abilities, fig.cap=fig_captions}
 # header message
 cat("
 ## 注意力指数
@@ -189,7 +200,7 @@ ability_data <- user_ability %>%
   filter(abname == ability_name) %>%
   mutate(rank = cut(abscore, rnk_cutedges_ability, LETTERS[4:1])) %>%
   inner_join(user_info)
-# score distribution by grade
+# score statistics by grade
 ability_data %>%
   group_by(学校, 年级) %>%
   summarise(
@@ -205,4 +216,46 @@ ability_data %>%
   ) %>%
   knitr::kable(digits = 2,
                caption = paste0(ability_name, "得分简表"))
+# score statistics by class
+ability_data %>% 
+  group_by(学校, 年级, 班) %>% 
+  summarise(
+    人数 = n(),
+    平均分 = mean(abscore),
+    标准差 = sd(abscore),
+    最高分 = max(abscore),
+    最低分 = min(abscore),
+    A = sum(rank == "A"),
+    B = sum(rank == "B"),
+    C = sum(rank == "C"),
+    D = sum(rank == "D")
+  ) %>%
+  knitr::kable(digits = 2, 
+               caption = paste0("各年级各班", ability_name, "得分简表"))
+# figure header
+cat(paste0("### 各年级学业成绩与", ability_name, "的相关关系\n\n"))
+ability_exam <- user_exam %>%
+  inner_join(ability_data)
+for (school in schools){
+  schoolplot <- ability_exam %>%
+    filter(学校 == school) %>%
+    ggplot(aes(abscore, 成绩, color = 学科)) +
+    geom_point() +
+    stat_smooth(method = "glm") +
+    facet_wrap(~年级, scales = "free") +
+    theme_minimal() +
+    labs(
+      title = paste0(ability_name, "与学业成绩的关系"),
+      x = paste0(ability_name, "得分"),
+      y = "学业成绩"
+    ) +
+    theme(
+      title = element_text(family = "SimHei"),
+      plot.title = element_text(hjust = 0.5)
+    )
+  # render the plot
+  print(schoolplot)
+  # in order that the captions would render
+  cat("\n\n")
+}
 ```
