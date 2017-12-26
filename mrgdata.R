@@ -65,6 +65,8 @@ write_rds(exam_score, file.path(data_dir, "user_exam_test.rds"))
 
 # load ability score
 ability_score <- read_csv(ability_file) %>%
+  # score of 0 indicates missing data
+  mutate(ability_score = ifelse(ability_score == 0, NA, ability_score)) %>%
   rename(
     abname = name,
     abscore = ability_score
