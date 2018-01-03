@@ -71,7 +71,7 @@ ability_score <- read_csv(ability_file) %>%
     abname = name,
     abscore = ability_score
   ) %>%
-  group_by(userId, createDate, abname) %>%
+  group_by(userId, abname) %>%
   mutate(occur = row_number(desc(abscore))) %>%
   filter(
     occur == 1,
