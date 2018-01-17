@@ -85,7 +85,7 @@ if (assess_time_auto){
   time_var <- time_var_cand[time_var_cand %in% names(user_ability)]
   assess_time <- median(user_ability[[time_var]])
 }
-# do some transformations
+# get school names
 schools <- unique(user_info$学校)
 ```
 
@@ -173,7 +173,8 @@ BLAI %>%
 ```{r lesson and BLAI, echo=FALSE, message=FALSE, warning=FALSE, fig.cap=fig_captions}
 fig_captions <- paste0(schools, "学生学业成绩和BLAI指数的相关关系")
 BLAI_exam <- user_exam %>%
-  inner_join(BLAI)
+  inner_join(BLAI) %>%
+  filter(!is.na(成绩), !is.na(BLAI))
 for (school in schools){
   schoolplot <- BLAI_exam %>%
     filter(学校 == school) %>%
@@ -214,7 +215,8 @@ for (ability_name in abilities){
     mutate(rank = cut(abscore, rnk_cutedges_ability, LETTERS[4:1])) %>%
     inner_join(user_info)
   ability_exam <- user_exam %>%
-    inner_join(ability_data)
+    inner_join(ability_data) %>%
+    filter(!is.na(成绩), !is.na(abscore))
   if (nrow(ability_exam) == 0)
     next
   # header message
