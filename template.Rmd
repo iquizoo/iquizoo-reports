@@ -76,9 +76,13 @@ user_info <- read_rds(user_info_file)
 user_exam <- read_rds(user_exam_file)
 # load user ability score
 user_ability <- read_rds(user_ability_file)
-# # if not input assess time, use the median of createDate
-if (assess_time_auto)
-  assess_time <- median(user_ability$createDate)
+# if not input assess time, use the median of createTime/createDate
+if (assess_time_auto){
+  # get the real time variable
+  time_var_cand <- c("createTime", "createDate")
+  time_var <- time_var_cand[time_var_cand %in% names(user_ability)]
+  assess_time <- median(user_ability[[time_var]])
+}
 # do some transformations
 schools <- unique(user_info$学校)
 ```
