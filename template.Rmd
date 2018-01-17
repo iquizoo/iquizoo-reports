@@ -62,6 +62,8 @@ abdesc <- setNames(
 # configuration settings
 meta_vars <- c("userId", "姓名", "性别", "学校", "年级", "班")
 rnk_cutedges_ability <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
+# let knitr kable output NA as empty string
+options(knitr.kable.NA = "")
 # get the last modification time of data files
 mtimes <- lapply(
   Sys.glob(c(user_info_file, user_exam_file, user_ability_file)),
