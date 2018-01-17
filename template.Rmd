@@ -202,13 +202,17 @@ fig_captions <- paste0(
   "指数的相关关系"
 )
 for (ability_name in abilities){
-  # header message
-  cat(paste0("## ", ability_name, "指数\n\n", abdesc[ability_name], "\n\n"))
   # data extract
   ability_data <- user_ability %>%
     filter(abname == ability_name) %>%
     mutate(rank = cut(abscore, rnk_cutedges_ability, LETTERS[4:1])) %>%
     inner_join(user_info)
+  ability_exam <- user_exam %>%
+    inner_join(ability_data)
+  if (nrow(ability_exam) == 0)
+    next
+  # header message
+  cat(paste0("## ", ability_name, "指数\n\n", abdesc[ability_name], "\n\n"))
   # score statistics by grade
   ability_data %>%
     group_by(学校, 年级) %>%
@@ -224,11 +228,11 @@ for (ability_name in abilities){
       D = sum(rank == "D")
     ) %>%
     knitr::kable(digits = 2,
-                 caption = paste0(ability_name, "得分简表")) %>% 
+                 caption = paste0(ability_name, "得分简表")) %>%
     print()
   # score statistics by class
-  ability_data %>% 
-    group_by(学校, 年级, 班) %>% 
+  ability_data %>%
+    group_by(学校, 年级, 班) %>%
     summarise(
       人数 = n(),
       平均分 = mean(abscore),
@@ -240,13 +244,11 @@ for (ability_name in abilities){
       C = sum(rank == "C"),
       D = sum(rank == "D")
     ) %>%
-    knitr::kable(digits = 2, 
-                 caption = paste0("各年级各班", ability_name, "得分简表")) %>% 
+    knitr::kable(digits = 2,
+                 caption = paste0("各年级各班", ability_name, "得分简表")) %>%
     print()
   # figure header
   cat(paste0("\n\n### 各年级学业成绩与", ability_name, "的相关关系\n\n"))
-  ability_exam <- user_exam %>%
-    inner_join(ability_data)
   for (school in schools){
     schoolplot <- ability_exam %>%
       filter(学校 == school) %>%
