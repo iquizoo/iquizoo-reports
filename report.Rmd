@@ -9,7 +9,7 @@ output:
 toc-title: "目录"
 ---
 
-```{r load packages and data, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+```{r load packages and data, include=FALSE}
 # load packages
 library(tidyverse)
 library(extrafont)
