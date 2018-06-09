@@ -1,0 +1,7 @@
+book_filename: "daxing"
+delete_merged_file: true
+output_dir: "daxing"
+language:
+  label:
+    tab: "表"
+    fig: "图"
