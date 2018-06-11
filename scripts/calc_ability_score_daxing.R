@@ -1,12 +1,11 @@
-# basic logic:
-# The most important modification here is to correct the scores of the
-# reasoning tests. The test ids are:
-# * 116039
-# * 116039
-# * 118036
-# * 118036
+# Copyright (C) 2018 Liang Zhang - All Rights Reserved
 
-# load packages
+# @author Liang Zhang <psychelzh@outlook.com>
+
+# This scripts is used to calculate ability scores for Daxing cognitive measure
+# project, and the results are directly used in reports.
+
+# load packages and settings ----
 library(tidyverse)
 library(readxl)
 library(writexl)
@@ -98,6 +97,7 @@ blai_total_scores <- blai_components_scores %>%
   summarise(score = mean(score, na.rm = TRUE))
 
 # calculate ability scores for math and components ----
+# TODO(Liang): Here should be the codes used to calculate math ability scores
 
 # side effects: output all ability scores after clensing
 # write_xlsx(ability_scores, file.path(wk_dir, "ability_scores.xlsx"))
