@@ -55,10 +55,10 @@ params:
 <!-- 使用没有序号的格式 -->
 ## 学生参加测评的情况
 
-测评学校：`r params$user_school`
-测评时间：`r params$time`
-应测人数：`r `人
-实测人数 ：`r `人
+* 测评学校：`r params$user_school`
+* 测评时间：`r params$time`
+* 应测人数：`r `人
+* 实测人数 ：`r `人
 
 # 详细报告
 
