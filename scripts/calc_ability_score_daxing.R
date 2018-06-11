@@ -14,6 +14,8 @@ library(rvest)
 wk_dir <- here::here("data", "daxing")
 mod_tests_sp <- c(116039, 116041, 116042, 118036)
 mod_tests_com <- 97938
+blai_components <- c("注意力", "记忆力", "反应力", "自控力", "思维力")
+math_components <- c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
 
 # merge data and clean data ----
 # load dataset
@@ -67,11 +69,11 @@ data_clean <- data_merged %>%
     stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
   )
 
-# calculate ability scores ----
+# calculate ability scores for BLAI and components ----
 # map abilities
 subability <- read_excel(file.path(wk_dir, "subability.xlsx"))
 ability_map <- read_excel(file.path(wk_dir, "exerciseInfo.xlsx")) %>%
-  left_join(subability, by = c("ability_cali" = "subname")) %>%
+  left_join(subability, by = c("ability_blai" = "subname")) %>%
   mutate(excerciseId = parse_double(ID)) %>%
   rename(taskname = name)
 # add ability setting to data
@@ -82,9 +84,20 @@ data_clean <- data_clean %>%
     -examId, -subId, -starts_with("交互题CODE"), -starts_with("title"),
     -ID, -birthDay
   )
+# side effects: output data after clensing
 write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
-# calculate by averaging
-ability_scores <- data_clean %>%
+# calculate components by averaging
+blai_components_scores <- data_clean %>%
   group_by(userId, name, sex, school, grade, cls, abname) %>%
-  summarise(score = mean(stdScore, na.rm = TRUE))
-write_xlsx(ability_scores, file.path(wk_dir, "ability_scores.xlsx"))
+  summarise(score = mean(stdScore, na.rm = TRUE)) %>%
+  filter(abname %in% blai_components)
+# calculate blai through component scores
+blai_total_scores <- blai_components_scores %>%
+  mutate(abname = "学习能力指数") %>%
+  group_by(userId, name, sex, school, grade, cls, abname) %>%
+  summarise(score = mean(score, na.rm = TRUE))
+
+# calculate ability scores for math and components ----
+
+# side effects: output all ability scores after clensing
+# write_xlsx(ability_scores, file.path(wk_dir, "ability_scores.xlsx"))
