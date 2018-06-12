@@ -94,7 +94,8 @@ data_clean <- data_merged %>%
   group_by(excerciseId) %>%
   mutate(
     stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
-  )
+  ) %>%
+  ungroup()
 # side effects: output data after clensing
 write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
 
@@ -107,11 +108,13 @@ for (ability_type in names(ability_components)) {
     rename(ability = !! sym(paste0("ability_", ability_type))) %>%
     group_by(!!! syms(key_vars)) %>%
     summarise(score := mean(stdScore, na.rm = TRUE)) %>%
+    ungroup() %>%
     filter(ability %in% ability_components[[ability_type]])
   # calculate total score through component scores
   total_scores <- components_scores %>%
     mutate(ability = ability_type_cn[ability_type]) %>%
     group_by(!!! syms(key_vars)) %>%
+    ungroup() %>%
     summarise(score = mean(score, na.rm = TRUE))
   ability_scores_list[[ability_type]] <- rbind(components_scores, total_scores)
 }
