@@ -67,6 +67,8 @@ data_clean <- data_merged %>%
   mutate(
     stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
   )
+# side effects: output data after clensing
+write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
 
 # calculate ability scores for BLAI and components ----
 # map abilities
@@ -75,18 +77,9 @@ ability_map <- read_excel(file.path(wk_dir, "exerciseInfo.xlsx")) %>%
   left_join(subability, by = c("ability_blai" = "subname")) %>%
   mutate(excerciseId = parse_double(ID)) %>%
   rename(taskname = name)
-# add ability setting to data
-data_clean <- data_clean %>%
-  left_join(ability_map, by = "excerciseId") %>%
-  select(
-    -abId, -allTime, -starts_with("basic"), -config, -dataJson, -device,
-    -examId, -subId, -starts_with("交互题CODE"), -starts_with("title"),
-    -ID, -birthDay
-  )
-# side effects: output data after clensing
-write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
-# calculate components by averaging
+# add ability setting to data and calculate components scores by averaging
 blai_components_scores <- data_clean %>%
+  left_join(ability_map, by = "excerciseId") %>%
   group_by(userId, name, sex, school, grade, cls, abname) %>%
   summarise(score = mean(stdScore, na.rm = TRUE)) %>%
   filter(abname %in% blai_components)
