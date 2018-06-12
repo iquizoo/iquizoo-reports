@@ -13,8 +13,15 @@ library(rvest)
 wk_dir <- here::here("data", "daxing")
 mod_tests_sp <- c(116039, 116041, 116042, 118036)
 mod_tests_com <- 97938
-blai_components <- c("注意力", "记忆力", "反应力", "自控力", "思维力")
-math_components <- c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
+ability_type_cn <- setNames(
+  c("学习能力指数", "数学基础能力"),
+  c("blai", "math")
+)
+ability_components <- list(
+  blai = c("注意力", "记忆力", "反应力", "自控力", "思维力"),
+  math = c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
+)
+key_vars <- c("userId", "name", "sex", "school", "grade", "cls", "ability")
 
 # merge data and clean data ----
 # load dataset
@@ -82,20 +89,26 @@ data_clean <- data_merged %>%
 # side effects: output data after clensing
 write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
 
-# calculate ability scores for BLAI and components ----
-# calculate components scores by averaging
-blai_components_scores <- data_clean %>%
-  group_by(userId, name, sex, school, grade, cls, ability_blai) %>%
-  summarise(score_blai = mean(stdScore, na.rm = TRUE)) %>%
-  filter(ability_blai %in% blai_components)
-# calculate blai through component scores
-blai_total_scores <- blai_components_scores %>%
-  mutate(ability_blai = "学习能力指数") %>%
-  group_by(userId, name, sex, school, grade, cls, ability_blai) %>%
-  summarise(score_blai = mean(score_blai, na.rm = TRUE))
-
-# calculate ability scores for math and components ----
-# TODO(Liang): Here should be the codes used to calculate math ability scores
+# calculate ability scores ----
+# preallocate as a list
+ability_scores_list <- list()
+for (ability_type in names(ability_components)) {
+  # calculate components scores by averaging
+  components_scores <- data_clean %>%
+    rename(ability = !! sym(paste0("ability_", ability_type))) %>%
+    group_by(!!! syms(key_vars)) %>%
+    summarise(score := mean(stdScore, na.rm = TRUE)) %>%
+    filter(ability %in% ability_components[[ability_type]])
+  # calculate total score through component scores
+  total_scores <- components_scores %>%
+    mutate(ability = ability_type_cn[ability_type]) %>%
+    group_by(!!! syms(key_vars)) %>%
+    summarise(score = mean(score, na.rm = TRUE))
+  ability_scores_list[[ability_type]] <- rbind(components_scores, total_scores)
+}
+# combine into one table data
+ability_scores <- ability_scores_list %>%
+  reduce(full_join)
 
 # side effects: output all ability scores after clensing
-# write_xlsx(ability_scores, file.path(wk_dir, "ability_scores.xlsx"))
+write_xlsx(ability_scores, file.path(wk_dir, "ability_scores.xlsx"))
