@@ -80,8 +80,13 @@ data_merged <- data_origin %>%
       TRUE ~ standardScore
     )
   )
-# data cleanse: remove outliers according boxplot rule
+# data cleanse: remove duplicates and outliers based on boxplot rule
 data_clean <- data_merged %>%
+  # remove duplicates
+  group_by(userId, excerciseId) %>%
+  mutate(occurrence = row_number(desc(stdScore))) %>%
+  filter(occurrence == 1) %>%
+  select(-occurrence) %>%
   group_by(excerciseId) %>%
   mutate(
     stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
