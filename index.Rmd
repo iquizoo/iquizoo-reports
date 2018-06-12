@@ -76,6 +76,12 @@ if (test_date_auto) {
 
 <!-- 本校和本区的BLAI指数分布对比 -->
 ```{r blai-histogram, echo=FALSE}
+ability_scores %>%
+  filter(ability == "学习能力指数") %>%
+  ggplot(aes(score, fill = type)) +
+  geom_density(color = NA, alpha = 0.5) +
+  theme_minimal() +
+  theme(panel.grid = element_blank())
 ```
 
 <!-- 本区、本校和本校各班的描述性统计表 -->
