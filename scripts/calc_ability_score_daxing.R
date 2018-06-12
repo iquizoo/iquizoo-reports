@@ -10,7 +10,8 @@ library(tidyverse)
 library(readxl)
 library(writexl)
 library(rvest)
-wk_dir <- here::here("data", "daxing")
+wk_dir <- here::here("data-archive", "daxing")
+res_dir <- here::here("data", "daxing")
 mod_tests_sp <- c(116039, 116041, 116042, 118036)
 mod_tests_com <- 97938
 ability_type_cn <- setNames(
@@ -114,8 +115,8 @@ for (ability_type in names(ability_components)) {
   total_scores <- components_scores %>%
     mutate(ability = ability_type_cn[ability_type]) %>%
     group_by(!!! syms(key_vars)) %>%
-    ungroup() %>%
-    summarise(score = mean(score, na.rm = TRUE))
+    summarise(score = mean(score, na.rm = TRUE)) %>%
+    ungroup()
   ability_scores_list[[ability_type]] <- rbind(components_scores, total_scores)
 }
 # combine into one table data
@@ -123,4 +124,4 @@ ability_scores <- ability_scores_list %>%
   reduce(full_join)
 
 # side effects: output all ability scores after clensing
-write_xlsx(ability_scores, file.path(wk_dir, "ability_scores.xlsx"))
+write_xlsx(ability_scores, file.path(res_dir, "ability_scores.xlsx"))
