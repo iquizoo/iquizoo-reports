@@ -4,26 +4,48 @@ subtitle: "学校集体报告"
 date: "`r format(Sys.time(), '%Y年%b%e日')`"
 toc-title: "目录"
 params:
-  user_ability:
+  ability_scores_file:
     label: "学生能力得分："
-    value: data/user_ability_test.rds
+    value: data/daxing/ability_scores.xlsx
     input: file
-  user_school:
+  school_name:
     label: "学校名称："
-    value: 请输入学校名称
+    value: 北京市大兴区兴华中学
     input: text
-  time_tf:
+  test_date_auto:
     label: "是否自动获得学生测评时间？"
     value: true
     input: checkbox
-  time:
+  test_date:
     label: "学生测评时间（取消勾选上一项后请认真填写）："
     value: !r date()
     input: date
 ---
 
 ```{r configs, include=FALSE}
+# load packages
+library(tidyverse)
+library(readxl)
 
+# parse params
+ability_scores_file <- params$ability_scores_file
+school_name <- params$school_name
+test_date_auto <- params$test_date_auto
+test_date <- params$test_date
+
+# load ability scores
+ability_scores_all <- read_excel(ability_scores_file)
+# filter out scores for current school
+if (!school_name %in% ability_scores_all$school) stop("School not found!")
+ability_scores_school <- ability_scores_all %>%
+  filter(school == school_name)
+# gather school data and total data
+ability_scores <- list(本区 = ability_scores_all, 本校 = ability_scores_school) %>%
+  bind_rows(.id = "type")
+# set test date
+if (test_date_auto) {
+  test_date <- median(ability_scores_school$createTime)
+}
 ```
 
 # 报告说明
@@ -44,22 +66,20 @@ params:
 <!-- 使用没有序号的格式 -->
 ## 学生参加测评的情况
 
-* 测评学校：`r params$user_school`
-* 测评时间：`r params$time`
-* 应测人数：`r `人
-* 实测人数 ：`r `人
+* 测评学校：`r school_name`
+* 测评时间：`r format(test_date, "%Y年%b")`
+* 实测人数：`r n_distinct(ability_scores_school$userId)`人
 
 # 详细报告
 
 ## 大脑学习能力指数（BLAI）
 
 <!-- 本校和本区的BLAI指数分布对比 -->
-```{r blai-histogram, include=FALSE}
-
+```{r blai-histogram, echo=FALSE}
 ```
 
 <!-- 本区、本校和本校各班的描述性统计表 -->
-```{r blai-tab, include=FALSE}
+```{r blai-tab, echo=FALSE}
 
 ```
 
@@ -71,12 +91,12 @@ params:
 <!-- 五年级	22	97.95	9.93	121.02	80.00	1	2	15	4 -->
 
 <!-- 本区、本校和本校各班的箱型图 -->
-```{r blai-boxplot, include=FALSE}
+```{r blai-boxplot, echo=FALSE}
 
 ```
 
 <!-- 本区、本校和本校各班学生各个水平上的人数比例 -->
-```{r blai-grading, include=FALSE}
+```{r blai-grading, echo=FALSE}
 
 ```
 
