@@ -21,7 +21,7 @@ ability_components <- list(
   blai = c("注意力", "记忆力", "反应力", "自控力", "思维力"),
   math = c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
 )
-key_vars <- c("userId", "name", "sex", "school", "grade", "cls", "ability")
+key_vars <- c("userId", "name", "sex", "school", "grade", "cls", "createTime", "ability")
 
 # merge data and clean data ----
 # load dataset
@@ -87,6 +87,10 @@ data_clean <- data_merged %>%
   mutate(occurrence = row_number(desc(stdScore))) %>%
   filter(occurrence == 1) %>%
   select(-occurrence) %>%
+  # remain the earliest createTime only for each user
+  group_by(userId) %>%
+  mutate(createTime = createTime[1]) %>%
+  # remove outliers based on boxplot rule
   group_by(excerciseId) %>%
   mutate(
     stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
