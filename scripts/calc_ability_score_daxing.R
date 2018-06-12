@@ -26,6 +26,17 @@ task_codes <- read_html(file.path(wk_dir, "exercise.html")) %>%
   html_node("table") %>%
   html_table(header = TRUE) %>%
   rename(excerciseId = excerciseid)
+# load ability map tables
+abilities_info <- read_excel(file.path(wk_dir, "abilities.xlsx"))
+exercises_info <- read_excel(file.path(wk_dir, "exerciseInfo.xlsx"))
+ability_map <- exercises_info %>%
+  left_join(abilities_info, by = c("ability_blai" = "subname")) %>%
+  mutate(excerciseId = parse_double(ID)) %>%
+  select(-ability_blai) %>% # no need to use subabilities now
+  rename(
+    taskname = name, # name is used for subjects' names
+    ability_blai = abname
+  )
 # common norms
 data_norms_common <- read_excel(
   file.path(wk_dir, "norm_convert_release.xlsx"), skip = 1
@@ -46,8 +57,9 @@ data_norms_special <- read_excel(
     avg.sp = 平均数,
     std.sp = 标准差
   )
-# merge data and norms
+# merge data, ability types and norms
 data_merged <- data_origin %>%
+  left_join(ability_map, by = "excerciseId") %>%
   left_join(task_codes, by = "excerciseId") %>%
   left_join(data_norms_common, by = "code") %>%
   left_join(data_norms_special, by = "excerciseId") %>%
@@ -71,23 +83,16 @@ data_clean <- data_merged %>%
 write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
 
 # calculate ability scores for BLAI and components ----
-# map abilities
-subability <- read_excel(file.path(wk_dir, "subability.xlsx"))
-ability_map <- read_excel(file.path(wk_dir, "exerciseInfo.xlsx")) %>%
-  left_join(subability, by = c("ability_blai" = "subname")) %>%
-  mutate(excerciseId = parse_double(ID)) %>%
-  rename(taskname = name)
-# add ability setting to data and calculate components scores by averaging
+# calculate components scores by averaging
 blai_components_scores <- data_clean %>%
-  left_join(ability_map, by = "excerciseId") %>%
-  group_by(userId, name, sex, school, grade, cls, abname) %>%
-  summarise(score = mean(stdScore, na.rm = TRUE)) %>%
-  filter(abname %in% blai_components)
+  group_by(userId, name, sex, school, grade, cls, ability_blai) %>%
+  summarise(score_blai = mean(stdScore, na.rm = TRUE)) %>%
+  filter(ability_blai %in% blai_components)
 # calculate blai through component scores
 blai_total_scores <- blai_components_scores %>%
-  mutate(abname = "学习能力指数") %>%
-  group_by(userId, name, sex, school, grade, cls, abname) %>%
-  summarise(score = mean(score, na.rm = TRUE))
+  mutate(ability_blai = "学习能力指数") %>%
+  group_by(userId, name, sex, school, grade, cls, ability_blai) %>%
+  summarise(score_blai = mean(score_blai, na.rm = TRUE))
 
 # calculate ability scores for math and components ----
 # TODO(Liang): Here should be the codes used to calculate math ability scores
