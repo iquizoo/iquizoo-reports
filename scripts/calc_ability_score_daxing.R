@@ -129,7 +129,8 @@ for (ability_type in names(ability_components)) {
 }
 # combine into one table data
 ability_scores <- ability_scores_list %>%
-  reduce(rbind)
+  reduce(rbind) %>%
+  mutate(cls = paste0(cls, "班"))
 
 # side effects: output all ability scores after clensing
 write_xlsx(ability_scores, file.path(res_dir, "ability_scores.xlsx"))
