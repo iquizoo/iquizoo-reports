@@ -39,9 +39,6 @@ ability_scores_all <- read_excel(ability_scores_file)
 if (!school_name %in% ability_scores_all$school) stop("School not found!")
 ability_scores_school <- ability_scores_all %>%
   filter(school == school_name)
-# gather school data and total data
-ability_scores <- list(本区 = ability_scores_all, 本校 = ability_scores_school) %>%
-  bind_rows(.id = "type")
 # set test date
 if (test_date_auto) {
   test_date <- median(ability_scores_school$createTime)
@@ -76,7 +73,8 @@ if (test_date_auto) {
 
 <!-- 本校和本区的BLAI指数分布对比 -->
 ```{r blai-histogram, echo=FALSE}
-ability_scores %>%
+list(本区 = ability_scores_all, 本校 = ability_scores_school) %>%
+  bind_rows(.id = "type") %>%
   filter(ability == "学习能力指数") %>%
   ggplot(aes(score, fill = type)) +
   geom_density(color = NA, alpha = 0.5) +
