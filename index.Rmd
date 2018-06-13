@@ -43,6 +43,33 @@ ability_scores_school <- ability_scores_district %>%
 if (test_date_auto) {
   test_date <- median(ability_scores_school$createTime)
 }
+
+# user-defined functions
+#' Summarise function used for summary table generation
+#'
+#' @params raw_tab Raw data table as a data.frame
+#' @params reg_type The region type as a character/character vector
+#' @params ab_type The ability type as a character, i.e., the name of ability
+#' @return The summarised table
+sum_tab <- function(raw_tab, reg_type, ab_type) {
+  out_tab <- raw_tab %>% 
+    add_column(type = reg_type) %>% 
+    group_by(type) %>%
+    filter(ability == ab_type) %>% 
+    summarise(
+      实测人数 = n(),
+      平均分 = mean(score, na.rm = TRUE),
+      标准差 = sd(score, na.rm = TRUE),
+      最高分 = max(score, na.rm = TRUE),
+      最低分 = min(score, na.rm = TRUE),
+      A = sum(level == "A", na.rm = TRUE),
+      B = sum(level == "B", na.rm = TRUE),
+      C = sum(level == "C", na.rm = TRUE),
+      D = sum(level == "D", na.rm = TRUE)
+    ) %>% 
+    ungroup()
+  return(out_tab)
+}
 ```
 
 # 报告说明
@@ -71,11 +98,15 @@ if (test_date_auto) {
 
 ## 大脑学习能力指数（BLAI）
 
+```{r blai-config, include=FALSE}
+ab_type <- "学习能力指数"
+```
+
 <!-- 本校和本区的BLAI指数分布对比 -->
 ```{r blai-histogram, echo=FALSE}
 list(本区 = ability_scores_district, 本校 = ability_scores_school) %>%
   bind_rows(.id = "type") %>%
-  filter(ability == "学习能力指数") %>%
+  filter(ability == ab_type) %>%
   ggplot(aes(score, fill = type)) +
   geom_density(color = NA, alpha = 0.5) +
   theme_minimal() +
@@ -84,15 +115,17 @@ list(本区 = ability_scores_district, 本校 = ability_scores_school) %>%
 
 <!-- 本区、本校和本校各班的描述性统计表 -->
 ```{r blai-tab, echo=FALSE}
-
+summary_district <- ability_scores_district %>%
+  sum_tab("本区", ab_type)
+summary_school <- ability_scores_school %>% 
+  sum_tab("本校", ab_type)
+summary_school_class <- ability_scores_school %>% 
+  sum_tab(paste0(.$cls, "班"), ab_type)
+list(summary_district, summary_school, summary_school_class) %>% 
+  reduce(rbind) %>% 
+  rename(` ` = type) %>% 
+  knitr::kable(digits = 2)
 ```
-
-<!-- 年级	人数	平均分	标准差	最高分	最低分	A	B	C	D -->
-<!-- 一年级	17	95.98	12.28	123.02	76.20	1	1	8	7 -->
-<!-- 二年级	14	98.53	8.76	114.23	85.03	0	2	7	5 -->
-<!-- 三年级	62	100.23	11.22	123.86	75.92	4	10	37	11 -->
-<!-- 四年级	24	98.86	11.68	121.44	71.63	1	4	10	9 -->
-<!-- 五年级	22	97.95	9.93	121.02	80.00	1	2	15	4 -->
 
 <!-- 本区、本校和本校各班的箱型图 -->
 ```{r blai-boxplot, echo=FALSE}
