@@ -1,5 +1,6 @@
+# language specifications
 language: r
 cache: packages
-
+# customize build steps
 script:
-  - Rscript -e 'bookdown::render_book("index.rmd")'
+- Rscript -e 'bookdown::render_book("index.rmd")'
