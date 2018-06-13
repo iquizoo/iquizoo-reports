@@ -23,6 +23,8 @@ ability_components <- list(
   math = c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
 )
 key_vars <- c("userId", "name", "sex", "school", "grade", "cls", "createTime", "ability")
+breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
+labels <- LETTERS[4:1]
 
 # merge data and clean data ----
 # load dataset
@@ -100,7 +102,7 @@ data_clean <- data_merged %>%
 # side effects: output data after clensing
 write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
 
-# calculate ability scores ----
+# calculate ability scores and levels ----
 # preallocate as a list
 ability_scores_list <- list()
 for (ability_type in names(ability_components)) {
@@ -108,20 +110,26 @@ for (ability_type in names(ability_components)) {
   components_scores <- data_clean %>%
     rename(ability = !! sym(paste0("ability_", ability_type))) %>%
     group_by(!!! syms(key_vars)) %>%
-    summarise(score := mean(stdScore, na.rm = TRUE)) %>%
+    summarise(
+      score = mean(stdScore, na.rm = TRUE),
+      level = cut(score, breaks, labels)
+    ) %>%
     ungroup() %>%
     filter(ability %in% ability_components[[ability_type]])
   # calculate total score through component scores
   total_scores <- components_scores %>%
     mutate(ability = ability_type_cn[ability_type]) %>%
     group_by(!!! syms(key_vars)) %>%
-    summarise(score = mean(score, na.rm = TRUE)) %>%
+    summarise(
+      score = mean(score, na.rm = TRUE),
+      level = cut(score, breaks, labels)
+    ) %>%
     ungroup()
   ability_scores_list[[ability_type]] <- rbind(components_scores, total_scores)
 }
 # combine into one table data
 ability_scores <- ability_scores_list %>%
-  reduce(full_join)
+  reduce(rbind)
 
 # side effects: output all ability scores after clensing
 write_xlsx(ability_scores, file.path(res_dir, "ability_scores.xlsx"))
