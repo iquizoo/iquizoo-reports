@@ -26,6 +26,9 @@ params:
 # load packages
 library(tidyverse)
 library(readxl)
+# TODO(Liang Zhang): find a proper way to solve the font issues
+# library(extrafont)
+# font_import(prompt = FALSE, pattern = "simhei")
 
 # parse params
 ability_scores_file <- params$ability_scores_file
@@ -39,6 +42,8 @@ ability_scores_district <- read_excel(ability_scores_file)
 if (!school_name %in% ability_scores_district$school) stop("School not found!")
 ability_scores_school <- ability_scores_district %>%
   filter(school == school_name)
+# get classes
+school_classes <- unique(ability_scores_school$cls)
 # set test date
 if (test_date_auto) {
   test_date <- median(ability_scores_school$createTime)
@@ -103,7 +108,7 @@ ab_type <- "学习能力指数"
 ```
 
 <!-- 本校和本区的BLAI指数分布对比 -->
-```{r blai-histogram, echo=FALSE}
+```{r blai-histogram, echo=FALSE, warning=FALSE, message=FALSE}
 list(本区 = ability_scores_district, 本校 = ability_scores_school) %>%
   bind_rows(.id = "type") %>%
   filter(ability == ab_type) %>%
@@ -114,7 +119,7 @@ list(本区 = ability_scores_district, 本校 = ability_scores_school) %>%
 ```
 
 <!-- 本区、本校和本校各班的描述性统计表 -->
-```{r blai-tab, echo=FALSE}
+```{r blai-tab, echo=FALSE, warning=FALSE, message=FALSE}
 summary_district <- ability_scores_district %>%
   sum_tab("本区", ab_type)
 summary_school <- ability_scores_school %>% 
@@ -127,9 +132,36 @@ list(summary_district, summary_school, summary_school_class) %>%
   knitr::kable(digits = 2)
 ```
 
-<!-- 本区、本校和本校各班的箱型图 -->
-```{r blai-boxplot, echo=FALSE}
+```{r blai-data-preparation, include=FALSE}
+plot_dataset <- list(本区 = ability_scores_district, 本校 = ability_scores_school, 各班 = ability_scores_school) %>%
+  bind_rows(.id = "type") %>% 
+  filter(ability == ab_type) %>% 
+  mutate(cls = if_else(type != "各班", NA_character_, cls))
+bp_stats <- boxplot.stats(plot_dataset$score)
+```
 
+<!-- 本区、本校和本校各班的箱型图 -->
+```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
+list(本区 = ability_scores_district, 本校 = ability_scores_school, 各班 = ability_scores_school) %>%
+  bind_rows(.id = "type") %>% 
+  filter(ability == ab_type) %>% 
+  mutate(cls = if_else(type != "各班", NA_character_, cls)) %>% 
+  ggplot(aes(type, score, fill = cls)) +
+  geom_boxplot(size = 0.5, outlier.color = NA) +
+  scale_x_discrete(limits = c("各班", "本校", "本区")) +
+  scale_y_continuous(limits = bp_stats$stats[c(1, 5)], position = "right") +
+  scale_fill_brewer(breaks = school_classes, palette = "Pastel1") +
+  labs(x = "", y = "分数", fill = "") +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    # text = element_text(family = "SimHei"),
+    plot.margin = margin(0.05, 0.05, 0.05, 0.05, unit = "npc"),
+    panel.grid.major.y = element_blank(),
+    legend.text = element_text(size = 16),
+    axis.text = element_text(size = 16),
+    axis.title.x.top = element_text(size = 24, margin = margin(b = 0.8, unit = "npc"))
+  )
 ```
 
 <!-- 本区、本校和本校各班学生各个水平上的人数比例 -->
