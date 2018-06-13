@@ -34,10 +34,10 @@ test_date_auto <- params$test_date_auto
 test_date <- params$test_date
 
 # load ability scores
-ability_scores_all <- read_excel(ability_scores_file)
+ability_scores_district <- read_excel(ability_scores_file)
 # filter out scores for current school
-if (!school_name %in% ability_scores_all$school) stop("School not found!")
-ability_scores_school <- ability_scores_all %>%
+if (!school_name %in% ability_scores_district$school) stop("School not found!")
+ability_scores_school <- ability_scores_district %>%
   filter(school == school_name)
 # set test date
 if (test_date_auto) {
@@ -73,7 +73,7 @@ if (test_date_auto) {
 
 <!-- 本校和本区的BLAI指数分布对比 -->
 ```{r blai-histogram, echo=FALSE}
-list(本区 = ability_scores_all, 本校 = ability_scores_school) %>%
+list(本区 = ability_scores_district, 本校 = ability_scores_school) %>%
   bind_rows(.id = "type") %>%
   filter(ability == "学习能力指数") %>%
   ggplot(aes(score, fill = type)) +
