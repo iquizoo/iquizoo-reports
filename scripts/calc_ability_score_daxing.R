@@ -15,7 +15,7 @@ res_dir <- here::here("data", "daxing")
 mod_tests_sp <- c(116039, 116041, 116042, 118036)
 mod_tests_com <- 97938
 ability_type_cn <- setNames(
-  c("学习能力指数", "数学基础能力"),
+  c("基础学习能力", "基础数学能力"),
   c("blai", "math")
 )
 ability_components <- list(
