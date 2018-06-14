@@ -58,13 +58,12 @@ school_classes <- unique(ability_scores_school$cls)
 if (test_date_auto) {
   test_date <- median(ability_scores_school$createTime)
 }
+```
 
-# user-defined functions
+```{r user-defined-functions, include=FALSE}
 #' Summarise function used for summary table generation
 #'
-#' @params raw_tab Raw data table as a data.frame
-#' @params reg_type The region type as a character/character vector
-#' @params ab_type The ability type as a character, i.e., the name of ability
+#' @param raw_tab Raw data table as a data.frame
 #' @return The summarised table
 sum_tab <- function(raw_tab) {
   out_tab <- raw_tab %>%
