@@ -44,6 +44,14 @@ ability_scores_district <- read_excel(ability_scores_file)
 if (!school_name %in% ability_scores_district$school) stop("School not found!")
 ability_scores_school <- ability_scores_district %>%
   filter(school == school_name)
+# combine data from whole district, this school and each class
+ability_scores_combined <- list(
+  本区 = ability_scores_district,
+  本校 = ability_scores_school,
+  各班 = ability_scores_school
+) %>%
+  bind_rows(.id = "type") %>%
+  mutate(cls = if_else(type != "各班", NA_character_, cls))
 # get classes
 school_classes <- unique(ability_scores_school$cls)
 # set test date
@@ -105,16 +113,14 @@ sum_tab <- function(raw_tab) {
 
 ```{r blai-config, include=FALSE}
 ab_type <- "学习能力指数"
-dataset_combined <- list(本区 = ability_scores_district, 本校 = ability_scores_school, 各班 = ability_scores_school) %>%
-  bind_rows(.id = "type") %>%
-  filter(ability == ab_type) %>%
-  mutate(cls = if_else(type != "各班", NA_character_, cls))
-bp_stats <- boxplot.stats(dataset_combined$score)
+ability_scores_combined_thisab <- ability_scores_combined %>%
+  filter(ability == ab_type)
+bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
 ```
 
 <!-- 本校和本区的BLAI指数分布对比 -->
 ```{r blai-histogram, echo=FALSE, warning=FALSE, message=FALSE}
-dataset_combined %>%
+ability_scores_combined_thisab %>%
   filter(type != "各班") %>%
   ggplot(aes(score, fill = type)) +
   geom_density(color = NA, alpha = 0.5) +
@@ -127,7 +133,7 @@ dataset_combined %>%
 
 <!-- 本区、本校和本校各班的描述性统计表 -->
 ```{r blai-tab, echo=FALSE, warning=FALSE, message=FALSE}
-dataset_combined %>%
+ability_scores_combined_thisab %>%
   sum_tab() %>%
   mutate(type = recode(type, 各班 = "")) %>%
   rename(` ` = type, 班级 = cls) %>%
@@ -136,7 +142,7 @@ dataset_combined %>%
 
 <!-- 本区、本校和本校各班的箱型图 -->
 ```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
-ggplot(dataset_combined, aes(type, score, fill = cls)) +
+ggplot(ability_scores_combined_thisab, aes(type, score, fill = cls)) +
   geom_boxplot(size = 1, outlier.color = NA, width = 0.5) +
   scale_x_discrete(limits = c("各班", "本校", "本区")) +
   scale_y_continuous(limits = bp_stats$stats[c(1, 5)], position = "right") +
