@@ -1,4 +1,4 @@
 Package: Reports
 Title: Reports generation of iquizoo.com.
 Version: 0.0.1
-Imports: bookdown, tidyverse, readxl
+Imports: bookdown, tidyverse, readxl, extrafont
