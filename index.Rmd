@@ -27,8 +27,12 @@ params:
 library(tidyverse)
 library(readxl)
 library(extrafont)
-font_import(prompt = FALSE, pattern = "wqy")
+# use an open source font
 text_family <- "WenQuanYi Zen Hei"
+# import font if not found
+if (!text_family %in% fonts()) {
+  font_import(prompt = FALSE, pattern = "wqy")
+}
 # do not display NA
 options(knitr.kable.NA = '')
 
