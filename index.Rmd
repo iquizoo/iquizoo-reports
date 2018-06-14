@@ -26,9 +26,11 @@ params:
 # load packages
 library(tidyverse)
 library(readxl)
-# TODO(Liang Zhang): find a proper way to solve the font issues
 library(extrafont)
-font_import(prompt = FALSE, pattern = "NotoSansCJKtc-Light")
+font_import(prompt = FALSE, pattern = "wqy")
+text_family <- "WenQuanYi Zen Hei"
+# do not display NA
+options(knitr.kable.NA = '')
 
 # parse params
 ability_scores_file <- params$ability_scores_file
@@ -118,7 +120,7 @@ dataset_combined %>%
   geom_density(color = NA, alpha = 0.5) +
   theme_minimal() +
   theme(
-    text = element_text(family = "Noto Sans CJK TC Light"),
+    text = element_text(family = text_family),
     panel.grid = element_blank()
   )
 ```
@@ -143,7 +145,7 @@ ggplot(dataset_combined, aes(type, score, fill = cls)) +
   coord_flip() +
   theme_minimal() +
   theme(
-    text = element_text(family = "Noto Sans CJK TC Light"),
+    text = element_text(family = text_family),
     plot.margin = margin(0.05, 0.05, 0.05, 0.05, unit = "npc"),
     panel.grid.major.x = element_line(linetype = "dotted", color = "black"),
     panel.grid.minor.x = element_blank(),
