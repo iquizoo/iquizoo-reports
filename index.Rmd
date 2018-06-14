@@ -137,20 +137,10 @@ ability_scores_combined_thisab %>%
   )
 ```
 
-<!-- 本区、本校和本校各班的描述性统计表 -->
-```{r blai-tab, echo=FALSE, warning=FALSE, message=FALSE}
-ability_scores_combined_thisab %>%
-  sum_tab() %>%
-  mutate(type = recode(type, 各班 = "")) %>%
-  rename(` ` = type, 班级 = cls) %>%
-  knitr::kable(digits = 2)
-```
-
 <!-- 本区、本校和本校各班的箱型图 -->
 ```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(ability_scores_combined_thisab, aes(type, score, fill = cls)) +
   geom_boxplot(size = 1, outlier.color = NA, width = 0.5) +
-  scale_x_discrete(limits = c("各班", "本校", "本区")) +
   scale_y_continuous(limits = bp_stats$stats[c(1, 5)], position = "right") +
   scale_fill_brewer(breaks = school_classes, palette = "Pastel1") +
   labs(x = "", y = "分数", fill = "") +
@@ -168,9 +158,43 @@ ggplot(ability_scores_combined_thisab, aes(type, score, fill = cls)) +
   )
 ```
 
+<!-- 本区、本校和本校各班的描述性统计表 -->
+```{r blai-tab, echo=FALSE, warning=FALSE, message=FALSE}
+ability_summary <- ability_scores_combined_thisab %>%
+  sum_tab() 
+ability_summary %>%
+  mutate(type = recode(type, 各班 = "")) %>%
+  rename(` ` = type, 班级 = cls) %>% 
+  knitr::kable(digits = 2)
+```
+
 <!-- 本区、本校和本校各班学生各个水平上的人数比例 -->
 ```{r blai-grading, echo=FALSE}
-
+ability_summary %>% 
+  mutate(cls = if_else(is.na(cls), "", cls)) %>% 
+  mutate(type = factor(type, c("各班", "本校", "本区"))) %>% 
+  gather(level, n, A:D) %>% 
+  mutate(prop = n / 实测人数) %>% 
+  ggplot(aes(cls, prop, fill = level)) +
+  geom_col(position = "stack", width = 0.5) +
+  facet_wrap(~ type, scales = "free_y", ncol = 1, strip.position = "right") +
+  scale_y_continuous(position = "right") +
+  scale_fill_brewer(palette = "Blues") +
+  labs(x = "", y = "比例", fill = "水平") +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    text = element_text(family = text_family),
+    panel.spacing = unit(-1, "lines"),
+    axis.title = element_text(face = "bold", size = 18),
+    strip.text = element_text(face = "bold", size = 18),
+    legend.title = element_text(face = "bold", size = 12),
+    legend.text = element_text(size = 12),
+    axis.text = element_text(size = 12),
+    panel.grid.major.x = element_line(linetype = "dotted", color = "black"),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
 ```
 
 第二部分 注意力指数
