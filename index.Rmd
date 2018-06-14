@@ -120,7 +120,7 @@ sum_tab <- function(raw_tab) {
 ## 大脑学习能力指数（BLAI）
 
 ```{r blai-config, include=FALSE}
-ab_type <- "学习能力指数"
+ab_type <- "基础学习能力"
 ability_scores_combined_thisab <- ability_scores_combined %>%
   filter(ability == ab_type)
 bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
