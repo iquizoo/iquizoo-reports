@@ -1,5 +1,10 @@
+sudo: required
+dist: trusty
 language: r
 cache: packages
+before_install:
+- sudo mv ./fonts/wqy.ttf /usr/share/fonts
+- sudo fc-cache -f -v
 script:
 - Rscript -e 'bookdown::render_book("index.rmd")'
 deploy:
