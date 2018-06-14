@@ -133,10 +133,15 @@ ability_scores_combined_thisab %>%
   filter(type != "各班") %>%
   ggplot(aes(score, fill = type)) +
   geom_density(color = NA, alpha = 0.5) +
+  labs(x = "分数", y = "", fill = "") +
   theme_minimal() +
   theme(
     text = element_text(family = text_family),
-    panel.grid = element_blank()
+    axis.title = element_text(size = 18, face = "bold"),
+    axis.text = element_text(size = 12),
+    legend.text = element_text(size = 12),
+    panel.grid = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, unit = "lines")
   )
 ```
 
