@@ -23,7 +23,7 @@ params:
 ---
 
 ```{r configs, include=FALSE}
-# load packages
+# load packages ----
 library(tidyverse)
 library(readxl)
 library(extrafont)
@@ -33,15 +33,18 @@ text_family <- "WenQuanYi Zen Hei"
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "wqy")
 }
+
+# knitr options ----
 # do not display NA
 options(knitr.kable.NA = '')
 
-# parse params
+# parse params ----
 ability_scores_file <- params$ability_scores_file
 school_name <- params$school_name
 test_date_auto <- params$test_date_auto
 test_date <- params$test_date
 
+# datasets preparations ----
 # load ability scores
 ability_scores_district <- read_excel(ability_scores_file)
 # filter out scores for current school
