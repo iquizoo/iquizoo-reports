@@ -60,8 +60,9 @@ ability_scores_combined <- list(
   本校 = ability_scores_school,
   各班 = ability_scores_school
 ) %>%
-  bind_rows(.id = "type") %>%
-  mutate(cls = if_else(type != "各班", NA_character_, cls))
+  bind_rows(.id = "region") %>%
+  mutate(cls = if_else(region != "各班", region, cls)) %>%
+  mutate(region = factor(region, c("各班", "本校", "本区")))
 # get classes
 school_classes <- unique(ability_scores_school$cls)
 # set test date
@@ -77,7 +78,7 @@ if (test_date_auto) {
 #' @return The summarised table
 sum_tab <- function(raw_tab) {
   out_tab <- raw_tab %>%
-    group_by(type, cls) %>%
+    group_by(region, cls) %>%
     summarise(
       实测人数 = n(),
       平均分 = mean(score, na.rm = TRUE),
@@ -133,17 +134,21 @@ bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
 <!-- 本校和本区的BLAI指数分布对比 -->
 ```{r blai-histogram, echo=FALSE, warning=FALSE, message=FALSE}
 ability_scores_combined_thisab %>%
-  filter(type != "各班") %>%
-  ggplot(aes(score, fill = type)) +
+  filter(region != "各班") %>%
+  ggplot(aes(score, fill = region)) +
   geom_density(color = NA, alpha = 0.5) +
   labs(x = "分数", y = "", fill = "") +
   theme_minimal() +
   theme(
     text = element_text(family = text_family),
-    axis.title = element_text(size = 18, face = "bold"),
+    axis.title.x = element_text(
+      size = 18, face = "bold",
+      margin = margin(t = 1, unit = "lines")
+    ),
     axis.text = element_text(size = 12),
     legend.text = element_text(size = 12),
-    panel.grid = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
     plot.margin = margin(1, 1, 1, 1, unit = "lines")
   )
 ```
@@ -156,10 +161,11 @@ ability_scores_combined_thisab %>%
 
 <!-- 本区、本校和本校各班的箱型图 -->
 ```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
-ggplot(ability_scores_combined_thisab, aes(type, score, fill = cls)) +
+ggplot(ability_scores_combined_thisab, aes(cls, score, fill = cls)) +
   geom_boxplot(size = 1, outlier.color = NA, width = 0.5) +
+  facet_wrap(~ region, scales = "free_y", ncol = 1) +
   scale_y_continuous(limits = bp_stats$stats[c(1, 5)]) +
-  scale_fill_brewer(breaks = school_classes, palette = "Pastel1") +
+  scale_fill_brewer(breaks = school_classes, palette = "Pastel1", guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
   coord_flip() +
   theme_minimal() +
@@ -183,8 +189,8 @@ ggplot(ability_scores_combined_thisab, aes(type, score, fill = cls)) +
 ability_summary <- ability_scores_combined_thisab %>%
   sum_tab()
 ability_summary %>%
-  mutate(type = recode(type, 各班 = "")) %>%
-  rename(` ` = type, 班级 = cls) %>%
+  rename(` ` = cls) %>%
+  select(-region) %>%
   knitr::kable(digits = 2)
 ```
 
@@ -195,13 +201,11 @@ ability_summary %>%
 <!-- 本区、本校和本校各班学生各个水平上的人数比例 -->
 ```{r blai-grading, echo=FALSE}
 ability_summary %>%
-  mutate(cls = if_else(is.na(cls), type, cls)) %>%
-  mutate(type = factor(type, c("各班", "本校", "本区"))) %>%
   gather(level, n, A:D) %>%
   mutate(prop = n / 实测人数) %>%
   ggplot(aes(cls, prop, fill = level)) +
   geom_col(position = "stack", width = 0.5) +
-  facet_wrap(~ type, scales = "free_y", ncol = 1) +
+  facet_wrap(~ region, scales = "free_y", ncol = 1) +
   scale_fill_brewer(palette = "Blues") +
   labs(x = "", y = "比例", fill = "水平") +
   coord_flip() +
