@@ -15,6 +15,7 @@ require(tidyverse)
 render_title_content <- function(title, content, hlevel = 1) {
   prefix <- strrep("#", hlevel)
   md <- paste0(prefix, " ", title, "\n\n", content)
+  return(md)
 }
 
 #' Summarise function used for summary table generation
