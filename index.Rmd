@@ -27,7 +27,7 @@ params:
 library(tidyverse)
 library(readxl)
 library(extrafont)
-source("scripts/utils.R", encoding = "UTF-8")
+source("assets/scripts/utils.R", encoding = "UTF-8")
 
 # setting for Chinese font ----
 # use Android Sans font, more info at
