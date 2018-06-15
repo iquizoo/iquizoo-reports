@@ -7,6 +7,16 @@
 # package loading checking
 require(tidyverse)
 
+#' Render title content pair as a section.
+#'
+#' @param title The section title
+#' @param content The section content
+#' @return The markdown string to render as a section
+render_title_content <- function(title, content, hlevel = 1) {
+  prefix <- strrep("#", hlevel)
+  md <- paste0(prefix, " ", title, "\n\n", content)
+}
+
 #' Summarise function used for summary table generation
 #'
 #' @param raw_tab Raw data table as a data.frame

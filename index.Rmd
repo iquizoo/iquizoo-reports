@@ -48,6 +48,10 @@ school_name <- params$school_name
 test_date_auto <- params$test_date_auto
 test_date <- params$test_date
 
+# load other configurations ----
+# descriptions used in content building
+descriptions <- yaml::read_yaml("assets/config/descriptions.yml")
+
 # datasets preparations ----
 # load ability scores
 ability_scores_district <- read_excel(ability_scores_file)
@@ -72,15 +76,13 @@ if (test_date_auto) {
 
 # 报告说明
 
-## 项目背景介绍
-
-## “大脑学习能力”测评系统介绍
-
-本次测评使用“大脑学习能力”测评系统（以下简称学习能力测评），该测评由北京师范大学脑与学习科学研究中心编制，整合了国际国内脑科学研究最新成果，依据脑功能分化和整合原理，以及大脑功能可塑性原理，采用计算机化认知测试的方式，全面测查与个体学习和发展密切相关的“大脑学习能力”。同传统智力测验相比，“大脑学习能力”测评具有科学性强、实施方便、准确度高、预测效度好、可反复测试等优势，代表了当今脑力测试的新趋势。
-
-## 测评内容简介
-
-本次测评主要包括基础能力测评和基础数学能力测评两部分。其中，基础能力测评包含多种维度指标，即大脑学习能力指数（BLAI）和各个子能力维度指数(注意力指数、记忆力指数、自控力指数、反应力指数和思维力指数)。大量证据表明，个体在这些维度所代表的能力中的表现与其智力，学习能力，社会适应能力和未来发展潜力具有密切关系。同时，因为基础数学能力是学习其他学科的基础，所以我们还重点考察了数学学科基础能力，以测试学生的数学能力发展情况。
+```{r contexts-building, results="asis", echo=FALSE}
+as_tibble(descriptions$context) %>% 
+  mutate(md = render_title_content(title, content, hlevel = 2)) %>% 
+  pull(md) %>% 
+  paste(collapse = "\n\n") %>% 
+  cat()
+```
 
 ## 学生参加测评的情况
 
