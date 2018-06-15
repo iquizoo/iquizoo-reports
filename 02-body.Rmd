@@ -1,0 +1,114 @@
+<!-- 由于bookdown目前对word的支持不够完善，本部分需要用脚本生成。 -->
+
+# 详细报告
+
+```{r ability-info-configs, include=FALSE}
+ability_type_cn <- setNames(
+  c("基础学习能力", "基础数学能力"),
+  c("blai", "math")
+)
+ability_info <- as_tibble(descriptions$ability) %>%
+  mutate(
+    hlevl = if_else(name %in% ability_type_cn, 2, 3),
+    style = if_else(name %in% ability_type_cn, "标题2-编号", ""),
+    md = render_title_content(
+      title = name, content = description,
+      hlevel = hlevl, style = style
+    )
+  )
+```
+
+```{r body-building, results="asis", echo=FALSE}
+# for (ability_name in ability_names) {
+# data preparations ----
+ability_name <- "基础学习能力"
+ability_scores_combined_thisab <- ability_scores_combined %>%
+  filter(ability == ability_name)
+bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
+
+# major title rendering ----
+ability_info %>%
+  filter(name == ability_name) %>%
+  pull(md) %>%
+  cat()
+cat("\n\n")
+
+# histogram/density plotting ----
+ability_scores_combined_thisab %>%
+  filter(region != "各班") %>%
+  ggplot(aes(score, fill = region)) +
+  geom_density(color = NA, alpha = 0.5) +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Paired") +
+  labs(x = "分数", y = "", fill = "") +
+  set_theme_dist(base_family = text_family)
+# }
+```
+
+```{r blai-config, include=FALSE}
+ab_type <- "基础学习能力"
+ability_scores_combined_thisab <- ability_scores_combined %>%
+  filter(ability == ab_type)
+bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
+```
+基础能力测评情况由大脑学习能力指数（BLAI）表示，它反映了注意力、记忆力、自控力、反应力和思维力这五个方面认知能力的综合水平，分数越高代表认知能力的综合水平发展越高。
+
+```{r blai-histogram, echo=FALSE, warning=FALSE, message=FALSE}
+ability_scores_combined_thisab %>%
+  filter(region != "各班") %>%
+  ggplot(aes(score, fill = region)) +
+  geom_density(color = NA, alpha = 0.5) +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Paired") +
+  labs(x = "分数", y = "", fill = "") +
+  set_theme_dist(base_family = text_family)
+```
+
+全校学生总体的基础能力测评的得分分布见图1-3，从图中可以看出，本校学生得分主要集中在【】区间中，整体表现较【】。与全区分布相比，在【】区组学生比例更大。
+（注释：
+对每张图进行命名；
+截取出分数的主要集中范围；
+并对整体表现作出评价）
+
+```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(ability_scores_combined_thisab, aes(cls, score, fill = cls)) +
+  geom_boxplot(outlier.color = NA, width = 0.5) +
+  facet_wrap(~ region, scales = "free_y", ncol = 1) +
+  scale_y_continuous(limits = bp_stats$stats[c(1, 5)]) +
+  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
+  labs(x = "", y = "分数", fill = "") +
+  coord_flip() +
+  set_theme_panels(base_family = text_family)
+```
+
+```{r blai-tab, echo=FALSE, warning=FALSE, message=FALSE}
+ability_summary <- ability_scores_combined_thisab %>%
+  sum_tab()
+ability_summary %>%
+  rename(` ` = cls) %>%
+  select(-region) %>%
+  knitr::kable(digits = 2)
+```
+
+从表1-2中我们可以看出，【】班学生的表现最好，而【】【】班学生总体表现低于全校平均水平，在后期应该重点关注这【】个班级的基础能力发展情况，对于表现低于平均水平的学校应该定期实施干预。
+
+从表1-4 中可以看到，每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级，对学生的基础能力进行有计划的训练和干预。
+
+```{r blai-grading, echo=FALSE}
+ability_summary %>%
+  gather(level, n, A:D) %>%
+  mutate(
+    prop = n / 实测人数 * 100,
+    prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
+  ) %>%
+  ggplot(aes(cls, prop, fill = level, label = prop_label)) +
+  geom_col(position = "stack", width = 0.5) +
+  geom_text(position = position_stack(vjust = 0.5), size = 3) +
+  facet_wrap(~ region, scales = "free_y", ncol = 1) +
+  scale_fill_brewer(palette = "Blues") +
+  labs(x = "", y = "比例（%）", fill = "") +
+  coord_flip() +
+  set_theme_panels(base_family = text_family)
+```
+
+本校学生总体在基础能力测评中各个水平的人数比例如下图1-5，其中，各水平的含义如下: A 水平:优秀；B水平：良好；C 水平:达到课程标准的基本要求；D 水平:未达到课程标准水平。

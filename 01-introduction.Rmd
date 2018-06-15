@@ -1,0 +1,15 @@
+# 报告说明
+
+```{r contexts-building, results="asis", echo=FALSE}
+as_tibble(descriptions$context) %>%
+  mutate(md = render_title_content(title, content, hlevel = 2)) %>%
+  pull(md) %>%
+  paste(collapse = "\n\n") %>%
+  cat()
+```
+
+## 学生参加测评的情况
+
+* 测评学校：`r school_name`
+* 测评时间：`r format(test_date, "%Y年%b")`
+* 实测人数：`r n_distinct(ability_scores_school$userId)`人
