@@ -77,10 +77,10 @@ if (test_date_auto) {
 # 报告说明
 
 ```{r contexts-building, results="asis", echo=FALSE}
-as_tibble(descriptions$context) %>% 
-  mutate(md = render_title_content(title, content, hlevel = 2)) %>% 
-  pull(md) %>% 
-  paste(collapse = "\n\n") %>% 
+as_tibble(descriptions$context) %>%
+  mutate(md = render_title_content(title, content, hlevel = 2)) %>%
+  pull(md) %>%
+  paste(collapse = "\n\n") %>%
   cat()
 ```
 
@@ -164,14 +164,10 @@ ability_summary %>%
 
 # 未来发展建议
 
-## 重视基础能力教育
-
-学科基础能力与各个学科成绩存在着高相关，所以可以通过培养学生的学科基础能力来达到增强学科成绩的目的；此外，在重视素质教育的今天，学科基础能力的培养能让学生在纷繁复杂的信息中得到真正的能力提升，加强基础能力建设。各区县和学校应该重视学生的基础能力教育，定期对能力较弱的学生及时进行干预和训练。
-
-## 尊重发展规律
-
-尊重初中生的认知能力发展规律，真正做到因材施教。研究表明，初中生抽象逻辑思维逐渐占主导地位，但具体形象成分还起作用，具有强烈的求知欲和探索精神，兴趣广泛，思想活跃，表现出较高的创造欲望。对于测评结果，我们应把握初中生思维的发展特点，目的是更好地发挥评价的导向作用，努力提高正面的积极因素，促进多元化评价的长效性。
-
-## 认知能力训练
-
-使用针对性的认知能力训练。认知能力训练主要是依据儿童认知能力发展规律，结合个体的认知能力发展特点，制定科学性的认知能力训练任务和训练日程，针对性地提高儿童认知能力水平。例如，为了加强思维力，可以让孩子每天坚持完成一些思维力训练的任务，并及时给出反馈。
+```{r suggestion-building, results="asis", echo=FALSE}
+as_tibble(descriptions$suggestions) %>%
+  mutate(md = render_title_content(title, content, hlevel = 2)) %>%
+  pull(md) %>%
+  paste(collapse = "\n\n") %>%
+  cat()
+```
