@@ -6,7 +6,7 @@ toc-title: "目录"
 params:
   ability_scores_file:
     label: "学生能力得分："
-    value: data/daxing/ability_scores.xlsx
+    value: assets/db/daxing.xlsx
     input: file
   school_name:
     label: "学校名称："
