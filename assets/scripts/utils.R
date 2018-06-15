@@ -2,7 +2,7 @@
 
 # @author Liang Zhang <psychelzh@outlook.com>
 
-# This scripts stores a bundle of utility functions used in reporting.
+# This script stores a bundle of utility functions used in reporting.
 
 # package loading checking
 require(tidyverse)

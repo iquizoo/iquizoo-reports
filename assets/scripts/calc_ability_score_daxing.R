@@ -2,7 +2,7 @@
 
 # @author Liang Zhang <psychelzh@outlook.com>
 
-# This scripts is used to calculate ability scores for Daxing cognitive measure
+# This script is used to calculate ability scores for Daxing cognitive measure
 # project, and the results are directly used in reports.
 
 # load packages and settings ----
