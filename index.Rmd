@@ -27,11 +27,14 @@ params:
 library(tidyverse)
 library(readxl)
 library(extrafont)
-# use an open source font
-text_family <- "WenQuanYi Zen Hei"
+
+# setting for Chinese font ----
+# use Android Sans font, more info at
+# https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
+text_family <- "Droid Sans Fallback"
 # import font if not found
 if (!text_family %in% fonts()) {
-  font_import(prompt = FALSE, pattern = "wqy")
+  font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
 
 # knitr options ----
@@ -169,7 +172,7 @@ ggplot(ability_scores_combined_thisab, aes(type, score, fill = cls)) +
     legend.text = element_text(size = 12),
     axis.text = element_text(size = 12),
     axis.title.x = element_text(
-      face = "bold", size = 18, 
+      face = "bold", size = 18,
       margin = margin(t = 1, unit = "lines")
     )
   )
