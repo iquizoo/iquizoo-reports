@@ -1,0 +1,66 @@
+# Copyright (C) 2018 Liang Zhang - All Rights Reserved
+
+# @author Liang Zhang <psychelzh@outlook.com>
+
+# This scripts stores a bundle of utility functions used in reporting.
+
+# package loading checking
+require(tidyverse)
+
+#' Summarise function used for summary table generation
+#'
+#' @param raw_tab Raw data table as a data.frame
+#' @param group_vars Variable names used for grouping, default: 'c("region", "cls")'
+#' @return The summarised table
+sum_tab <- function(raw_tab, group_vars = c("region", "cls")) {
+  out_tab <- raw_tab %>%
+    group_by(!!! syms(group_vars)) %>%
+    summarise(
+      实测人数 = n(),
+      平均分 = mean(score, na.rm = TRUE),
+      标准差 = sd(score, na.rm = TRUE),
+      最高分 = max(score, na.rm = TRUE),
+      最低分 = min(score, na.rm = TRUE),
+      A = sum(level == "A", na.rm = TRUE),
+      B = sum(level == "B", na.rm = TRUE),
+      C = sum(level == "C", na.rm = TRUE),
+      D = sum(level == "D", na.rm = TRUE)
+    ) %>%
+    ungroup()
+  return(out_tab)
+}
+
+#' custom theme setter for histogram/density plot
+#'
+#' @param base_size base font size
+#' @param base_family base font family
+set_theme_dist <- function(base_size = 18, base_family = "") {
+  theme_minimal(base_size, base_family) %+replace%
+    theme(
+      axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+      axis.line.x = element_line(),
+      axis.ticks.x = element_line(),
+      panel.grid = element_blank(),
+      plot.margin = margin(1, 1, 1, 1, unit = "lines")
+    )
+}
+
+#' custom theme setter for three virtual panels graphs
+#'
+#' @param base_size base font size
+#' @param base_family base font family
+set_theme_panels <- function(base_size = 18, base_family = "") {
+  theme_minimal(base_size, base_family) %+replace%
+    theme(
+      # x axis is at the bottom
+      axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+      # disable facet panel labels
+      strip.text = element_blank(),
+      strip.background = element_blank(),
+      # ensure facet panels are concatenated
+      panel.spacing = unit(-0.5, "lines"),
+      # remain major x grid only
+      panel.grid = element_blank(),
+      panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+    )
+}
