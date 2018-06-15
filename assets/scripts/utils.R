@@ -7,14 +7,42 @@
 # package loading checking
 require(tidyverse)
 
+#' Render heading according to level.
+#'
+#' @param text The text to be adjusted
+#' @param hlevel The heading level, default to 1
+#' @return The corresponding heading level markdown content
+render_heading <- function(text, hlevel = 1) {
+  prefix <- strrep("#", hlevel)
+  md <- paste(prefix, text)
+  return(md)
+}
+
+#' Custom style block generating.
+#'
+#' @param text The text to be adjusted
+#' @param style The name of the custom style
+#' @return The pandoc-flavored markdown string
+customize_style <- function(text, style = "") {
+  prefix <- if_else(
+    style == "", "",
+    paste0(":::  {custom-style=\"", style, "\"}")
+  )
+  suffix <- if_else(style == "", "", ":::")
+  md <- paste(prefix, text, suffix, sep = "\n")
+  return(md)
+}
+
 #' Render title content pair as a section.
 #'
 #' @param title The section title
 #' @param content The section content
+#' @param hlevel The heading level, default to 1
 #' @return The markdown string to render as a section
-render_title_content <- function(title, content, hlevel = 1) {
-  prefix <- strrep("#", hlevel)
-  md <- paste0(prefix, " ", title, "\n\n", content)
+render_title_content <- function(title, content, hlevel = 1, style = "") {
+  heading <- render_heading(title, hlevel) %>%
+    customize_style(style = style)
+  md <- paste(heading, content, sep = "\n\n")
   return(md)
 }
 
