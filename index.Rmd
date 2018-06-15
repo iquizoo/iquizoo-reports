@@ -63,8 +63,6 @@ ability_scores_combined <- list(
   bind_rows(.id = "region") %>%
   mutate(cls = if_else(region != "各班", region, cls)) %>%
   mutate(region = factor(region, c("各班", "本校", "本区")))
-# get classes
-school_classes <- unique(ability_scores_school$cls)
 # set test date
 if (test_date_auto) {
   test_date <- median(ability_scores_school$createTime)
@@ -92,6 +90,41 @@ sum_tab <- function(raw_tab) {
     ) %>%
     ungroup()
   return(out_tab)
+}
+
+#' custom theme setter for histogram/density plot
+#'
+#' @param base_size base font size
+#' @param base_family base font family
+set_theme_dist <- function(base_size = 18, base_family = "") {
+  theme_minimal(base_size, base_family) %+replace%
+    theme(
+      axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+      axis.line.x = element_line(),
+      axis.ticks.x = element_line(),
+      panel.grid = element_blank(),
+      plot.margin = margin(1, 1, 1, 1, unit = "lines")
+    )
+}
+
+#' custom theme setter for three virtual panels graphs
+#'
+#' @param base_size base font size
+#' @param base_family base font family
+set_theme_panels <- function(base_size = 18, base_family = "") {
+  theme_minimal(base_size, base_family) %+replace%
+    theme(
+      # x axis is at the bottom
+      axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+      # disable facet panel labels
+      strip.text = element_blank(),
+      strip.background = element_blank(),
+      # ensure facet panels are concatenated
+      panel.spacing = unit(-0.5, "lines"),
+      # remain major x grid only
+      panel.grid = element_blank(),
+      panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+    )
 }
 ```
 
@@ -137,20 +170,10 @@ ability_scores_combined_thisab %>%
   filter(region != "各班") %>%
   ggplot(aes(score, fill = region)) +
   geom_density(color = NA, alpha = 0.5) +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Paired") +
   labs(x = "分数", y = "", fill = "") +
-  theme_minimal() +
-  theme(
-    text = element_text(family = text_family),
-    axis.title.x = element_text(
-      size = 18, face = "bold",
-      margin = margin(t = 1, unit = "lines")
-    ),
-    axis.text = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.x = element_blank(),
-    plot.margin = margin(1, 1, 1, 1, unit = "lines")
-  )
+  set_theme_dist(base_family = text_family)
 ```
 
 全校学生总体的基础能力测评的得分分布见图1-3，从图中可以看出，本校学生得分主要集中在【】区间中，整体表现较【】。与全区分布相比，在【】区组学生比例更大。
@@ -162,26 +185,13 @@ ability_scores_combined_thisab %>%
 <!-- 本区、本校和本校各班的箱型图 -->
 ```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
 ggplot(ability_scores_combined_thisab, aes(cls, score, fill = cls)) +
-  geom_boxplot(size = 1, outlier.color = NA, width = 0.5) +
+  geom_boxplot(outlier.color = NA, width = 0.5) +
   facet_wrap(~ region, scales = "free_y", ncol = 1) +
   scale_y_continuous(limits = bp_stats$stats[c(1, 5)]) +
-  scale_fill_brewer(breaks = school_classes, palette = "Pastel1", guide = FALSE) +
+  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
   coord_flip() +
-  theme_minimal() +
-  theme(
-    text = element_text(family = text_family),
-    plot.margin = margin(0.05, 0.05, 0.05, 0.05, unit = "npc"),
-    panel.grid.major.x = element_line(linetype = "dotted", color = "black"),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_blank(),
-    legend.text = element_text(size = 12),
-    axis.text = element_text(size = 12),
-    axis.title.x = element_text(
-      face = "bold", size = 18,
-      margin = margin(t = 1, unit = "lines")
-    )
-  )
+  set_theme_panels(base_family = text_family)
 ```
 
 <!-- 本区、本校和本校各班的描述性统计表 -->
@@ -202,31 +212,18 @@ ability_summary %>%
 ```{r blai-grading, echo=FALSE}
 ability_summary %>%
   gather(level, n, A:D) %>%
-  mutate(prop = n / 实测人数) %>%
-  ggplot(aes(cls, prop, fill = level)) +
+  mutate(
+    prop = n / 实测人数 * 100,
+    prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
+  ) %>%
+  ggplot(aes(cls, prop, fill = level, label = prop_label)) +
   geom_col(position = "stack", width = 0.5) +
+  geom_text(position = position_stack(vjust = 0.5), size = 3) +
   facet_wrap(~ region, scales = "free_y", ncol = 1) +
   scale_fill_brewer(palette = "Blues") +
-  labs(x = "", y = "比例", fill = "水平") +
+  labs(x = "", y = "比例（%）", fill = "") +
   coord_flip() +
-  theme_minimal() +
-  theme(
-    text = element_text(family = text_family),
-    panel.spacing = unit(-1, "lines"),
-    axis.title.x = element_text(
-      face = "bold", size = 18,
-      margin = margin(t = 1, unit = "lines")
-    ),
-    strip.text = element_text(face = "bold", size = 18),
-    legend.title = element_text(face = "bold", size = 12),
-    legend.text = element_text(size = 12),
-    axis.text = element_text(size = 12),
-    panel.grid.major.x = element_line(linetype = "dotted", color = "black"),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_blank(),
-    strip.background = element_blank(),
-    strip.text.x = element_blank()
-  )
+  set_theme_panels(base_family = text_family)
 ```
 
 本校学生总体在基础能力测评中各个水平的人数比例如下图1-5，其中，各水平的含义如下: A 水平:优秀；B水平：良好；C 水平:达到课程标准的基本要求；D 水平:未达到课程标准水平。
