@@ -5,9 +5,9 @@ author: 匿名
 date: "2017年12月9日"
 toc-title: 目录
 output: 
-  word_document:
+  bookdown::word_document2:
     toc: true
-    reference_docx: word-styles-reference-report.docx
+    reference_docx: styles.docx
 ---
 
 ```{r setup, include=FALSE}
@@ -32,9 +32,9 @@ knitr::opts_chunk$set(echo = TRUE)
 summary(cars)
 ```
 
-表格样例
+表格样例表\@ref(tab:tab-test)
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r tab-test, echo=FALSE, message=FALSE, warning=FALSE}
 knitr::kable(head(cars), caption = "First few lines of dataset cars", digits = 2)
 ```
 
