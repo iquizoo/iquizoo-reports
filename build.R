@@ -75,6 +75,7 @@ if (!all(school_names %in% scores_district$school)) {
   stop("School not found!")
 }
 for (school_name in school_names) {
+  # data preparations ----
   # filter out scores for current school
   scores_school <- scores_district %>%
     filter(school == school_name)
@@ -93,7 +94,24 @@ for (school_name in school_names) {
   } else {
     test_date <- params$test_date
   }
-  # TODO render 'R Markdown' content as 'body.Rmd'
-  # render report for current school
+
+  # ability information preparation ----
+  ability_type_cn <- setNames(
+    c("基础学习能力", "基础数学能力"),
+    c("blai", "math")
+  )
+  ability_info <- as_tibble(descriptions$ability) %>%
+    mutate(
+      hlevl = if_else(name %in% ability_type_cn, 2, 3),
+      style = if_else(name %in% ability_type_cn, "标题2-编号", ""),
+      md = render_title_content(
+        title = name, content = description,
+        hlevel = hlevl, style = style
+      )
+    )
+
+  # TODO render 'R Markdown' content as 'body.Rmd' ----
+
+  # render report for current school ----
   bookdown::render_book("index.Rmd", output_file = paste0(school_name, ".docx"))
 }
