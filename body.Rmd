@@ -22,9 +22,9 @@ ability_info <- as_tibble(descriptions$ability) %>%
 # for (ability_name in ability_names) {
 # data preparations ----
 ability_name <- "基础学习能力"
-ability_scores_combined_thisab <- ability_scores_combined %>%
+scores_combined_thisab <- scores_combined %>%
   filter(ability == ability_name)
-bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
+bp_stats <- boxplot.stats(scores_combined_thisab$score)
 
 # major title rendering ----
 ability_info %>%
@@ -34,7 +34,7 @@ ability_info %>%
 cat("\n\n")
 
 # histogram/density plotting ----
-ability_scores_combined_thisab %>%
+scores_combined_thisab %>%
   filter(region != "各班") %>%
   ggplot(aes(score, fill = region)) +
   geom_density(color = NA, alpha = 0.5) +
@@ -47,14 +47,14 @@ ability_scores_combined_thisab %>%
 
 ```{r blai-config, include=FALSE}
 ab_type <- "基础学习能力"
-ability_scores_combined_thisab <- ability_scores_combined %>%
+scores_combined_thisab <- scores_combined %>%
   filter(ability == ab_type)
-bp_stats <- boxplot.stats(ability_scores_combined_thisab$score)
+bp_stats <- boxplot.stats(scores_combined_thisab$score)
 ```
 基础能力测评情况由大脑学习能力指数（BLAI）表示，它反映了注意力、记忆力、自控力、反应力和思维力这五个方面认知能力的综合水平，分数越高代表认知能力的综合水平发展越高。
 
 ```{r blai-histogram, echo=FALSE, warning=FALSE, message=FALSE}
-ability_scores_combined_thisab %>%
+scores_combined_thisab %>%
   filter(region != "各班") %>%
   ggplot(aes(score, fill = region)) +
   geom_density(color = NA, alpha = 0.5) +
@@ -71,7 +71,7 @@ ability_scores_combined_thisab %>%
 并对整体表现作出评价）
 
 ```{r blai-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
-ggplot(ability_scores_combined_thisab, aes(cls, score, fill = cls)) +
+ggplot(scores_combined_thisab, aes(cls, score, fill = cls)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
   facet_wrap(~ region, scales = "free_y", ncol = 1) +
   scale_y_continuous(limits = bp_stats$stats[c(1, 5)]) +
@@ -82,7 +82,7 @@ ggplot(ability_scores_combined_thisab, aes(cls, score, fill = cls)) +
 ```
 
 ```{r blai-tab, echo=FALSE, warning=FALSE, message=FALSE}
-ability_summary <- ability_scores_combined_thisab %>%
+ability_summary <- scores_combined_thisab %>%
   sum_tab()
 ability_summary %>%
   rename(` ` = cls) %>%

@@ -1,0 +1,99 @@
+# Copyright (C) 2018 Liang Zhang - All Rights Reserved
+
+# @author Liang Zhang <psychelzh@outlook.com>
+
+# This script is used to generate chapters for book building.
+
+# environmental settings ----
+# file encoding: set to 'UTF-8'
+kFileEncoding <- "UTF-8"
+# configurations
+kConfigPath <- file.path("assets", "config")
+kConfigParamBase <- "params.yml"
+kConfigParamTravis <- "params.travis.yml"
+kConfigDescription <- "descriptions.yml"
+# scripts
+kScriptPath <- file.path("assets", "scripts")
+kScriptUtils <- "utils.R"
+kScriptChapter <- ""
+# database
+kDbPath <- file.path("assets", "db")
+
+# load packages and user scripts ----
+library(tidyverse)
+library(readxl)
+library(extrafont)
+# load user utilities
+source(file.path(kScriptPath, kScriptUtils), encoding = kFileEncoding)
+
+# setting for Chinese font ----
+# use Android Sans font, more info at
+# https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
+text_family <- "Droid Sans Fallback"
+# import font if not found
+if (!text_family %in% fonts()) {
+  font_import(prompt = FALSE, pattern = "DroidSansFallback")
+}
+
+# knitr options ----
+# do not display NA
+options(knitr.kable.NA = '')
+
+# loading configurations ----
+# parameterized dynamic reporting configurations
+params <- yaml::read_yaml(
+  file.path(kConfigPath, kConfigParamBase),
+  fileEncoding = kFileEncoding
+)
+if (file.exists(file.path(kConfigPath, kConfigParamTravis))) {
+  params_travis <- yaml::read_yaml(
+    file.path(kConfigPath, kConfigParamTravis),
+    fileEncoding = kFileEncoding
+  )
+  # replace base params with travis params settings
+  for (param_travis in names(params_travis)) {
+    params[[param_travis]] <- params_travis[[param_travis]]
+  }
+}
+# descriptions used in content building
+descriptions <- yaml::read_yaml(
+  file.path(kConfigPath, kConfigDescription),
+  fileEncoding = kFileEncoding
+)
+
+# datasets preparations ----
+# load ability scores
+scores_district <- read_rds(file.path(kDbPath, params$data_filename))
+# reconfigure some parameters based on the dataset
+if (params$school_name_auto) {
+  school_names <- unique(scores_district$school)
+} else {
+  school_names <- params$school_name
+}
+# validate shcool names
+if (!all(school_names %in% scores_district$school)) {
+  stop("School not found!")
+}
+for (school_name in school_names) {
+  # filter out scores for current school
+  scores_school <- scores_district %>%
+    filter(school == school_name)
+  # combine data from whole district, this school and each class
+  scores_combined <- list(
+    本区 = scores_district,
+    本校 = scores_school,
+    各班 = scores_school
+  ) %>%
+    bind_rows(.id = "region") %>%
+    mutate(cls = if_else(region != "各班", region, cls)) %>%
+    mutate(region = factor(region, c("各班", "本校", "本区")))
+  # set test date
+  if (params$test_date_auto) {
+    test_date <- median(scores_school$createTime)
+  } else {
+    test_date <- params$test_date
+  }
+  # TODO render 'R Markdown' content as 'body.Rmd'
+  # render report for current school
+  bookdown::render_book("index.Rmd", output_file = paste0(school_name, ".docx"))
+}

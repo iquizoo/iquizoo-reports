@@ -3,73 +3,20 @@ title: "大脑学习能力测评"
 subtitle: "学校集体报告"
 date: "`r format(Sys.time(), '%Y年%b%e日')`"
 toc-title: "目录"
-params:
-  ability_scores_file:
-    label: "学生能力得分："
-    value: assets/db/daxing.xlsx
-    input: file
-  school_name:
-    label: "学校名称："
-    value: 北京市大兴区兴华中学
-    input: text
-  test_date_auto:
-    label: "是否自动获得学生测评时间？"
-    value: true
-    input: checkbox
-  test_date:
-    label: "学生测评时间（取消勾选上一项后请认真填写）："
-    value: !r date()
-    input: date
 ---
 
-```{r configs, include=FALSE}
-# load packages and user scripts ----
-library(tidyverse)
-library(readxl)
-library(extrafont)
-source("assets/scripts/utils.R", encoding = "UTF-8")
+# 报告说明
 
-# setting for Chinese font ----
-# use Android Sans font, more info at
-# https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
-text_family <- "Droid Sans Fallback"
-# import font if not found
-if (!text_family %in% fonts()) {
-  font_import(prompt = FALSE, pattern = "DroidSansFallback")
-}
-
-# knitr options ----
-# do not display NA
-options(knitr.kable.NA = '')
-
-# parse params ----
-ability_scores_file <- params$ability_scores_file
-school_name <- params$school_name
-test_date_auto <- params$test_date_auto
-test_date <- params$test_date
-
-# load other configurations ----
-# descriptions used in content building
-descriptions <- yaml::read_yaml("assets/config/descriptions.yml")
-
-# datasets preparations ----
-# load ability scores
-ability_scores_district <- read_excel(ability_scores_file)
-# filter out scores for current school
-if (!school_name %in% ability_scores_district$school) stop("School not found!")
-ability_scores_school <- ability_scores_district %>%
-  filter(school == school_name)
-# combine data from whole district, this school and each class
-ability_scores_combined <- list(
-  本区 = ability_scores_district,
-  本校 = ability_scores_school,
-  各班 = ability_scores_school
-) %>%
-  bind_rows(.id = "region") %>%
-  mutate(cls = if_else(region != "各班", region, cls)) %>%
-  mutate(region = factor(region, c("各班", "本校", "本区")))
-# set test date
-if (test_date_auto) {
-  test_date <- median(ability_scores_school$createTime)
-}
+```{r contexts-building, results="asis", echo=FALSE}
+as_tibble(descriptions$context) %>%
+  mutate(md = render_title_content(title, content, hlevel = 2)) %>%
+  pull(md) %>%
+  paste(collapse = "\n\n") %>%
+  cat()
 ```
+
+## 学生参加测评的情况
+
+* 测评学校：`r school_name`
+* 测评时间：`r format(test_date, "%Y年%b")`
+* 实测人数：`r n_distinct(scores_school$userId)`人
