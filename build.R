@@ -49,6 +49,7 @@ library(tidyverse)
 library(readxl)
 library(extrafont)
 library(yaml)
+library(glue)
 # load user utilities
 source(file.path(kScriptPath, kScriptUtils), encoding = kFileEncoding)
 
@@ -138,6 +139,15 @@ for (school_name in school_names) {
   } else {
     test_date <- params$test_date
   }
+  # format test date
+  test_date_string <- format(test_date, "%Y年%b")
+  # set test region
+  if (params$region_auto) {
+    # do not set this as TRUE, because no region info is set now
+    region <- unique(scores_school$region)
+  } else {
+    region <- params$region
+  }
 
   # render body content as 'body.Rmd' ----
   body_filename <- "body.Rmd"
@@ -146,7 +156,7 @@ for (school_name in school_names) {
   for (ability_name in names(ability_names)) {
     # use one template of single ability to generate the 'body.Rmd'
     body_content_vector[ability_name] <- read_file(file.path(kTemplatePath, "body.glue.Rmd")) %>%
-        glue::glue(.open = "<<", .close = ">>")
+        glue(.open = "<<", .close = ">>")
   }
   body_content <- paste(body_content_vector, collapse = "\n\n")
   write_lines(render_title_content(body_title, body_content), body_filename)
