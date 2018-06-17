@@ -137,7 +137,8 @@ for (school_name in school_names) {
     test_date <- params$test_date
   }
 
-  # render 'R Markdown' content as 'body.Rmd' ----
+  # render body content as 'body.Rmd' ----
+  body_filename <- "body.Rmd"
   body_title <- "详细报告"
   body_content_vector <- character()
   for (ability_name in names(ability_names)) {
@@ -146,8 +147,10 @@ for (school_name in school_names) {
         glue::glue(.open = "<<", .close = ">>")
   }
   body_content <- paste(body_content_vector, collapse = "\n\n")
-  write_lines(render_title_content(body_title, body_content), "body.Rmd")
+  write_lines(render_title_content(body_title, body_content), body_filename)
 
   # render report for current school ----
   bookdown::render_book("index.Rmd", output_file = paste0(school_name, ".docx"), clean_envir = FALSE)
+  # clean generated body content
+  unlink(body_filename)
 }
