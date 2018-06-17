@@ -89,7 +89,7 @@ descriptions <- read_yaml(
 
 # datasets preparations ----
 # load ability scores
-scores_district <- read_rds(file.path(kDbPath, params$data_filename))
+scores_district <- read_excel(file.path(kDbPath, params$data_filename))
 # reconfigure `school_name` based on the dataset
 if (params$school_name_auto) {
   school_names <- unique(scores_district$school)

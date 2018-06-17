@@ -1,4 +1,4 @@
-data_filename: daxing.rds # required
+data_filename: daxing.xlsx # required
 school_name_auto: false # automatic school name extraction
 school_name: 北京市大兴区兴华中学
 ability_name_auto: true
