@@ -13,7 +13,7 @@ ability_info %>%
 cat("\n\n")
 ```
 
-```{r <<ability_name>>-histogram, echo=FALSE, warning=FALSE, message=FALSE}
+```{r <<ability_name>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="本区和本校学生分数分布对比"}
 scores_this_ability %>%
   filter(region != "各班") %>%
   ggplot(aes(score, fill = region)) +
@@ -24,15 +24,9 @@ scores_this_ability %>%
   set_theme_dist(base_family = text_family)
 ```
 
-基础能力测评情况由大脑学习能力指数（BLAI）表示，它反映了注意力、记忆力、自控力、反应力和思维力这五个方面认知能力的综合水平，分数越高代表认知能力的综合水平发展越高。
+全校学生总体的基础能力测评的得分分布见图\@ref(fig:<<ability_name>>-histogram)，从图中可以看出，本校学生得分主要集中在【】区间中，整体表现较【】。与全区分布相比，在【】区组学生比例更大。
 
-全校学生总体的基础能力测评的得分分布见图1-3，从图中可以看出，本校学生得分主要集中在【】区间中，整体表现较【】。与全区分布相比，在【】区组学生比例更大。
-（注释：
-对每张图进行命名；
-截取出分数的主要集中范围；
-并对整体表现作出评价）
-
-```{r <<ability_name>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE}
+```{r <<ability_name>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="本区、本校和本校各班学生分数情况对比"}
 ggplot(scores_this_ability, aes(cls, score, fill = cls)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
   facet_wrap(~ region, scales = "free_y", ncol = 1) +
@@ -49,14 +43,14 @@ ability_summary <- scores_this_ability %>%
 ability_summary %>%
   rename(` ` = cls) %>%
   select(-region) %>%
-  knitr::kable(digits = 2)
+  knitr::kable(digits = 2, caption = "本区、本校和本校各班学生分数情况表")
 ```
 
-从表1-2中我们可以看出，【】班学生的表现最好，而【】【】班学生总体表现低于全校平均水平，在后期应该重点关注这【】个班级的基础能力发展情况，对于表现低于平均水平的学校应该定期实施干预。
+从表\@ref(tab:<<ability_name>>-tab)中我们可以看出，【】班学生的表现最好，而【】【】班学生总体表现低于全校平均水平，在后期应该重点关注这【】个班级的基础能力发展情况，对于表现低于平均水平的学校应该定期实施干预。
 
-从表1-4 中可以看到，每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级，对学生的基础能力进行有计划的训练和干预。
+从表\@ref(tab:<<ability_name>>-tab)中可以看到，每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级，对学生的基础能力进行有计划的训练和干预。
 
-```{r <<ability_name>>-grading, echo=FALSE, warning=FALSE, message=FALSE}
+```{r <<ability_name>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="本区、本校和本校各班各水平人数比例"}
 ability_summary %>%
   gather(level, n, A:D) %>%
   mutate(
@@ -73,4 +67,4 @@ ability_summary %>%
   set_theme_panels(base_family = text_family)
 ```
 
-本校学生总体在基础能力测评中各个水平的人数比例如下图1-5，其中，各水平的含义如下: A 水平:优秀；B水平：良好；C 水平:达到课程标准的基本要求；D 水平:未达到课程标准水平。
+本校学生总体在基础能力测评中各个水平的人数比例如图\@ref(fig:<<ability_name>>-grading)，其中，各水平的含义如下: A 水平:优秀；B水平：良好；C 水平:达到课程标准的基本要求；D 水平:未达到课程标准水平。
