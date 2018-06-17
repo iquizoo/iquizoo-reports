@@ -133,5 +133,4 @@ ability_scores <- ability_scores_list %>%
   mutate(cls = paste0(cls, "班"))
 
 # side effects: output all ability scores after clensing
-write_xlsx(ability_scores, file.path(wk_dir, "daxing.xlsx"))
-write_rds(ability_scores, file.path(res_dir, "daxing.rds"))
+write_xlsx(ability_scores, file.path(res_dir, "daxing.xlsx"))
