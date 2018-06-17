@@ -18,6 +18,23 @@ kScriptUtils <- "utils.R"
 kScriptChapter <- ""
 # database
 kDbPath <- file.path("assets", "db")
+# ability names settings
+kTestType <- setNames(
+  c("基础学习能力", "基础数学能力"),
+  c("blai", "math")
+)
+kSubTestType <- list(
+  blai = c("注意力", "记忆力", "反应力", "自控力", "思维力"),
+  math = c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
+)
+# set the oreder of ability report
+ability_name_order <- character()
+for (testType in names(kTestType)) {
+  ability_name_order <- c(
+    ability_name_order,
+    kTestType[testType], kSubTestType[[testType]]
+  )
+}
 
 # load packages and user scripts ----
 library(tidyverse)
@@ -64,7 +81,7 @@ descriptions <- yaml::read_yaml(
 # datasets preparations ----
 # load ability scores
 scores_district <- read_rds(file.path(kDbPath, params$data_filename))
-# reconfigure some parameters based on the dataset
+# reconfigure `school_name` based on the dataset
 if (params$school_name_auto) {
   school_names <- unique(scores_district$school)
 } else {
@@ -74,6 +91,22 @@ if (params$school_name_auto) {
 if (!all(school_names %in% scores_district$school)) {
   stop("School not found!")
 }
+# reconfigure `ability_name` based on the dataset
+if (params$ability_name_auto) {
+  ability_names <- intersect(ability_name_order, scores_district$ability)
+} else {
+  ability_names <- intersect(ability_name_order, params$ability_name)
+}
+# ability information preparation
+ability_info <- as_tibble(descriptions$ability) %>%
+  mutate(
+    hlevl = if_else(name %in% ability_type_cn, 2, 3),
+    style = if_else(name %in% ability_type_cn, "标题2-编号", ""),
+    md = render_title_content(
+      title = name, content = description,
+      hlevel = hlevl, style = style
+    )
+  )
 for (school_name in school_names) {
   # data preparations ----
   # filter out scores for current school
@@ -94,21 +127,6 @@ for (school_name in school_names) {
   } else {
     test_date <- params$test_date
   }
-
-  # ability information preparation ----
-  ability_type_cn <- setNames(
-    c("基础学习能力", "基础数学能力"),
-    c("blai", "math")
-  )
-  ability_info <- as_tibble(descriptions$ability) %>%
-    mutate(
-      hlevl = if_else(name %in% ability_type_cn, 2, 3),
-      style = if_else(name %in% ability_type_cn, "标题2-编号", ""),
-      md = render_title_content(
-        title = name, content = description,
-        hlevel = hlevl, style = style
-      )
-    )
 
   # TODO render 'R Markdown' content as 'body.Rmd' ----
 
