@@ -18,14 +18,22 @@ kScriptUtils <- "utils.R"
 kScriptChapter <- ""
 # database
 kDbPath <- file.path("assets", "db")
+# templates
+kTemplatePath <- file.path("assets", "template")
 # ability names settings
 kTestType <- setNames(
   c("基础学习能力", "基础数学能力"),
   c("blai", "math")
 )
 kSubTestType <- list(
-  blai = c("注意力", "记忆力", "反应力", "自控力", "思维力"),
-  math = c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
+  blai = setNames(
+    c("注意力", "记忆力", "反应力", "自控力", "思维力"),
+    c("attn", "mmry", "rctn", "ctrl", "thnk")
+  ),
+  math = setNames(
+    c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算"),
+    c("dgtl", "rsng", "gmtr", "qnty", "cmpt")
+  )
 )
 # set the oreder of ability report
 ability_name_order <- character()
@@ -40,6 +48,7 @@ for (testType in names(kTestType)) {
 library(tidyverse)
 library(readxl)
 library(extrafont)
+library(yaml)
 # load user utilities
 source(file.path(kScriptPath, kScriptUtils), encoding = kFileEncoding)
 
@@ -58,12 +67,12 @@ options(knitr.kable.NA = '')
 
 # loading configurations ----
 # parameterized dynamic reporting configurations
-params <- yaml::read_yaml(
+params <- read_yaml(
   file.path(kConfigPath, kConfigParamBase),
   fileEncoding = kFileEncoding
 )
 if (file.exists(file.path(kConfigPath, kConfigParamTravis))) {
-  params_travis <- yaml::read_yaml(
+  params_travis <- read_yaml(
     file.path(kConfigPath, kConfigParamTravis),
     fileEncoding = kFileEncoding
   )
@@ -73,7 +82,7 @@ if (file.exists(file.path(kConfigPath, kConfigParamTravis))) {
   }
 }
 # descriptions used in content building
-descriptions <- yaml::read_yaml(
+descriptions <- read_yaml(
   file.path(kConfigPath, kConfigDescription),
   fileEncoding = kFileEncoding
 )
@@ -93,15 +102,15 @@ if (!all(school_names %in% scores_district$school)) {
 }
 # reconfigure `ability_name` based on the dataset
 if (params$ability_name_auto) {
-  ability_names <- intersect(ability_name_order, scores_district$ability)
+  ability_names <- ability_name_order[ability_name_order %in% ability_name_order]
 } else {
-  ability_names <- intersect(ability_name_order, params$ability_name)
+  ability_names <- ability_name_order[ability_name_order %in% params$ability_name]
 }
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(
-    hlevl = if_else(name %in% ability_type_cn, 2, 3),
-    style = if_else(name %in% ability_type_cn, "标题2-编号", ""),
+    hlevl = if_else(name %in% kTestType, 2, 3),
+    style = if_else(name %in% kTestType, "标题2-编号", ""),
     md = render_title_content(
       title = name, content = description,
       hlevel = hlevl, style = style
@@ -128,8 +137,17 @@ for (school_name in school_names) {
     test_date <- params$test_date
   }
 
-  # TODO render 'R Markdown' content as 'body.Rmd' ----
+  # render 'R Markdown' content as 'body.Rmd' ----
+  body_title <- "详细报告"
+  body_content_vector <- character()
+  for (ability_name in names(ability_names)) {
+    # use one template of single ability to generate the 'body.Rmd'
+    body_content_vector[ability_name] <- read_file(file.path(kTemplatePath, "body.glue.Rmd")) %>%
+        glue::glue(.open = "<<", .close = ">>")
+  }
+  body_content <- paste(body_content_vector, collapse = "\n\n")
+  write_lines(render_title_content(body_title, body_content), "body.Rmd")
 
   # render report for current school ----
-  bookdown::render_book("index.Rmd", output_file = paste0(school_name, ".docx"))
+  bookdown::render_book("index.Rmd", output_file = paste0(school_name, ".docx"), clean_envir = FALSE)
 }
