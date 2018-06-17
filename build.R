@@ -156,7 +156,7 @@ for (school_name in school_names) {
   for (ability_name in names(ability_names)) {
     # use one template of single ability to generate the 'body.Rmd'
     body_content_vector[ability_name] <- read_file(file.path(kTemplatePath, "body.glue.Rmd")) %>%
-        glue(.open = "<<", .close = ">>")
+      glue(.open = "<<", .close = ">>")
   }
   body_content <- paste(body_content_vector, collapse = "\n\n")
   write_lines(render_title_content(body_title, body_content), body_filename)
