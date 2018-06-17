@@ -8,6 +8,7 @@ bp_stats <- boxplot.stats(scores_this_ability$score)
 ```{r <<ability_name>>-description, results="asis", echo=FALSE}
 ability_info %>%
   filter(name == ability_name_cn) %>%
+  # see 'build.R' at root directory for how `md` (Markdown) is generated
   pull(md) %>%
   cat()
 cat("\n\n")

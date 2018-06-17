@@ -109,7 +109,9 @@ if (params$ability_name_auto) {
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(
+    # set heading as level 2 for ability, and level 3 for subability
     hlevl = if_else(name %in% kTestType, 2, 3),
+    # set style as 'numbered' for ability, and 'normal' for subability
     style = if_else(name %in% kTestType, "标题2-编号", ""),
     md = render_title_content(
       title = name, content = description,
