@@ -29,7 +29,7 @@ labels <- LETTERS[4:1]
 # merge data and clean data ----
 # load dataset
 data_origin <- read_excel(
-  file.path(wk_dir, "daxing.xlsx"), guess_max = 1048576 # maximal number of rows
+  file.path(wk_dir, "daxing_origin.xlsx"), guess_max = 1048576 # maximal number of rows
 )
 # read exercise code information
 task_codes <- read_html(file.path(wk_dir, "exercise.html")) %>%
