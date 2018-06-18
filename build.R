@@ -50,6 +50,7 @@ library(readxl)
 library(extrafont)
 library(yaml)
 library(glue)
+library(lubridate)
 # load user utilities
 source(file.path(kScriptPath, kScriptUtils), encoding = kFileEncoding)
 
@@ -140,7 +141,7 @@ for (school_name in school_names) {
     test_date <- params$test_date
   }
   # format test date
-  test_date_string <- format(test_date, "%Y年%b")
+  test_date_string <- paste0(year(test_date), "年", month(test_date), "月")
   # set test region
   if (params$region_auto) {
     # do not set this as TRUE, because no region info is set now
