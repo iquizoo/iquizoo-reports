@@ -27,7 +27,7 @@ render_heading <- function(text, hlevel = 1) {
 customize_style <- function(text, style = "") {
   prefix <- if_else(
     style == "", "",
-    glue("::: {{custom-style=\"{style}\"}}")
+    unclass(glue("::: {{custom-style=\"{style}\"}}"))
   )
   suffix <- if_else(style == "", "", ":::")
   md <- paste(prefix, text, suffix, sep = "\n")
