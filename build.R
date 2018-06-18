@@ -13,7 +13,7 @@ kConfigParamBase <- "params.yml"
 kConfigParamTravis <- "params.travis.yml"
 kConfigDescription <- "descriptions.yml"
 # scripts
-kScriptPath <- file.path("assets", "scripts")
+kScriptPath <- file.path("scripts")
 kScriptUtils <- "utils.R"
 kScriptChapter <- ""
 # database
