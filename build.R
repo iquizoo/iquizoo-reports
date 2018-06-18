@@ -8,7 +8,7 @@
 # file encoding: set to 'UTF-8'
 kFileEncoding <- "UTF-8"
 # configurations
-kConfigPath <- file.path("assets", "config")
+kConfigPath <- file.path("config")
 kConfigParamBase <- "params.yml"
 kConfigParamTravis <- "params.travis.yml"
 kConfigDescription <- "descriptions.yml"
