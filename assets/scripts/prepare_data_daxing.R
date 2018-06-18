@@ -134,4 +134,4 @@ ability_scores <- ability_scores_list %>%
   mutate(cls = glue("{cls}班"))
 
 # side effects: output all ability scores after clensing
-write_xlsx(ability_scores, file.path(res_dir, "daxing.xlsx"))
+write_excel_csv(ability_scores, file.path(res_dir, "daxing.csv"))
