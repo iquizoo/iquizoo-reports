@@ -10,6 +10,7 @@ library(tidyverse)
 library(readxl)
 library(writexl)
 library(rvest)
+library(glue)
 wk_dir <- here::here("data", "daxing")
 res_dir <- here::here("assets", "db")
 mod_tests_sp <- c(116039, 116041, 116042, 118036)
@@ -108,7 +109,7 @@ ability_scores_list <- list()
 for (ability_type in names(ability_components)) {
   # calculate components scores by averaging
   components_scores <- data_clean %>%
-    rename(ability = !! sym(paste0("ability_", ability_type))) %>%
+    rename(ability = !! sym(glue("ability_{ability_type}"))) %>%
     group_by(!!! syms(key_vars)) %>%
     summarise(
       score = mean(stdScore, na.rm = TRUE),
@@ -130,7 +131,7 @@ for (ability_type in names(ability_components)) {
 # combine into one table data
 ability_scores <- ability_scores_list %>%
   reduce(rbind) %>%
-  mutate(cls = paste0(cls, "班"))
+  mutate(cls = glue("{cls}班"))
 
 # side effects: output all ability scores after clensing
 write_xlsx(ability_scores, file.path(res_dir, "daxing.xlsx"))

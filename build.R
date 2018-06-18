@@ -141,7 +141,7 @@ for (school_name in school_names) {
     test_date <- params$test_date
   }
   # format test date
-  test_date_string <- paste0(year(test_date), "年", month(test_date), "月")
+  test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
   # set test region
   if (params$region_auto) {
     # do not set this as TRUE, because no region info is set now
@@ -163,7 +163,7 @@ for (school_name in school_names) {
   write_lines(render_title_content(body_title, body_content), body_filename)
 
   # render report for current school ----
-  bookdown::render_book("index.Rmd", output_file = paste0(school_name, ".docx"), clean_envir = FALSE)
+  bookdown::render_book("index.Rmd", output_file = glue("{school_name}.docx"), clean_envir = FALSE)
   # clean generated body content
   unlink(body_filename)
 }
