@@ -6,9 +6,11 @@ before_install:
 - sudo mv ./assets/fonts/DroidSansFallback.ttf /usr/share/fonts
 - sudo fc-cache -f -v
 script:
+- Rscript 'build.R'
+- Rscript -e 'bookdown::clean_book(TRUE)'
+before_deploy:
 - Rscript -e "yaml::write_yaml(list(school_name_auto = TRUE), file.path('config', 'params.travis.yml'))"
 - Rscript 'build.R'
-before_deploy:
 - zip -r daxing.zip daxing
 deploy:
   provider: releases
