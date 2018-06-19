@@ -64,21 +64,25 @@ main <- function(loc) {
     file.path(info_dir, "norm_convert_release.xlsx"), skip = 1
   ) %>%
     mutate(code = parse_integer(交互题CODE)) %>%
+    select(-交互题CODE) %>%
     rename(
       title.com = 描述说明,
       avg.com = 平均数,
       std.com = 标准差
-    )
+    ) %>%
+    filter(!is.na(code))
   # special norms
   data_norms_special <- read_excel(
     file.path(info_dir, "norm_convert_release_special.xlsx"), skip = 1
   ) %>%
     mutate(excerciseId = parse_double(交互题CODE)) %>%
+    select(-交互题CODE) %>%
     rename(
       title.sp = 描述说明,
       avg.sp = 平均数,
       std.sp = 标准差
-    )
+    ) %>%
+    filter(!is.na(excerciseId))
   # merge data, ability types and norms
   data_merged <- data_origin %>%
     left_join(ability_map, by = "excerciseId") %>%
