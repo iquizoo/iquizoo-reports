@@ -29,9 +29,10 @@ library(glue)
 main <- function(loc) {
   data_dir <- file.path("data", loc)
   info_dir <- file.path("data", "_info")
-  res_dir <- file.path("assets", "db")
   # load configurations
   configs <- read_yaml(file.path(data_dir, "config.yml"))
+  # set the directory where the result data go
+  res_dir <- configs$goal$res_path
   # use norm to correct data or not, if not, will use standardized score only
   norm_correct <- configs$score_correction$norm
   if (norm_correct) {
