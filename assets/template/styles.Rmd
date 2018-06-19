@@ -1,0 +1,51 @@
+---
+title: "标题"
+subtitle: "副标题"
+author: 匿名
+date: "2017年12月9日"
+toc-title: 目录
+output: 
+  bookdown::word_document2:
+    toc: true
+    reference_docx: styles.docx
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 一级标题
+
+::: {custom-style="NoIndent"}
+无缩进段落。
+:::
+
+## 二级标题
+
+### 三级标题
+
+首段，由于是中文，需要首行缩进。
+
+正常段落，首行缩进
+
+```{r cars}
+summary(cars)
+```
+
+表格样例表\@ref(tab:tab-test)
+
+```{r tab-test, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::kable(head(cars), caption = "First few lines of dataset cars", digits = 2)
+```
+
+::: {custom-style="标题2-编号"}
+## 带编号的二级标题
+:::
+
+插图样例：
+
+```{r pressure, echo=FALSE, fig.cap=c("样图1", "样图2")}
+plot(pressure)
+cat("\n\n")
+plot(head(pressure))
+```

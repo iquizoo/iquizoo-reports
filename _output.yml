@@ -1,0 +1,3 @@
+bookdown::word_document2:
+    toc: true
+    reference_docx: assets/template/styles.docx

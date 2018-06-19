@@ -1,0 +1,22 @@
+---
+title: "大脑学习能力测评"
+subtitle: "学校集体报告"
+date: "`r format(Sys.time(), '%Y年%b%e日')`"
+toc-title: "目录"
+---
+
+# 报告说明
+
+```{r contexts-building, results="asis", echo=FALSE}
+as_tibble(descriptions$context) %>%
+  mutate(md = render_title_content(title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>")) %>%
+  pull(md) %>%
+  paste(collapse = "\n\n") %>%
+  cat()
+```
+
+## 学生参加测评的情况
+
+* 测评学校：`r school_name`
+* 测评时间：`r test_date_string`
+* 实测人数：`r n_distinct(scores_school$userId)`人

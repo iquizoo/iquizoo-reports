@@ -1,0 +1,8 @@
+book_filename: "report"
+delete_merged_file: true
+output_dir: "daxing"
+rmd_files: [index.Rmd, body.Rmd, suggestion.Rmd]
+language:
+  label:
+    tab: "表"
+    fig: "图"
