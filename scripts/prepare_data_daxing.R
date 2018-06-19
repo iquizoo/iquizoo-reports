@@ -7,14 +7,18 @@
 
 # load packages and settings ----
 library(tidyverse)
+library(yaml)
 library(readxl)
 library(writexl)
 library(rvest)
 library(glue)
-wk_dir <- here::here("data", "daxing")
-res_dir <- here::here("assets", "db")
-mod_tests_sp <- c(116039, 116041, 116042, 118036)
-mod_tests_com <- 97938
+data_dir <- file.path("data", "daxing")
+info_dir <- file.path("data", "_info")
+res_dir <- file.path("assets", "db")
+# load configurations
+configs <- read_yaml(file.path(data_dir, "config.yml"))
+mod_tests_sp <- configs$test_modify$special
+mod_tests_com <- configs$test_modify$common
 ability_type_cn <- setNames(
   c("基础学习能力", "基础数学能力"),
   c("blai", "math")
@@ -30,16 +34,16 @@ labels <- LETTERS[4:1]
 # merge data and clean data ----
 # load dataset
 data_origin <- read_excel(
-  file.path(wk_dir, "daxing_origin.xlsx"), guess_max = 1048576 # maximal number of rows
+  file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
 )
 # read exercise code information
-task_codes <- read_html(file.path(wk_dir, "exercise.html")) %>%
+task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
   html_node("table") %>%
   html_table(header = TRUE) %>%
   rename(excerciseId = excerciseid)
 # load ability map tables
-abilities_info <- read_excel(file.path(wk_dir, "abilities.xlsx"))
-exercises_info <- read_excel(file.path(wk_dir, "exerciseInfo.xlsx"))
+abilities_info <- read_excel(file.path(info_dir, "abilities.xlsx"))
+exercises_info <- read_excel(file.path(info_dir, "exerciseInfo.xlsx"))
 ability_map <- exercises_info %>%
   left_join(abilities_info, by = c("ability_blai" = "subname")) %>%
   mutate(excerciseId = parse_double(ID)) %>%
@@ -50,7 +54,7 @@ ability_map <- exercises_info %>%
   )
 # common norms
 data_norms_common <- read_excel(
-  file.path(wk_dir, "norm_convert_release.xlsx"), skip = 1
+  file.path(info_dir, "norm_convert_release.xlsx"), skip = 1
 ) %>%
   mutate(code = parse_integer(交互题CODE)) %>%
   rename(
@@ -60,7 +64,7 @@ data_norms_common <- read_excel(
   )
 # special norms
 data_norms_special <- read_excel(
-  file.path(wk_dir, "norm_convert_release_special.xlsx"), skip = 1
+  file.path(info_dir, "norm_convert_release_special.xlsx"), skip = 1
 ) %>%
   mutate(excerciseId = parse_double(交互题CODE)) %>%
   rename(
@@ -101,7 +105,7 @@ data_clean <- data_merged %>%
   ) %>%
   ungroup()
 # side effects: output data after clensing
-write_xlsx(data_clean, file.path(wk_dir, "data_clean.xlsx"))
+write_xlsx(data_clean, file.path(data_dir, "data_clean.xlsx"))
 
 # calculate ability scores and levels ----
 # preallocate as a list
