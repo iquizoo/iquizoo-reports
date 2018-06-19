@@ -15,7 +15,15 @@ library(writexl)
 library(rvest)
 library(glue)
 
-#' Main function used to do all the works
+#' Main function used to do all the works. There needs to be one yaml config file.
+#' \code{
+#' data_file: filename
+#' score_correction:
+#'   norm: true/false
+#'   special: excerciseIds
+#'   common: excerciseIds
+#' }
+#'
 #' @param loc Location of data, i.e., the specific data folder
 #' @return Returns 0 if succeeded.
 main <- function(loc) {
@@ -24,8 +32,12 @@ main <- function(loc) {
   res_dir <- file.path("assets", "db")
   # load configurations
   configs <- read_yaml(file.path(data_dir, "config.yml"))
-  mod_tests_sp <- configs$test_modify$special
-  mod_tests_com <- configs$test_modify$common
+  # use norm to correct data or not, if not, will use standardized score only
+  norm_correct <- configs$score_correction$norm
+  if (norm_correct) {
+    mod_tests_sp <- configs$score_correction$special
+    mod_tests_com <- configs$score_correction$common
+  }
   ability_type_cn <- setNames(
     c("基础学习能力", "基础数学能力"),
     c("blai", "math")
@@ -38,7 +50,7 @@ main <- function(loc) {
   breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
   labels <- LETTERS[4:1]
 
-  # merge data and clean data ----
+  # clean data / correct data ----
   # load dataset
   data_origin <- read_excel(
     file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
@@ -59,48 +71,56 @@ main <- function(loc) {
       taskname = name, # name is used for subjects' names
       ability_blai = abname
     )
-  # common norms
-  data_norms_common <- read_excel(
-    file.path(info_dir, "norm_convert_release.xlsx"), skip = 1
-  ) %>%
-    mutate(code = parse_integer(交互题CODE)) %>%
-    select(-交互题CODE) %>%
-    rename(
-      title.com = 描述说明,
-      avg.com = 平均数,
-      std.com = 标准差
+  # data correction
+  if (norm_correct) {
+    # common norms
+    data_norms_common <- read_excel(
+      file.path(info_dir, "norm_convert_release.xlsx"), skip = 1
     ) %>%
-    filter(!is.na(code))
-  # special norms
-  data_norms_special <- read_excel(
-    file.path(info_dir, "norm_convert_release_special.xlsx"), skip = 1
-  ) %>%
-    mutate(excerciseId = parse_double(交互题CODE)) %>%
-    select(-交互题CODE) %>%
-    rename(
-      title.sp = 描述说明,
-      avg.sp = 平均数,
-      std.sp = 标准差
+      mutate(code = parse_integer(交互题CODE)) %>%
+      select(-交互题CODE) %>%
+      rename(
+        title.com = 描述说明,
+        avg.com = 平均数,
+        std.com = 标准差
+      ) %>%
+      filter(!is.na(code))
+    # special norms
+    data_norms_special <- read_excel(
+      file.path(info_dir, "norm_convert_release_special.xlsx"), skip = 1
     ) %>%
-    filter(!is.na(excerciseId))
-  # merge data, ability types and norms
-  data_merged <- data_origin %>%
-    left_join(ability_map, by = "excerciseId") %>%
-    left_join(task_codes, by = "excerciseId") %>%
-    left_join(data_norms_common, by = "code") %>%
-    left_join(data_norms_special, by = "excerciseId") %>%
-    mutate(
-      stdScore = case_when(
-        excerciseId %in% mod_tests_sp ~
-          (asin(sqrt(index)) - avg.sp) / std.sp * 15 + 100,
-        # note: use 'magic number' here for simplicity
-        excerciseId == mod_tests_com ~
-          (asin(sqrt(index)) - avg.com) / std.com * 15 - 14.4 + 100,
-        TRUE ~ standardScore
+      mutate(excerciseId = parse_double(交互题CODE)) %>%
+      select(-交互题CODE) %>%
+      rename(
+        title.sp = 描述说明,
+        avg.sp = 平均数,
+        std.sp = 标准差
+      ) %>%
+      filter(!is.na(excerciseId))
+    # correct data by norms
+    data_corrected <- data_origin %>%
+      left_join(task_codes, by = "excerciseId") %>%
+      left_join(data_norms_common, by = "code") %>%
+      left_join(data_norms_special, by = "excerciseId") %>%
+      mutate(
+        stdScore = case_when(
+          excerciseId %in% mod_tests_sp ~
+            (asin(sqrt(index)) - avg.sp) / std.sp * 15 + 100,
+          # note: use 'magic number' here for simplicity
+          excerciseId == mod_tests_com ~
+            (asin(sqrt(index)) - avg.com) / std.com * 15 - 14.4 + 100,
+          TRUE ~ standardScore
+        )
       )
-    )
+  } else {
+    data_corrected <- data_origin %>%
+      group_by(excerciseId, grade) %>%
+      mutate(stdScore = scale(index) * 15 + 100)
+  }
   # data cleanse: remove duplicates and outliers based on boxplot rule
-  data_clean <- data_merged %>%
+  data_clean <- data_corrected %>%
+    # add ability information to data
+    left_join(ability_map, by = "excerciseId") %>%
     # remove duplicates
     group_by(userId, excerciseId) %>%
     mutate(occurrence = row_number(desc(stdScore))) %>%
