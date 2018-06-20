@@ -1,7 +1,7 @@
 ---
 title: "大脑学习能力测评"
 subtitle: "学校集体报告"
-date: "`r format(Sys.time(), '%Y年%b%e日')`"
+date: "`r glue('{report_date_string}')`"
 toc-title: "目录"
 ---
 
