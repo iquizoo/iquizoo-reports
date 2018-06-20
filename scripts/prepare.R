@@ -30,7 +30,7 @@ main <- function(loc) {
   data_dir <- file.path("data", loc)
   info_dir <- file.path("data", "_info")
   # load configurations
-  configs <- read_yaml(file.path(data_dir, "config.yml"))
+  configs <- read_yaml(file.path(data_dir, "config.yml"), fileEncoding = "UTF-8")
   # set the directory where the result data go
   res_dir <- configs$goal$res_path
   # use norm to correct data or not, if not, will use standardized score only
@@ -117,6 +117,13 @@ main <- function(loc) {
     data_corrected <- data_origin %>%
       group_by(excerciseId, grade) %>%
       mutate(stdScore = scale(index) * 15 + 100)
+  }
+  # read extra datasets to merge
+  if (!is.null(configs$data_extra_file)) {
+    data_extra <- read_excel(file.path(data_dir, configs$data_extra_file))
+    data_corrected <- data_corrected %>%
+      left_join(data_extra)
+    key_vars <- c(key_vars, "schoolCovert")
   }
   # data cleanse: remove duplicates and outliers based on boxplot rule
   data_clean <- data_corrected %>%
