@@ -5,12 +5,21 @@ cache: packages
 before_install:
 - sudo mv ./assets/fonts/DroidSansFallback.ttf /usr/share/fonts
 - sudo fc-cache -f -v
-script:
-- Rscript 'build.R'
-- Rscript -e 'bookdown::clean_book(TRUE)'
-before_deploy:
-- Rscript 'build.R' -a
-- zip -r daxing.zip daxing
+jobs:
+  include:
+    - script: Rscript 'build.R'
+    - script: Rscript 'build.R' -T='district'
+    - name: deploy
+      script: Rscript 'build.R' -a
+    - name: deploy
+      script: Rscript 'build.R' -T='district'
+    - name: deploy
+      script: zip -r daxing.zip daxing
+stages:
+  - name: test
+    if: NOT (tag IS present)
+  - name: deploy
+    if: tag IS present
 deploy:
   provider: releases
   api_key:
