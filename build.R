@@ -5,12 +5,12 @@
 # This script is used to generate chapters for book building.
 
 # load packages ----
-library(tidyverse)
-library(extrafont)
-library(yaml)
-library(glue)
-library(lubridate)
-library(optparse)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(extrafont))
+suppressPackageStartupMessages(library(yaml))
+suppressPackageStartupMessages(library(glue))
+suppressPackageStartupMessages(library(lubridate))
+suppressPackageStartupMessages(library(optparse))
 
 # parse command line argument if not in interactive mode
 if (!interactive()) {
