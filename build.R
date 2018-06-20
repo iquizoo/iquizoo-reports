@@ -10,6 +10,31 @@ library(extrafont)
 library(yaml)
 library(glue)
 library(lubridate)
+library(optparse)
+
+# parse command line argument if not in interactive mode
+if (!interactive()) {
+  # specify our desired options in a list
+  # by default OptionParser will add an help option equivalent to
+  # make_option(c("-h", "--help"), action="store_true", default=FALSE,
+  #               help="Show this help message and exit")
+  option_list <- list(
+    make_option(
+      c("-T", "--type"), default = "school",
+      help = "Specify the report type, could be 'school' (default) or 'district'."
+    ),
+    make_option(
+      c("-a", "--all"), action = "store_true", default = FALSE,
+      help = "For now, only works when 'type' is 'school', if set, will build reports for all schools."
+    )
+  )
+
+  # get command line options, if help option encountered print help and exit,
+  # otherwise if options not found on command line then set defaults,
+  opts <- parse_args(OptionParser(option_list = option_list))
+} else {
+  opts <- list(type = "school", all = FALSE)
+}
 
 # environmental settings ----
 # options used in reports configurations
@@ -49,6 +74,11 @@ options(
     )
   )
 )
+# import font if not found
+text_family <- getOption("report.text.family")
+if (!text_family %in% fonts()) {
+  font_import(prompt = FALSE, pattern = "DroidSansFallback")
+}
 # set the oreder of ability report
 ability_name_order <- character()
 for (testType in names(getOption("report.test.type"))) {
@@ -58,43 +88,45 @@ for (testType in names(getOption("report.test.type"))) {
     getOption("report.test.subtype")[[testType]]
   )
 }
-# load user utilities functions
-source(
-  file.path(
-    getOption("report.script.path"),
-    getOption("report.script.files")
-  ),
-  encoding = getOption("report.encoding")
+# get encoding option
+file_encoding <- getOption("report.encoding")
+# get script/config file names from options/settings
+script_utils_src <- file.path(
+  getOption("report.script.path"),
+  getOption("report.script.files")
 )
-# import font if not found
-text_family <- getOption("report.text.family")
-if (!text_family %in% fonts()) {
-  font_import(prompt = FALSE, pattern = "DroidSansFallback")
-}
+params_src <- file.path(
+  getOption("report.config.path"),
+  getOption("report.config.param.base")
+)
+descr_src <- switch(
+  opts$type,
+  school = file.path(
+    getOption("report.config.path"), getOption("report.config.descr.school")
+  ),
+  district = file.path(
+    getOption("report.config.path"), getOption("report.config.descr.district")
+  ),
+  file.path(
+    getOption("report.config.path"), getOption("report.config.descr.district")
+  )
+)
+# source user script
+source(script_utils_src, encoding = file_encoding)
 # parameterized dynamic reporting configurations
-params <- read_yaml(
-  file.path(
-    getOption("report.config.path"),
-    getOption("report.config.param.base")
-  ),
-  fileEncoding = getOption("report.encoding")
-)
+params <- read_yaml(params_src, fileEncoding = file_encoding)
 # descriptions used in content building
-descriptions <- read_yaml(
-  file.path(getOption("report.config.path"), getOption("report.config.descr.school")),
-  fileEncoding = getOption("report.encoding")
-)
+descriptions <- read_yaml(descr_src, fileEncoding = file_encoding)
 
 # datasets preparations ----
 # load ability scores
 scores_district <- read_csv(file.path(getOption("report.db.path"), params$data_filename))
 # reconfigure `school_name` based on the dataset
-if (params$school_name_auto) {
+if (params$school_name_auto || opts$all) {
   school_names <- unique(scores_district$school)
 } else {
   school_names <- params$school_name
 }
-
 # validate shcool names
 if (!all(school_names %in% scores_district$school)) {
   stop("School not found!")
