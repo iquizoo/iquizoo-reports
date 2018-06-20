@@ -4,99 +4,97 @@
 
 # This script is used to generate chapters for book building.
 
-# environmental settings ----
-# file encoding: set to 'UTF-8'
-kFileEncoding <- "UTF-8"
-# configurations
-kConfigPath <- file.path("config")
-kConfigParamBase <- "params.yml"
-kConfigParamTravis <- "params.travis.yml"
-kConfigDescription <- "descriptions.yml"
-# scripts
-kScriptPath <- file.path("scripts")
-kScriptUtils <- "utils.R"
-kScriptChapter <- ""
-# database
-kDbPath <- file.path("assets", "db")
-# templates
-kTemplatePath <- file.path("assets", "template")
-# ability names settings
-kTestType <- setNames(
-  c("基础学习能力", "基础数学能力"),
-  c("blai", "math")
-)
-kSubTestType <- list(
-  blai = setNames(
-    c("注意力", "记忆力", "反应力", "自控力", "思维力"),
-    c("attn", "mmry", "rctn", "ctrl", "thnk")
-  ),
-  math = setNames(
-    c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算"),
-    c("dgtl", "rsng", "gmtr", "qnty", "cmpt")
-  )
-)
-# set the oreder of ability report
-ability_name_order <- character()
-for (testType in names(kTestType)) {
-  ability_name_order <- c(
-    ability_name_order,
-    kTestType[testType], kSubTestType[[testType]]
-  )
-}
-
-# load packages and user scripts ----
+# load packages ----
 library(tidyverse)
 library(extrafont)
 library(yaml)
 library(glue)
 library(lubridate)
-# load user utilities
-source(file.path(kScriptPath, kScriptUtils), encoding = kFileEncoding)
 
-# setting for Chinese font ----
-# use Android Sans font, more info at
-# https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
-text_family <- "Droid Sans Fallback"
+# environmental settings ----
+# options used in reports configurations
+options(
+  # knitr: do not display NA
+  knitr.kable.NA = "",
+  # general
+  report.encoding = "UTF-8",
+  # use Android Sans font, more info at
+  # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
+  report.text.family = "Droid Sans Fallback",
+  # configurations
+  report.config.path = "config",
+  report.config.param.base = "params.yml",
+  report.config.descr.school = "descriptions.yml",
+  report.config.descr.district = "descriptions.district.yml",
+  # scripts
+  report.script.path = "scripts",
+  report.script.files = "utils.R",
+  # database
+  report.db.path = file.path("assets", "db"),
+  # templates
+  report.tmpl.path = file.path("assets", "template"),
+  # ability names settings
+  report.test.type = setNames(
+    c("基础学习能力", "基础数学能力"),
+    c("blai", "math")
+  ),
+  report.test.subtype = list(
+    blai = setNames(
+      c("注意力", "记忆力", "反应力", "自控力", "思维力"),
+      c("attn", "mmry", "rctn", "ctrl", "thnk")
+    ),
+    math = setNames(
+      c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算"),
+      c("dgtl", "rsng", "gmtr", "qnty", "cmpt")
+    )
+  )
+)
+# set the oreder of ability report
+ability_name_order <- character()
+for (testType in names(getOption("report.test.type"))) {
+  ability_name_order <- c(
+    ability_name_order,
+    getOption("report.test.type")[testType],
+    getOption("report.test.subtype")[[testType]]
+  )
+}
+# load user utilities functions
+source(
+  file.path(
+    getOption("report.script.path"),
+    getOption("report.script.files")
+  ),
+  encoding = getOption("report.encoding")
+)
 # import font if not found
+text_family <- getOption("report.text.family")
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
-
-# knitr options ----
-# do not display NA
-options(knitr.kable.NA = "")
-
-# loading configurations ----
 # parameterized dynamic reporting configurations
 params <- read_yaml(
-  file.path(kConfigPath, kConfigParamBase),
-  fileEncoding = kFileEncoding
+  file.path(
+    getOption("report.config.path"),
+    getOption("report.config.param.base")
+  ),
+  fileEncoding = getOption("report.encoding")
 )
-if (file.exists(file.path(kConfigPath, kConfigParamTravis))) {
-  params_travis <- read_yaml(
-    file.path(kConfigPath, kConfigParamTravis),
-    fileEncoding = kFileEncoding
-  )
-  # replace base params with travis params settings
-  for (param_travis in names(params_travis)) {
-    params[[param_travis]] <- params_travis[[param_travis]]
-  }
-}
 # descriptions used in content building
 descriptions <- read_yaml(
-  file.path(kConfigPath, kConfigDescription),
-  fileEncoding = kFileEncoding
+  file.path(getOption("report.config.path"), getOption("report.config.descr.school")),
+  fileEncoding = getOption("report.encoding")
 )
 
 # datasets preparations ----
 # load ability scores
-scores_district <- read_csv(file.path(kDbPath, params$data_filename))
+scores_district <- read_csv(file.path(getOption("report.db.path"), params$data_filename))
 # reconfigure `school_name` based on the dataset
 if (params$school_name_auto) {
   school_names <- unique(scores_district$school)
 } else {
   school_names <- params$school_name
 }
+
 # validate shcool names
 if (!all(school_names %in% scores_district$school)) {
   stop("School not found!")
@@ -111,9 +109,9 @@ if (params$ability_name_auto) {
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(
     # set heading as level 2 for ability, and level 3 for subability
-    hlevl = if_else(name %in% kTestType, 2, 3),
+    hlevl = if_else(name %in% getOption("report.test.type"), 2, 3),
     # set style as 'numbered' for ability, and 'normal' for subability
-    style = if_else(name %in% kTestType, "标题2-编号", ""),
+    style = if_else(name %in% getOption("report.test.type"), "标题2-编号", ""),
     md = render_title_content(
       title = name, content = description,
       hlevel = hlevl, style = style
@@ -161,7 +159,9 @@ for (school_name in school_names) {
   body_content_vector <- character()
   for (ability_name in names(ability_names)) {
     # use one template of single ability to generate the 'body.Rmd'
-    body_content_vector[ability_name] <- read_file(file.path(kTemplatePath, "body.glue.Rmd")) %>%
+    body_content_vector[ability_name] <- read_file(
+      file.path(getOption("report.tmpl.path"), "body.glue.Rmd")
+    ) %>%
       glue(.open = "<<", .close = ">>")
   }
   body_content <- paste(body_content_vector, collapse = "\n\n")
