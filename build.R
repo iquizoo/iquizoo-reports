@@ -117,19 +117,28 @@ source(script_utils_src, encoding = file_encoding)
 params <- read_yaml(params_src, fileEncoding = file_encoding)
 # descriptions used in content building
 descriptions <- read_yaml(descr_src, fileEncoding = file_encoding)
+# set report date
+if (params$report_date_auto) {
+  report_date <- Sys.time()
+} else {
+  report_date <- params$report_date
+}
+report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
 
 # datasets preparations ----
 # load ability scores
 scores_district <- read_csv(file.path(getOption("report.db.path"), params$data_filename))
 # reconfigure `school_name` based on the dataset
-if (params$school_name_auto || opts$all) {
-  school_names <- unique(scores_district$school)
-} else {
-  school_names <- params$school_name
-}
-# validate shcool names
-if (!all(school_names %in% scores_district$school)) {
-  stop("School not found!")
+if (opts$type == "school") {
+  if (params$school_name_auto || opts$all) {
+    school_names <- unique(scores_district$school)
+  } else {
+    school_names <- params$school_name
+  }
+  # validate shcool names
+  if (!all(school_names %in% scores_district$school)) {
+    stop("School not found!")
+  }
 }
 # reconfigure `ability_name` based on the dataset
 if (params$ability_name_auto) {
@@ -149,58 +158,102 @@ ability_info <- as_tibble(descriptions$ability) %>%
       hlevel = hlevl, style = style
     )
   )
-for (school_name in school_names) {
-  # data preparations ----
-  # filter out scores for current school
-  scores_school <- scores_district %>%
-    filter(school == school_name)
-  # combine data from whole district, this school and each class
-  scores_combined <- list(
-    本区 = scores_district,
-    本校 = scores_school,
-    各班 = scores_school
-  ) %>%
-    bind_rows(.id = "region") %>%
-    mutate(cls = if_else(region != "各班", region, cls)) %>%
-    mutate(region = factor(region, c("各班", "本校", "本区")))
-  # set test date
-  if (params$test_date_auto) {
-    test_date <- median(scores_school$createTime)
-  } else {
-    test_date <- params$test_date
-  }
-  test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
-  # set report date
-  if (params$report_date_auto) {
-    report_date <- Sys.time()
-  } else {
-    report_date <- params$report_date
-  }
-  report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
-  # set test region
-  if (params$region_auto) {
-    # do not set this as TRUE, because no region info is set now
-    region <- unique(scores_school$region)
-  } else {
-    region <- params$region
-  }
 
-  # render body content as 'body.Rmd' ----
-  body_filename <- "body.Rmd"
-  body_title <- "详细报告"
-  body_content_vector <- character()
-  for (ability_name in names(ability_names)) {
-    # use one template of single ability to generate the 'body.Rmd'
-    body_content_vector[ability_name] <- read_file(
-      file.path(getOption("report.tmpl.path"), "body.glue.Rmd")
+# build report according to the build type ----
+body_filename <- "body.Rmd"
+body_title <- "详细报告"
+switch(
+  opts$type,
+  school = {
+    for (school_name in school_names) {
+      # data preparations ----
+      # filter out scores for current school
+      scores_school <- scores_district %>%
+        filter(school == school_name)
+      # combine data from whole district, this school and each class
+      scores_combined <- list(
+        本区 = scores_district,
+        本校 = scores_school,
+        各班 = scores_school
+      ) %>%
+        bind_rows(.id = "region") %>%
+        mutate(cls = if_else(region != "各班", region, cls)) %>%
+        mutate(region = factor(region, c("各班", "本校", "本区")))
+      # set test date
+      if (params$test_date_auto) {
+        test_date <- median(scores_school$createTime)
+      } else {
+        test_date <- params$test_date
+      }
+      test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+      # set test region
+      if (params$region_auto) {
+        # do not set this as TRUE, because no region info is set now
+        region <- unique(scores_school$region)
+      } else {
+        region <- params$region
+      }
+      # render body content as 'body.Rmd' ----
+      body_content_vector <- character()
+      for (ability_name in names(ability_names)) {
+        # use one template of single ability to generate the 'body.Rmd'
+        body_content_vector[ability_name] <- read_file(
+          file.path(getOption("report.tmpl.path"), "body.glue.Rmd")
+        ) %>%
+          glue(.open = "<<", .close = ">>")
+      }
+      body_content <- paste(body_content_vector, collapse = "\n\n")
+      write_lines(render_title_content(body_title, body_content), body_filename)
+
+      # render report for current school ----
+      bookdown::render_book("index.Rmd", output_file = glue("{school_name}.docx"), clean_envir = FALSE)
+      # clean generated body content
+      unlink(body_filename)
+    }
+  },
+  district = {
+    # data preparations ----
+    # use schoolCovert not school
+    scores_district <- scores_district %>%
+      rename(schoolOvert = school, school = schoolCovert)
+    # combine data from whole district, each school
+    scores_combined <- list(
+      本区 = scores_district,
+      各校 = scores_district
     ) %>%
-      glue(.open = "<<", .close = ">>")
-  }
-  body_content <- paste(body_content_vector, collapse = "\n\n")
-  write_lines(render_title_content(body_title, body_content), body_filename)
+      bind_rows(.id = "region") %>%
+      mutate(school = if_else(region != "各校", region, school)) %>%
+      mutate(region = factor(region, c("本区", "各校")))
+    # set test date
+    if (params$test_date_auto) {
+      test_date <- median(scores_district$createTime)
+    } else {
+      test_date <- params$test_date
+    }
+    test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+    # set test region
+    if (params$region_auto) {
+      # do not set this as TRUE, because no region info is set now
+      region <- unique(scores_district$region)
+    } else {
+      region <- params$region
+    }
+    # render body content as 'body.Rmd' ----
+    body_content_vector <- character()
+    for (ability_name in names(ability_names)) {
+      # use one template of single ability to generate the 'body.Rmd'
+      body_content_vector[ability_name] <- read_file(
+        file.path(getOption("report.tmpl.path"), "body.glue.district.Rmd")
+      ) %>%
+        glue(.open = "<<", .close = ">>")
+    }
+    body_content <- paste(body_content_vector, collapse = "\n\n")
+    write_lines(render_title_content(body_title, body_content), body_filename)
 
-  # render report for current school ----
-  bookdown::render_book("index.Rmd", output_file = glue("{school_name}.docx"), clean_envir = FALSE)
-  # clean generated body content
-  unlink(body_filename)
-}
+    # render report for current school ----
+    bookdown::render_book("index.Rmd", output_file = glue("{region}.docx"), clean_envir = FALSE)
+    # clean generated body content
+    unlink(body_filename)
+  },
+  stop("Unsupported report type! Please specify as school/district only.")
+)

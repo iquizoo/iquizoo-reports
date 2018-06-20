@@ -1,6 +1,8 @@
 # note: based on the usage of `glue` package of `R`, we use two types of open/close delimiters.
 # * "<<" and ">>"" are used when the texts should be `glue`d at the top level of `glue`, and
 # * "{" and "}" are used when the texts should be `glue`d at the second level of `glue`.
+title: 大脑学习能力测评
+subtitle: 区县集体报告
 context:
   title:
   - 项目背景介绍
