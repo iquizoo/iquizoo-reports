@@ -64,7 +64,7 @@ if (!text_family %in% fonts()) {
 
 # knitr options ----
 # do not display NA
-options(knitr.kable.NA = '')
+options(knitr.kable.NA = "")
 
 # loading configurations ----
 # parameterized dynamic reporting configurations
