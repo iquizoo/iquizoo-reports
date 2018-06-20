@@ -7,9 +7,11 @@ before_install:
 - sudo fc-cache -f -v
 script:
 - Rscript 'build.R'
+- Rscript 'build.R' -T 'district'
 - Rscript -e 'bookdown::clean_book(TRUE)'
 before_deploy:
 - Rscript 'build.R' -a
+- Rscript 'build.R' -T 'district'
 - zip -r daxing.zip daxing
 deploy:
   provider: releases
