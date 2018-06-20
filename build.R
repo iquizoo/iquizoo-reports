@@ -139,8 +139,14 @@ for (school_name in school_names) {
   } else {
     test_date <- params$test_date
   }
-  # format test date
   test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+  # set report date
+  if (params$report_date_auto) {
+    report_date <- Sys.time()
+  } else {
+    report_date <- params$report_date
+  }
+  report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
   # set test region
   if (params$region_auto) {
     # do not set this as TRUE, because no region info is set now

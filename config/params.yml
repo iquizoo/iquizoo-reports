@@ -5,5 +5,7 @@ ability_name_auto: true
 ability_name: "基础学习能力"
 test_date_auto: true
 test_date: 2018-04-21
+report_date_auto: false
+report_date: 2018-06-20
 region_auto: false
 region: "北京市大兴区"
