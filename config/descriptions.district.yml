@@ -45,12 +45,12 @@ ability:
 body:
   histogram:
     caption: 本区总体学生{ability_name_cn}测评的分数分布
-    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。本区成绩的平均数{diff_msg}。
+    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。
   boxplot:
     caption: 本区及各学校学生{ability_name_cn}测评的分数情况对比
     description: 本区共施测{n_school}所学校，对各个学校的{ability_name_cn}测评分数进行了统计，结果如图\@ref(fig:{ability_name}-boxplot)，其中学校名称用编码代替。从图中我们可以看出，{best_school_med}的总体表现最好，{worst_school_med}的总体表现最差，在后期应该重点关注该学校，在该校进行相关基础能力课程的推广，对该校能力不足的学生进行干预和有计划的训练。
   table:
-    caption: 本区及各学校学生{ability_name_cn}测评的分数情况表
+    caption: 本区及各学校学生{ability_name_cn}测评的分数表
     description: 从表\@ref(tab:{ability_name}-tab)中我们可以看出，{best_school}学生的整体表现最好，而{worst_school}学生的整体表现最差，每个学校的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的学校，对该校学生的{ability_name_cn}进行有计划的训练和干预。
   grading:
     caption: 本区及各学校{ability_name_cn}测评的不同水平人数比例
