@@ -1,6 +1,8 @@
 # note: based on the usage of `glue` package of `R`, we use two types of open/close delimiters.
 # * "<<" and ">>"" are used when the texts should be `glue`d at the top level of `glue`, and
 # * "{" and "}" are used when the texts should be `glue`d at the second level of `glue`.
+title: 大脑学习能力测评
+subtitle: 学校集体报告
 context:
   title:
   - 项目背景介绍
@@ -45,25 +47,37 @@ ability:
 body:
   histogram:
     caption: 本区和本校学生{ability_name_cn}测评的分数分布对比
-    description: 本校学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。本校成绩的平均数{diff_msg}。
+    description: 本校学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。本校学生的整体表现{diff_msg}。
     note:
-      large: 比全区总体学生平均数明显更高
-      small: 比全区总体学生平均数明显更低
-      equal: 和全区总体学生平均数差异不明显
-  boxplot:
-    caption: 本区、本校和本校各班学生{ability_name_cn}测评的分数情况对比
-    description: 本校共施测{n_cls}个班级，对各个班级的{ability_name_cn}测评分数进行了统计，结果如图\@ref(fig:{ability_name}-boxplot)。从图中我们可以看出，{best_cls_med}的总体表现最好，{worst_cls_med}的总体表现最差，在后期应该重点关注该班级，对能力不足的学生进行干预和有计划的训练。
+      large: 比全区总体学生明显更好
+      small: 比全区总体学生明显更差
+      equal: 和全区总体学生差异不明显
   table:
-    caption: 本区、本校和本校各班学生{ability_name_cn}测评的分数情况表
-    description: 从表\@ref(tab:{ability_name}-tab)中我们可以看出，{best_cls}学生的整体表现最好，而{worst_cls}学生的整体表现最差，每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级对学生的{ability_name_cn}进行有计划的训练和干预。
+    caption: 本区、本校和各班学生{ability_name_cn}测评的整体表现详表
+    description: 本校共施测{n_cls}个班级。表\@ref(tab:{ability_name}-tab)中展示了本区、本校和各班的学生整体表现情况。{extra_tab}其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+    note:
+      sig: 并且各班级的表现差异明显
+      nsig: 但是各班级的表现差异不明显
+      extra: # display only the condition is meeted
+        condition: n_cls > 1
+        content: 从学生的平均水平来看，{best_cls}学生的整体表现最好，而{worst_cls}学生的整体表现最差，{diff_msg_mean}。
+  boxplot:
+    caption: 本区、本校和各班学生{ability_name_cn}测评的得分情况对比
+    description: 本区、本校和各班的{ability_name_cn}测评分数的分布区间如图\@ref(fig:{ability_name}-boxplot)。{extra_bp}
+    note:
+      sig: 并且各班级的表现差异明显
+      nsig: 但是各班级的表现差异不明显
+      extra:
+        condition: n_cls > 1
+        content: 从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:{ability_name}-tab)查看具体数值）角度看，{best_cls_med}的总体表现最好，{worst_cls_med}的总体表现最差，{diff_msg_med}。在后期应该重点关注{worst_cls_med}，对能力不足的学生进行干预和有计划的训练。
   grading:
-    caption: 本区、本校和本校各班{ability_name_cn}测评的各水平人数比例
-    description: 本校学生总体在{ability_name_cn}测评中各个水平的人数比例如图\@ref(fig:{ability_name}-grading)。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+    caption: 本区、本校和各班{ability_name_cn}测评的各水平人数比例
+    description: 本校学生总体在{ability_name_cn}测评中各个水平的人数比例如图\@ref(fig:{ability_name}-grading)。每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级对学生的{ability_name_cn}进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
 suggestions:
   title:
   - 重视基础学习能力和基础学科能力教育
   - 尊重中学生身心发展规律
-  - 有针对性地推行认知能力训练
+  - 有针对性地推行基础能力训练
   content:
   - 学科基础能力与各个学科成绩存在着高相关，所以可以通过培养学生的学科基础能力来达到增强学科成绩的目的；此外，在重视素质教育的今天，学科基础能力的培养能让学生在纷繁复杂的信息中得到真正的能力提升，加强基础能力建设。各区县和学校应该重视学生的基础学习能力教育，定期对能力较弱的学生进行干预和训练。
   - 尊重初中生的认知能力发展规律，真正做到因材施教。研究表明，初中生抽象逻辑思维逐渐占主导地位，但具体形象成分还起作用，具有强烈的求知欲和探索精神，兴趣广泛，思想活跃，表现出较高的创造欲望。对于测评结果，我们应把握初中生思维的发展特点，目的是更好地发挥评价的导向作用，努力提高正面的积极因素，促进多元化评价的长效性。

@@ -1,6 +1,6 @@
 ---
-title: "大脑学习能力测评"
-subtitle: "学校集体报告"
+title: "`r descriptions$title`"
+subtitle: "`r descriptions$subtitle`"
 date: "`r glue('{report_date_string}')`"
 toc-title: "目录"
 ---
@@ -17,6 +17,21 @@ as_tibble(descriptions$context) %>%
 
 ## 学生参加测评的情况
 
-* 测评学校：`r school_name`
-* 测评时间：`r test_date_string`
-* 实测人数：`r n_distinct(scores_school$userId)`人
+```{r info-report, echo=FALSE, results='asis'}
+switch(
+  opts$type,
+  school = glue(
+    "* 测评学校：{school_name}",
+    "* 测评时间：{test_date_string}",
+    "* 实测人数：{n_distinct(scores_school$userId)}人",
+    .sep = "\n"
+  ),
+  district = glue(
+    "* 学校数目：{n_distinct(scores_district$school)}",
+    "* 测评时间：{test_date_string}",
+    "* 实测人数：{n_distinct(scores_district$userId)}人",
+    .sep = "\n"
+  )
+) %>%
+  cat()
+```

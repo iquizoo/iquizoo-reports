@@ -1,0 +1,141 @@
+```{r <<ability_name>>-configs, include=FALSE}
+ability_name <- "<<ability_name>>"
+ability_name_cn <- ability_names[ability_name]
+scores_this_ability <- scores_combined %>%
+  filter(ability == ability_name_cn)
+bp_stats <- boxplot.stats(scores_this_ability$score)
+# descriptive statistics
+ability_summary <- scores_this_ability %>%
+  sum_tab(c("region", "school"))
+# `n_school`, `best_school[_med]`, `worst_school[_med]` `diff_msg[_mean/_med]` are required
+ability_summary_school <- ability_summary %>%
+  filter(region == "各校")
+ability_summary_school_sortmean <- ability_summary_school %>%
+  arrange(desc(平均分))
+ability_summary_school_sortmed <- ability_summary_school %>%
+  arrange(desc(中位数))
+n_school <- nrow(ability_summary_school)
+if (n_school > 1) {
+  best_school <- first(ability_summary_school_sortmean$school)
+  worst_school <- last(ability_summary_school_sortmean$school)
+  best_school_med <- first(ability_summary_school_sortmed$school)
+  worst_school_med <- last(ability_summary_school_sortmed$school)
+  scores_this_ability_school <- filter(scores_this_ability, region == "各校")
+  stats_mean <- broom::tidy(aov(score ~ school, scores_this_ability_school))
+  diff_msg_mean <- with(
+    descriptions$body$table$note,
+    if_else(stats_mean$p.value[1] < 0.05, sig, nsig)
+  ) 
+  stats_med <- broom::tidy(kruskal.test(with(scores_this_ability_school, split(score, school))))
+  diff_msg_med <- with(
+    descriptions$body$boxplot$note,
+    if_else(stats_med$p.value < 0.05, sig, nsig)
+  )
+}
+# `extra_tab` and `extra_bp` are required
+extra_tab <- with(
+  descriptions$body$table$note$extra,
+  if_else(eval(parse(text = condition)), as.character(glue(content)), "")
+)
+extra_bp <- with(
+  descriptions$body$boxplot$note$extra,
+  if_else(eval(parse(text = condition)), as.character(glue(content)), "")
+)
+# `Q1_gross` and `Q3_gross` are required
+scores_this_ability %>% 
+  filter(region == "本区") %>% 
+  summarise(
+    Q1_gross = round(quantile(score, 0.25, na.rm = TRUE)),
+    Q3_gross = round(quantile(score, 0.75, na.rm = TRUE))
+  ) %>% 
+  attach()
+```
+
+```{r <<ability_name>>-description, results="asis", echo=FALSE}
+ability_info %>%
+  filter(name == ability_name_cn) %>%
+  # see 'build.R' at root directory for how `md` (Markdown) is generated
+  pull(md) %>%
+  cat()
+```
+
+```{r <<ability_name>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$histogram$caption)}
+scores_this_ability %>%
+  filter(region != "各校") %>%
+  ggplot(aes(score, fill = region)) +
+  geom_density(color = NA, alpha = 0.5) +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Paired") +
+  labs(x = "分数", y = "", fill = "") +
+  set_theme_dist(base_family = text_family)
+```
+
+```{r <<ability_name>>-histogram-description, echo=FALSE, results="asis"}
+descriptions$body$histogram$description %>%
+  glue() %>%
+  cat()
+```
+
+```{r <<ability_name>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
+ability_summary %>%
+  rename(` ` = school) %>%
+  select(-region) %>%
+  knitr::kable(digits = 2, caption = glue(descriptions$body$table$caption))
+```
+
+```{r <<ability_name>>-tab-description, echo=FALSE, results="asis"}
+descriptions$body$table$description %>%
+  glue() %>%
+  cat()
+```
+
+```{r <<ability_name>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$boxplot$caption)}
+scores_this_ability %>%
+  mutate(
+    school = factor(
+      school, levels = c("本区", ability_summary_school_sortmed$school)
+    )
+  ) %>%
+  ggplot(aes(school, score, fill = school)) +
+  geom_boxplot(outlier.color = NA, width = 0.5) +
+  # facet_wrap(~ region, scales = "free_y", ncol = 1) +
+  scale_fill_discrete(guide = FALSE) +
+  labs(x = "", y = "分数", fill = "") +
+  coord_cartesian(ylim = bp_stats$stats[c(1, 5)]) +
+  coord_flip() +
+  set_theme_panels(base_size = 9, base_family = text_family)
+```
+
+```{r <<ability_name>>-boxplot-description, echo=FALSE, results="asis"}
+descriptions$body$boxplot$description %>%
+  glue() %>%
+  cat()
+```
+
+```{r <<ability_name>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$grading$caption)}
+ability_summary %>%
+  mutate(
+    school = factor(
+      school, levels = c("本区", ability_summary_school_sortmed$school)
+    )
+  ) %>%
+  gather(level, n, A:D) %>%
+  mutate(
+    prop = n / 实测人数 * 100,
+    prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
+  ) %>%
+  ggplot(aes(school, prop, fill = level, label = prop_label)) +
+  geom_col(position = "stack", width = 0.5) +
+  geom_text(position = position_stack(vjust = 0.5), size = 3) +
+  # facet_wrap(~ region, scales = "free_y", ncol = 1) +
+  scale_fill_brewer(palette = "Blues") +
+  labs(x = "", y = "比例（%）", fill = "") +
+  coord_flip() +
+  set_theme_panels(base_size = 9, base_family = text_family)
+```
+
+```{r <<ability_name>>-grading-description, echo=FALSE, results="asis"}
+descriptions$body$grading$description %>%
+  glue() %>%
+  cat()
+```
