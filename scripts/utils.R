@@ -64,10 +64,10 @@ sum_tab <- function(raw_tab, group_vars = c("region", "cls")) {
     group_by(!!! syms(group_vars)) %>%
     summarise(
       实测人数 = n(),
-      中位数 = median(score, na.rm = TRUE),
       平均分 = mean(score, na.rm = TRUE),
       标准差 = sd(score, na.rm = TRUE),
       最高分 = max(score, na.rm = TRUE),
+      中位数 = median(score, na.rm = TRUE),
       最低分 = min(score, na.rm = TRUE),
       A = sum(level == "A", na.rm = TRUE),
       B = sum(level == "B", na.rm = TRUE),
