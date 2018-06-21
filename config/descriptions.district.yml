@@ -47,7 +47,7 @@ ability:
 body:
   histogram:
     caption: 本区总体学生{ability_name_cn}测评的分数分布
-    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。
+    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)，从图中可以看出，分数主要集中于{Q1_gross}-{Q3_gross}之间，本区全体学生{ability_name_cn}分数分布趋于正态。
   table:
     caption: 本区及各学校学生{ability_name_cn}测评的整体表现详表
     description: 本区共施测{n_school}所学校，其中学校名称用编码代替。表\@ref(tab:{ability_name}-tab)中展示了本区及各学校的学生整体表现情况。{extra_tab}其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
@@ -68,12 +68,12 @@ body:
         content: 从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:{ability_name}-tab)查看具体数值）角度看，{best_school_med}的表现最好，{worst_school_med}的表现最差，{diff_msg_med}。在后期应该重点关注{worst_school_med}，在该校进行相关基础能力课程的推广，对该校能力不足的学生进行干预和有计划的训练。
   grading:
     caption: 本区及各学校{ability_name_cn}测评的不同水平人数比例
-    description: 各个学校学生总体在{ability_name_cn}测评中各个水平的人数比例如图\@ref(fig:{ability_name}-grading)。每个学校的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的学校，对该校学生的{ability_name_cn}进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+    description: 各个学校学生总体在{ability_name_cn}测评中各个水平的人数比例如图\@ref(fig:{ability_name}-grading)所示。每个学校的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的学校，对该校学生的{ability_name_cn}进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
 suggestions:
   title:
   - 重视基础学习能力和基础学科能力教育
   - 尊重中学生身心发展规律
-  - 有针对性地推行认知能力训练
+  - 有针对性地推行基础能力训练
   content:
   - 学科基础能力与各个学科成绩存在着高相关，所以可以通过培养学生的学科基础能力来达到增强学科成绩的目的；此外，在重视素质教育的今天，学科基础能力的培养能让学生在纷繁复杂的信息中得到真正的能力提升，加强基础能力建设。各区县和学校应该重视学生的基础学习能力教育，定期对能力较弱的学生进行干预和训练。
   - 尊重初中生的认知能力发展规律，真正做到因材施教。研究表明，初中生抽象逻辑思维逐渐占主导地位，但具体形象成分还起作用，具有强烈的求知欲和探索精神，兴趣广泛，思想活跃，表现出较高的创造欲望。对于测评结果，我们应把握初中生思维的发展特点，目的是更好地发挥评价的导向作用，努力提高正面的积极因素，促进多元化评价的长效性。
