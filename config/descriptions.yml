@@ -59,7 +59,7 @@ body:
       sig: 并且各班级的表现差异明显
       nsig: 但是各班级的表现差异不明显
       extra: # display only the condition is meeted
-        if: n_cls > 1
+        condition: n_cls > 1
         content: 从学生的平均水平来看，{best_cls}学生的整体表现最好，而{worst_cls}学生的整体表现最差，{diff_msg_mean}。
   boxplot:
     caption: 本区、本校和各班学生{ability_name_cn}测评的得分情况对比
@@ -68,7 +68,7 @@ body:
       sig: 并且各班级的表现差异明显
       nsig: 但是各班级的表现差异不明显
       extra:
-        if: n_cls > 1
+        condition: n_cls > 1
         content: 从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:{ability_name}-tab)查看具体数值）角度看，{best_cls_med}的总体表现最好，{worst_cls_med}的总体表现最差，{diff_msg_med}。在后期应该重点关注{worst_cls_med}，对能力不足的学生进行干预和有计划的训练。
   grading:
     caption: 本区、本校和各班{ability_name_cn}测评的各水平人数比例
