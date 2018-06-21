@@ -45,7 +45,8 @@ ability:
 body:
   histogram:
     caption: 本区总体学生{ability_name_cn}测评的分数分布
-    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。
+    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)，从图中可以看出，分数主要集中于{score_25%}-{score_75%}之间，中位数为{median_score},本区全体学生{ability_name_cn}分数分布趋于正态。
+    note: 分布取中间50%学生的分数，描述整体分布。
   boxplot:
     caption: 本区及各学校学生{ability_name_cn}测评的分数情况对比
     description: 本区共施测{n_school}所学校，对各个学校的{ability_name_cn}测评分数进行了统计，结果如图\@ref(fig:{ability_name}-boxplot)，其中学校名称用编码代替。从图中我们可以看出，{best_school_med}的总体表现最好，{worst_school_med}的总体表现最差，在后期应该重点关注该学校，在该校进行相关基础能力课程的推广，对该校能力不足的学生进行干预和有计划的训练。
