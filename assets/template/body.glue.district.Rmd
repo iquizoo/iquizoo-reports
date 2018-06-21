@@ -7,7 +7,7 @@ bp_stats <- boxplot.stats(scores_this_ability$score)
 # descriptive statistics
 ability_summary <- scores_this_ability %>%
   sum_tab(c("region", "school"))
-# `n_school`, `best_school[_med]`, `worst_school[_med]` are required
+# `n_school`, `best_school[_med]`, `worst_school[_med]` `diff_msg[_mean/_med]` are required
 ability_summary_school <- ability_summary %>%
   filter(region == "各校")
 ability_summary_school_sortmean <- ability_summary_school %>%
@@ -15,22 +15,23 @@ ability_summary_school_sortmean <- ability_summary_school %>%
 ability_summary_school_sortmed <- ability_summary_school %>%
   arrange(desc(中位数))
 n_school <- nrow(ability_summary_school)
-best_school <- first(ability_summary_school_sortmean$school)
-worst_school <- last(ability_summary_school_sortmean$school)
-best_school_med <- first(ability_summary_school_sortmed$school)
-worst_school_med <- last(ability_summary_school_sortmed$school)
-# `diff_msg[_mean/_med]` is used in description
-scores_this_ability_school <- filter(scores_this_ability, region == "各校")
-stats_mean <- broom::tidy(aov(score ~ school, scores_this_ability_school))
-diff_msg_mean <- with(
-  descriptions$body$table$note,
-  if_else(stats_mean$p.value[1] < 0.05, sig, nsig)
-) 
-stats_med <- broom::tidy(kruskal.test(with(scores_this_ability_school, split(score, school))))
-diff_msg_med <- with(
-  descriptions$body$boxplot$note,
-  if_else(stats_med$p.value < 0.05, sig, nsig)
-)
+if (n_school > 1) {
+  best_school <- first(ability_summary_school_sortmean$school)
+  worst_school <- last(ability_summary_school_sortmean$school)
+  best_school_med <- first(ability_summary_school_sortmed$school)
+  worst_school_med <- last(ability_summary_school_sortmed$school)
+  scores_this_ability_school <- filter(scores_this_ability, region == "各校")
+  stats_mean <- broom::tidy(aov(score ~ school, scores_this_ability_school))
+  diff_msg_mean <- with(
+    descriptions$body$table$note,
+    if_else(stats_mean$p.value[1] < 0.05, sig, nsig)
+  ) 
+  stats_med <- broom::tidy(kruskal.test(with(scores_this_ability_school, split(score, school))))
+  diff_msg_med <- with(
+    descriptions$body$boxplot$note,
+    if_else(stats_med$p.value < 0.05, sig, nsig)
+  )
+}
 # `extra_tab` and `extra_bp` are required
 extra_tab <- with(
   descriptions$body$table$note$extra,
