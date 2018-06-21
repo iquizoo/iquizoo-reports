@@ -40,6 +40,14 @@ extra_bp <- with(
   descriptions$body$boxplot$note$extra,
   if_else(eval(parse(text = condition)), as.character(glue(content)), "")
 )
+# `Q1_gross` and `Q3_gross` are required
+scores_this_ability %>% 
+  filter(region == "本区") %>% 
+  summarise(
+    Q1_gross = quantile(score, 0.25, na.rm = TRUE),
+    Q3_gross = quantile(score, 0.75, na.rm = TRUE)
+  ) %>% 
+  attach()
 ```
 
 ```{r <<ability_name>>-description, results="asis", echo=FALSE}
