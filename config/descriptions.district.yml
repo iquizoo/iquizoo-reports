@@ -47,7 +47,7 @@ ability:
 body:
   histogram:
     caption: 本区总体学生{ability_name_cn}测评的分数分布
-    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)，从图中可以看出，分数主要集中于{Q1_gross}-{Q3_gross}之间，本区全体学生{ability_name_cn}分数分布趋于正态。
+    description: 本区学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。从图中可以看出，分数主要集中于{Q1_gross}-{Q3_gross}之间。
   table:
     caption: 本区及各学校学生{ability_name_cn}测评的整体表现详表
     description: 本区共施测{n_school}所学校，其中学校名称用编码代替。表\@ref(tab:{ability_name}-tab)中展示了本区及各学校的学生整体表现情况。{extra_tab}其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
