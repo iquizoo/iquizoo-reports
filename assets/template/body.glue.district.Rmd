@@ -31,6 +31,15 @@ diff_msg_med <- with(
   descriptions$body$boxplot$note,
   if_else(stats_med$p.value < 0.05, sig, nsig)
 )
+# `extra_tab` and `extra_bp` are required
+extra_tab <- with(
+  descriptions$body$table$note$extra,
+  if_else(eval(parse(text = condition)), as.character(glue(content)), "")
+)
+extra_bp <- with(
+  descriptions$body$boxplot$note$extra,
+  if_else(eval(parse(text = condition)), as.character(glue(content)), "")
+)
 ```
 
 ```{r <<ability_name>>-description, results="asis", echo=FALSE}
