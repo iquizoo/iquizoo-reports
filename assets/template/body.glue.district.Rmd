@@ -99,9 +99,9 @@ scores_this_ability %>%
   ggplot(aes(school, score, fill = school)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
   # facet_wrap(~ region, scales = "free_y", ncol = 1) +
-  scale_y_continuous(limits = bp_stats$stats[c(1, 5)]) +
   scale_fill_discrete(guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
+  coord_cartesian(ylim = bp_stats$stats[c(1, 5)]) +
   coord_flip() +
   set_theme_panels(base_size = 9, base_family = text_family)
 ```
