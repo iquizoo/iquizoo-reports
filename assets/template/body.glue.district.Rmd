@@ -45,8 +45,8 @@ extra_bp <- with(
 scores_this_ability %>% 
   filter(region == "本区") %>% 
   summarise(
-    Q1_gross = quantile(score, 0.25, na.rm = TRUE),
-    Q3_gross = quantile(score, 0.75, na.rm = TRUE)
+    Q1_gross = round(quantile(score, 0.25, na.rm = TRUE)),
+    Q3_gross = round(quantile(score, 0.75, na.rm = TRUE))
   ) %>% 
   attach()
 ```
