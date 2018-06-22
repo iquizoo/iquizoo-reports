@@ -105,8 +105,7 @@ scores_this_ability %>%
   ) %>%
   ggplot(aes(cls, score, fill = cls)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
-  facet_wrap(~ region, scales = "free_y", ncol = 1) +
-  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
+  scale_fill_discrete(guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
   coord_cartesian(ylim = bp_stats$stats[c(1, 5)]) +
   coord_flip() +
@@ -134,7 +133,6 @@ ability_summary %>%
   ggplot(aes(cls, prop, fill = level, label = prop_label)) +
   geom_col(position = "stack", width = 0.5) +
   geom_text(position = position_stack(vjust = 0.5), size = 3) +
-  facet_wrap(~ region, scales = "free_y", ncol = 1) +
   scale_fill_brewer(palette = "Blues") +
   labs(x = "", y = "比例（%）", fill = "") +
   coord_flip() +
