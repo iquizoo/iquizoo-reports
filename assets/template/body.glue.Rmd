@@ -103,9 +103,9 @@ scores_this_ability %>%
       cls, levels = c("本区", "本校", ability_summary_cls_sortmed$cls)
     )
   ) %>%
-  ggplot(aes(cls, score, fill = cls)) +
+  ggplot(aes(cls, score, fill = region)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
-  scale_fill_discrete(guide = FALSE) +
+  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
   coord_cartesian(ylim = bp_stats$stats[c(1, 5)]) +
   coord_flip() +
