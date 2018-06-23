@@ -1,11 +1,13 @@
-data_filename: daxing.csv # required
-school_name_auto: false # automatic school name extraction
+type: one
+all: FALSE
+# school_name_auto: false # automatic school name extraction
 school_name: 北京市大兴区兴华中学
-ability_name_auto: true
-ability_name: "基础学习能力"
+# ability_name_auto: true
+# ability_name: "基础学习能力"
 test_date_auto: true
 test_date: 2018-04-21
 report_date_auto: false
 report_date: 2018-06-20
 region_auto: false
-region: "北京市大兴区"
+region: 佛山市里水镇
+regionid: lishui
