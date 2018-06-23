@@ -1,6 +1,6 @@
 book_filename: "report"
 delete_merged_file: true
-output_dir: "daxing"
+output_dir: "reports"
 rmd_files: [index.Rmd, body.Rmd, suggestion.Rmd]
 language:
   label:
