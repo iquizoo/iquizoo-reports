@@ -28,7 +28,13 @@ switch(
   ),
   district = glue(
     "* 学校数目：{n_school}",
-    "* 年级数目：{n_grade}",
+    "* 测评时间：{test_date_string}",
+    "* 实测人数：{n_user}人",
+    .sep = "\n"
+  ),
+  one = glue(
+    "* 学校数目：{n_school}所",
+    "* 年级数目：{n_grade}个",
     "* 测评时间：{test_date_string}",
     "* 实测人数：{n_user}人",
     .sep = "\n"
