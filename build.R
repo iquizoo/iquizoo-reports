@@ -145,7 +145,8 @@ ability_md <- rbind(ability_info, component_info) %>%
     )
   )
 
-# build report according to the build type ----
+# build the three parts of the report ----
+context_filename <- "context.Rmd"
 body_filename <- "body.Rmd"
 body_title <- "详细报告"
 body_src <- file.path(
@@ -184,6 +185,20 @@ switch(
       } else {
         region <- params$region
       }
+      # render context content as 'context.Rmd' ----
+      report_context <- as_tibble(descriptions$context) %>%
+        mutate(
+          md = render_title_content(
+            title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
+          )
+        ) %>%
+        pull(md) %>%
+        paste(collapse = "\n\n")
+      context_content <- read_file(
+        file.path(getOption("report.tmpl.path"), "context.glue.Rmd")
+      ) %>%
+        glue(.open = "<<", .close = ">>")
+      write_lines(context_content, context_filename)
       # render body content as 'body.Rmd' ----
       body_content_vector <- character()
       for (ability_name in names(ability_names)) {
@@ -200,6 +215,7 @@ switch(
       bookdown::render_book("index.Rmd", output_file = glue("{school_name}.docx"), clean_envir = FALSE)
       # clean generated body content
       unlink(body_filename)
+      unlink(context_filename)
     }
   },
   district = {
@@ -229,6 +245,20 @@ switch(
     } else {
       region <- params$region
     }
+    # render context content as 'context.Rmd' ----
+    report_context <- as_tibble(descriptions$context) %>%
+      mutate(
+        md = render_title_content(
+          title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
+        )
+      ) %>%
+      pull(md) %>%
+      paste(collapse = "\n\n")
+    context_content <- read_file(
+      file.path(getOption("report.tmpl.path"), "context.glue.district.Rmd")
+    ) %>%
+      glue(.open = "<<", .close = ">>")
+    write_lines(context_content, context_filename)
     # render body content as 'body.Rmd' ----
     body_content_vector <- character()
     for (ability_name in names) {
@@ -245,6 +275,7 @@ switch(
     bookdown::render_book("index.Rmd", output_file = glue("{region}.docx"), clean_envir = FALSE)
     # clean generated body content
     unlink(body_filename)
+    unlink(context_filename)
   },
   one = {
     # combine data from whole district, each school
