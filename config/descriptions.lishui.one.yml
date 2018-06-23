@@ -50,7 +50,7 @@ body:
     description: 本区各年级学生的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name_id}-histogram)。
   table:
     caption: 本区及各学校学生{ability_name_cn}测评的整体表现详表
-    description: 本区共施测{n_school}所学校，{n_grade}个年级。表\@ref(tab:{ability_name_id}-tab)中展示了本区及各学校的学生整体表现情况。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+    description: 本区共施测{n_school}所学校，{n_grade}个年级。表\@ref(tab:{ability_name_id}-tab)中展示了本区及各学校的学生在{ability_name_cn}测评中的整体表现情况。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
   correlation:
     caption: 本区各年级学生{ability_name_cn}测评得分与学科成绩的相关
     description: 本区各年级学生{ability_name_cn}测评得分与学科成绩如图\@ref(fig:{ability_name_id}-correlation)所示。
