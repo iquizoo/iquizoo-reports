@@ -20,7 +20,7 @@ jobs:
       script:
         - Rscript 'build.R' -a
         - Rscript 'build.R' -T 'district'
-        - zip -r daxing.zip daxing
+        - zip -r reports.zip reports
       deploy:
         - provider: releases
           prerelease: true
@@ -35,7 +35,7 @@ jobs:
         - provider: releases
           api_key:
             secure: yBmExfUFJh6xfT9YT0i/DxmXV2Fv/dxi+jvZCz2LdNNm3saIT0VfxPTxR2jr4WIKtQa8EbkmGOnvip+Yu/QPhvYIKGrKbSfQePtFqqQZVHPe8psUncPI1deardWAn0dEriZsDWdn+MNMk52EBlOvDUo21c1yeKEyogIX0seh/EJzbPlyT2rEYo6m9pdPbI29o47XH5m5wH3JxmA2pCiCZZ3vMiJnZGkTr2Wl4caDcaBqKrtk/8rTrmwx3D6c6zVZ/OkUGrP7Ih9JfG4Da+wVZytoBO1ZDvoT3GHTNl1/LQlVfxGpIy+a8fxtIaVWCKCX/8OQ/+Can/M3QteC5AA2m6d0qdmCfJv/fgwJ9R/DwJn8aUh8aD+5AOIF4NXqTrfW6Y/iMRtpRxDfQR+Odv0MxmARxUa0PozUku1J0gxdgQLBM9bxjwzhWlRefTw7UxsZB6ppehShBFThD9zLplljzjUPr1bynIAl06gfxaImbccvINak8wVgCB4nY0yDXVyHu71LPGH7Ix1iwo3B/Yv+vjgZ3PQaXeVB9e8Phf7yrDRZOYfpPmgewKRH790Nz33nMIRqNR/8fvnPrSHc/lxSoGQNoHYRhSUX7ayzREhZ5ljsExv27q3i2SH6KjCY3Hofb6dZeOk2p/y+3tOSbxYy/4vEH0/O3uVL38r+iG+Eapo=
-          file: daxing.zip
+          file: reports.zip
           skip_cleanup: true
           on:
             branch: master
