@@ -80,7 +80,7 @@ context:
 
     大量研究表明，大脑基础能力学习是预测学生学业表现的重要指标，我们基于前人的研究以及对区域教育质量监测的结果，提出了学业表现的金字塔模型（见图\@ref(fig:context-figure)），认为大脑核心学习能力是影响学业表现的基础能力。在此基础上，还存在学科基础能力和学科知识的掌握，这三者共同影响了学业表现。其中，学科能力和学科知识之间应该有很好的匹配，从而有助于发展个性化的学习路径。
 
-    ```{r context-figure, fig.cap="学业成绩的金字塔模型"}
+    ```{r context-figure, fig.cap="学业成绩的金字塔模型", echo=FALSE}
     knitr::include_graphics("assets/image/model.jpg")
     ```
 
