@@ -44,6 +44,14 @@ if (!interactive()) {
       help = "Specify the report type, could be 'one' (default), 'school' or 'district'."
     ),
     make_option(
+      c("-r", "--regionid"),
+      help = paste(
+        "Specify the region identifier for reporting.",
+        "This signifies because it will be used to identify dataset and descriptions."
+      )
+    ),
+    make_option(c("-R", "--region"), help = "Specify the Chinese region name."),
+    make_option(
       c("-a", "--all"), action = "store_true", default = FALSE,
       help = paste(
         "For now, only works when 'type' is 'school',",
@@ -51,16 +59,19 @@ if (!interactive()) {
       )
     ),
     make_option(
-      c("-r", "--regionid"),
-      help = paste(
-        "Specify the region identifier for reporting.",
-        "This signifies because it will be used to identify dataset and descriptions."
-      )
-    )
+      c("--report-date-auto"), action = "store_true", default = FALSE,
+      help = "Specify if set the report date automatically or not."
+    ),
+    make_option(c("--report-date"), help = "The report date."),
+    make_option(
+      c("--test-date-auto"), action = "store_true", default = TRUE,
+      help = "Specify if set the report date automatically or not."
+    ),
+    make_option(c("--test-date"), help = "The test date.")
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
-  params <- parse_args(OptionParser(option_list = option_list))
+  params <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 } else {
   # read configurations from yaml config file if in interactive mode
   params <- read_yaml(
@@ -70,56 +81,24 @@ if (!interactive()) {
 }
 
 # environmental settings ----
+# source user script, which will be placed in script path
+# TODO: NEEDS ENHANCEMENT
+source(
+  file.path(getOption("report.include.path")["script"], "utils.R"),
+  encoding = getOption("report.encoding")
+)
 # import font if not found
 text_family <- getOption("report.text.family")
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
-# source user script, which will be placed in script path, which could be enhanced
-source(
-  file.path(getOption("report.include.path")["script"], "utils.R"),
-  encoding = getOption("report.encoding")
-)
-# descriptions used in content building
-descr_src <- file.path(
-  getOption("report.include.path")["config"],
-  # description file name rule: 'descriptions.{regionid}.{type}.yml'
-  paste("descriptions", params$regionid, params$type, ext = "yml", sep = ".")
-)
-if (!file.exists(descr_src)) stop("Critical error! No description file found!")
-descriptions <- read_yaml(descr_src, fileEncoding = getOption("report.encoding"))
-# set report date: needs enhancement
-if (params$report_date_auto) {
-  report_date <- Sys.time()
-} else {
-  report_date <- params$report_date
-}
-report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
-
-# datasets preparations ----
-# load ability scores
-scores_origin <- read_excel(
-  file.path(
-    getOption("report.include.path")["database"],
-    paste0(params$regionid, ".xlsx")
-  )
-)
-# count number of school, grade and users
-n_school <- n_distinct(scores_origin$school)
-n_grade <- n_distinct(scores_origin$grade)
-n_user <- n_distinct(scores_origin$userId)
-# reconfigure `school_name` based on the dataset
-if (params$type == "school") {
-  if (params$school_name_auto || params$all) {
-    school_names <- unique(scores_origin$school)
-  } else {
-    school_names <- params$school_name
-  }
-  # validate shcool names
-  if (!all(school_names %in% scores_origin$school)) {
-    stop("School not found!")
-  }
-}
+# get the names of all the configuration files
+# context template
+context_tmpl <- get_config("context", params$regionid, params$type, ext = "Rmd")
+# body template
+body_tmpl <- get_config("body", params$regionid, params$type, ext = "Rmd")
+# descriptions, or the content builder
+descriptions <- get_config("descriptions", params$regionid, params$type, ext = "yml")
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
@@ -144,16 +123,40 @@ ability_md <- rbind(ability_info, component_info) %>%
       hlevel = hlevel, style = style
     )
   )
+# set report date: needs enhancement
+if (params$report_date_auto) {
+  report_date <- Sys.time()
+} else {
+  report_date <- params$report_date
+}
+report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
+
+# datasets preparations ----
+# load ability scores
+scores_origin <- read_excel(
+  file.path(
+    getOption("report.include.path")["database"],
+    paste0(params$regionid, ".xlsx")
+  )
+)
+# count number of school, grade and users
+n_school <- n_distinct(scores_origin$school)
+n_grade <- n_distinct(scores_origin$grade)
+n_user <- n_distinct(scores_origin$userId)
+# reconfigure `school_name` based on the dataset
+if (params$type == "school") {
+  if (params$all) {
+    school_names <- unique(scores_origin$school)
+  } else {
+    school_names <- params$school_name
+  }
+  # validate shcool names
+  if (!all(school_names %in% scores_origin$school)) {
+    stop("School not found!")
+  }
+}
 
 # build the three parts of the report ----
-context_filename <- "context.Rmd"
-body_filename <- "body.Rmd"
-body_title <- "详细报告"
-body_src <- file.path(
-  getOption("report.include.path")["config"],
-  # body Rmd file name rule: 'body.{regionid}.{type}.Rmd'
-  paste("body", params$regionid, params$type, ext = "Rmd", sep = ".")
-)
 switch(
   params$type,
   school = {
@@ -185,37 +188,7 @@ switch(
       } else {
         region <- params$region
       }
-      # render context content as 'context.Rmd' ----
-      report_context <- as_tibble(descriptions$context) %>%
-        mutate(
-          md = render_title_content(
-            title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
-          )
-        ) %>%
-        pull(md) %>%
-        paste(collapse = "\n\n")
-      context_content <- read_file(
-        file.path(getOption("report.tmpl.path"), "context.glue.Rmd")
-      ) %>%
-        glue(.open = "<<", .close = ">>")
-      write_lines(context_content, context_filename)
-      # render body content as 'body.Rmd' ----
-      body_content_vector <- character()
-      for (ability_name in names(ability_names)) {
-        # use one template of single ability to generate the 'body.Rmd'
-        body_content_vector[ability_name] <- read_file(
-          file.path(getOption("report.tmpl.path"), "body.glue.Rmd")
-        ) %>%
-          glue(.open = "<<", .close = ">>")
-      }
-      body_content <- paste(body_content_vector, collapse = "\n\n")
-      write_lines(render_title_content(body_title, body_content), body_filename)
-
-      # render report for current school ----
-      bookdown::render_book("index.Rmd", output_file = glue("{school_name}.docx"), clean_envir = FALSE)
-      # clean generated body content
-      unlink(body_filename)
-      unlink(context_filename)
+      render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
   district = {
@@ -232,60 +205,22 @@ switch(
       mutate(school = if_else(region != "各校", region, school)) %>%
       mutate(region = factor(region, c("本区", "各校")))
     # set test date
-    if (params$test_date_auto) {
+    if (!is.null(params$test_date_auto) && params$test_date_auto) {
       test_date <- median(scores_origin$createTime)
     } else {
       test_date <- params$test_date
     }
     test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
     # set test region
-    if (params$region_auto) {
+    if (!is.null(params$region_auto) && params$region_auto) {
       # do not set this as TRUE, because no region info is set now
       region <- unique(scores_origin$region)
     } else {
       region <- params$region
     }
-    # render context content as 'context.Rmd' ----
-    report_context <- as_tibble(descriptions$context) %>%
-      mutate(
-        md = render_title_content(
-          title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
-        )
-      ) %>%
-      pull(md) %>%
-      paste(collapse = "\n\n")
-    context_content <- read_file(
-      file.path(getOption("report.tmpl.path"), "context.glue.district.Rmd")
-    ) %>%
-      glue(.open = "<<", .close = ">>")
-    write_lines(context_content, context_filename)
-    # render body content as 'body.Rmd' ----
-    body_content_vector <- character()
-    for (ability_name in names) {
-      # use one template of single ability to generate the 'body.Rmd'
-      body_content_vector[ability_name] <- read_file(
-        file.path(getOption("report.tmpl.path"), "body.glue.district.Rmd")
-      ) %>%
-        glue(.open = "<<", .close = ">>")
-    }
-    body_content <- paste(body_content_vector, collapse = "\n\n")
-    write_lines(render_title_content(body_title, body_content), body_filename)
-
-    # render report for current school ----
-    bookdown::render_book("index.Rmd", output_file = glue("{region}.docx"), clean_envir = FALSE)
-    # clean generated body content
-    unlink(body_filename)
-    unlink(context_filename)
+    render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
-    # combine data from whole district, each school
-    # scores_combined <- list(
-    #   本区 = scores_origin,
-    #   各校 = scores_origin
-    # ) %>%
-    #   bind_rows(.id = "region") %>%
-    #   mutate(school = if_else(region != "各校", region, school)) %>%
-    #   mutate(region = factor(region, c("本区", "各校")))
     # set test date
     if (params$test_date_auto) {
       test_date <- median(scores_origin$createTime)
@@ -300,21 +235,7 @@ switch(
     } else {
       region <- params$region
     }
+    render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
   },
   stop("Unsupported report type! Please specify as school/district only.")
 )
-
-# render body content as 'body.Rmd' ----
-body_content_vector <- character()
-for (ability_name_id in ability_names_id) {
-  # use one template of single ability to generate the 'body.Rmd'
-  body_content_vector[ability_name_id] <- read_file(body_src) %>%
-    glue(.open = "<<", .close = ">>")
-}
-body_content <- paste(body_content_vector, collapse = "\n\n")
-write_lines(render_title_content(body_title, body_content), body_filename)
-
-# render report for current school ----
-bookdown::render_book("index.Rmd", output_file = glue("{region}.docx"), clean_envir = FALSE)
-# clean generated body content
-unlink(body_filename)
