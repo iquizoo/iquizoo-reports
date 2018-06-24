@@ -8,6 +8,38 @@
 require(tidyverse)
 require(glue)
 
+#' Helper funtion used to get config file content
+#'
+#' @param name The name of the configuration
+#' @param regionid The identifier of region
+#' @param type The report type
+#' @param ext File extension
+get_config <- function(name, regionid, type, ext) {
+  config_dir <- getOption("report.include.path")["config"]
+  if (is.null(config_dir)) {
+    warning(
+      "No config path specified! Please set it in option \"report.include.path\"!\n",
+      "Will use default path: \"config\""
+    )
+    config_dir <- "config"
+  }
+  # note the file name rule
+  config_file <- file.path(
+    config_dir, paste(name, regionid, type, ext, sep = ".")
+  )
+  if (!file.exists(config_file)) {
+    stop(sprintf("Critical error! Config file \"%s\" not found!", config_file))
+  }
+  # read content
+  config_content <- switch(
+    ext,
+    yml = ,
+    yaml = read_yaml(config_file),
+    Rmd = read_file(config_file)
+  )
+  return(config_content)
+}
+
 #' Render heading according to level.
 #'
 #' @param text The text to be adjusted
