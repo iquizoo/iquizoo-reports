@@ -1,6 +1,8 @@
-```{r <<ability_name>>-configs, include=FALSE}
-ability_name <- "<<ability_name>>"
-ability_name_cn <- ability_names[ability_name]
+```{r <<ability_name_id>>-configs, include=FALSE}
+ability_name_id <- "<<ability_name_id>>"
+ability_name_cn <- ability_md %>% 
+  filter(nameid == ability_name_id) %>% 
+  pull(name)
 scores_this_ability <- scores_combined %>%
   filter(ability == ability_name_cn)
 bp_stats <- boxplot.stats(scores_this_ability$score)
@@ -58,15 +60,15 @@ extra_bp <- with(
 ) 
 ```
 
-```{r <<ability_name>>-description, results="asis", echo=FALSE}
-ability_info %>%
+```{r <<ability_name_id>>-description, results="asis", echo=FALSE}
+ability_md %>%
   filter(name == ability_name_cn) %>%
   # see 'build.R' at root directory for how `md` (Markdown) is generated
   pull(md) %>%
   cat()
 ```
 
-```{r <<ability_name>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$histogram$caption)}
+```{r <<ability_name_id>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$histogram$caption)}
 scores_this_ability %>%
   filter(region != "各班") %>%
   ggplot(aes(score, fill = region)) +
@@ -77,26 +79,26 @@ scores_this_ability %>%
   set_theme_dist(base_family = text_family)
 ```
 
-```{r <<ability_name>>-histogram-description, echo=FALSE, results="asis"}
+```{r <<ability_name_id>>-histogram-description, echo=FALSE, results="asis"}
 descriptions$body$histogram$description %>%
   glue() %>%
   cat()
 ```
 
-```{r <<ability_name>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
+```{r <<ability_name_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
 ability_summary %>%
   rename(` ` = cls) %>%
   select(-region) %>%
   knitr::kable(digits = 2, caption = glue(descriptions$body$table$caption))
 ```
 
-```{r <<ability_name>>-tab-description, echo=FALSE, results="asis"}
+```{r <<ability_name_id>>-tab-description, echo=FALSE, results="asis"}
 descriptions$body$table$description %>%
   glue() %>%
   cat()
 ```
 
-```{r <<ability_name>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$boxplot$caption)}
+```{r <<ability_name_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$boxplot$caption)}
 scores_this_ability %>%
   mutate(
     cls = factor(
@@ -112,13 +114,13 @@ scores_this_ability %>%
   set_theme_panels(base_family = text_family)
 ```
 
-```{r <<ability_name>>-boxplot-description, echo=FALSE, results="asis"}
+```{r <<ability_name_id>>-boxplot-description, echo=FALSE, results="asis"}
 descriptions$body$boxplot$description %>%
   glue() %>%
   cat()
 ```
 
-```{r <<ability_name>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$grading$caption)}
+```{r <<ability_name_id>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$grading$caption)}
 ability_summary %>%
   mutate(
     cls = factor(
@@ -139,7 +141,7 @@ ability_summary %>%
   set_theme_panels(base_family = text_family)
 ```
 
-```{r <<ability_name>>-grading-description, echo=FALSE, results="asis"}
+```{r <<ability_name_id>>-grading-description, echo=FALSE, results="asis"}
 descriptions$body$grading$description %>%
   glue() %>%
   cat()
