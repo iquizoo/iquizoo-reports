@@ -40,17 +40,17 @@ if (!interactive()) {
   #               help="Show this help message and exit")
   option_list <- list(
     make_option(
-      c("-t", "--type"), default = "one",
+      c("-t", "--type"),
       help = "Specify the report type, could be 'one' (default), 'school' or 'district'."
     ),
     make_option(
-      c("-r", "--regionid"),
+      c("-r", "--region"),
       help = paste(
         "Specify the region identifier for reporting.",
         "This signifies because it will be used to identify dataset and descriptions."
       )
     ),
-    make_option(c("-R", "--region"), help = "Specify the Chinese region name."),
+    make_option(c("-n", "--school-name"), help = "The name of school, used when `all` is true."),
     make_option(
       c("-a", "--all"), action = "store_true", default = FALSE,
       help = paste(
@@ -59,7 +59,7 @@ if (!interactive()) {
       )
     ),
     make_option(
-      c("--report-date-auto"), action = "store_true", default = FALSE,
+      c("--report-date-auto"), action = "store_true", default = TRUE,
       help = "Specify if set the report date automatically or not."
     ),
     make_option(c("--report-date"), help = "The report date."),
@@ -92,13 +92,17 @@ text_family <- getOption("report.text.family")
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
-# get the names of all the configuration files
+# get the content of all the configuration files
+# paramter map
+report_map <- get_config("report", "map")
 # context template
-context_tmpl <- get_config("context", params$regionid, params$type, ext = "Rmd")
+context_tmpl <- get_config("context", params$region, params$type, ext = "Rmd")
 # body template
-body_tmpl <- get_config("body", params$regionid, params$type, ext = "Rmd")
+body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
 # descriptions, or the content builder
-descriptions <- get_config("descriptions", params$regionid, params$type, ext = "yml")
+descriptions <- get_config("descriptions", params$region, params$type)
+# set test region
+region <- report_map$regionname[[params$region]]
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
@@ -136,7 +140,7 @@ report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(re
 scores_origin <- read_excel(
   file.path(
     getOption("report.include.path")["database"],
-    paste0(params$regionid, ".xlsx")
+    paste0(params$region, ".xlsx")
   )
 )
 # count number of school, grade and users
@@ -181,13 +185,6 @@ switch(
         test_date <- params$test_date
       }
       test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
-      # set test region
-      if (params$region_auto) {
-        # do not set this as TRUE, because no region info is set now
-        region <- unique(scores_school$region)
-      } else {
-        region <- params$region
-      }
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
@@ -211,13 +208,6 @@ switch(
       test_date <- params$test_date
     }
     test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
-    # set test region
-    if (!is.null(params$region_auto) && params$region_auto) {
-      # do not set this as TRUE, because no region info is set now
-      region <- unique(scores_origin$region)
-    } else {
-      region <- params$region
-    }
     render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
@@ -228,13 +218,6 @@ switch(
       test_date <- params$test_date
     }
     test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
-    # set test region
-    if (params$region_auto) {
-      # do not set this as TRUE, because no region info is set now
-      region <- unique(scores_origin$region)
-    } else {
-      region <- params$region
-    }
     render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
   },
   stop("Unsupported report type! Please specify as school/district only.")
