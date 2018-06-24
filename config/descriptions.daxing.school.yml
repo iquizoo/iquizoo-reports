@@ -104,14 +104,14 @@ context:
 body:
   histogram:
     caption: 本区和本校学生{ability_name_cn}测评的分数分布对比
-    description: 本校学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name}-histogram)。本校学生的整体表现{diff_msg}。
+    description: 本校学生总体的{ability_name_cn}测评的得分分布见图\@ref(fig:{ability_name_id}-histogram)。本校学生的整体表现{diff_msg}。
     note:
       large: 比全区总体学生明显更好
       small: 比全区总体学生明显更差
       equal: 和全区总体学生差异不明显
   table:
     caption: 本区、本校和各班学生{ability_name_cn}测评的整体表现详表
-    description: 本校共施测{n_cls}个班级。表\@ref(tab:{ability_name}-tab)中展示了本区、本校和各班的学生整体表现情况。{extra_tab}其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+    description: 本校共施测{n_cls}个班级。表\@ref(tab:{ability_name_id}-tab)中展示了本区、本校和各班的学生整体表现情况。{extra_tab}其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
     note:
       sig: 并且各班级的表现差异明显
       nsig: 但是各班级的表现差异不明显
@@ -120,16 +120,16 @@ body:
         content: 从学生的平均水平来看，{best_cls}学生的整体表现最好，而{worst_cls}学生的整体表现最差，{diff_msg_mean}。
   boxplot:
     caption: 本区、本校和各班学生{ability_name_cn}测评的得分情况对比
-    description: 本区、本校和各班的{ability_name_cn}测评分数的分布区间如图\@ref(fig:{ability_name}-boxplot)。{extra_bp}
+    description: 本区、本校和各班的{ability_name_cn}测评分数的分布区间如图\@ref(fig:{ability_name_id}-boxplot)。{extra_bp}
     note:
       sig: 并且各班级的表现差异明显
       nsig: 但是各班级的表现差异不明显
       extra:
         condition: n_cls > 1
-        content: 从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:{ability_name}-tab)查看具体数值）角度看，{best_cls_med}的总体表现最好，{worst_cls_med}的总体表现最差，{diff_msg_med}。在后期应该重点关注{worst_cls_med}，对能力不足的学生进行干预和有计划的训练。
+        content: 从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:{ability_name_id}-tab)查看具体数值）角度看，{best_cls_med}的总体表现最好，{worst_cls_med}的总体表现最差，{diff_msg_med}。在后期应该重点关注{worst_cls_med}，对能力不足的学生进行干预和有计划的训练。
   grading:
     caption: 本区、本校和各班{ability_name_cn}测评的各水平人数比例
-    description: 本校学生总体在{ability_name_cn}测评中各个水平的人数比例如图\@ref(fig:{ability_name}-grading)。每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级对学生的{ability_name_cn}进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+    description: 本校学生总体在{ability_name_cn}测评中各个水平的人数比例如图\@ref(fig:{ability_name_id}-grading)。每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级对学生的{ability_name_cn}进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
 suggestions:
   title:
   - 重视基础学习能力和基础学科能力教育
