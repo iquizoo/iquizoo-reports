@@ -52,11 +52,11 @@ if (n_cls > 1) {
 # `extra_tab` and `extra_bp` are required
 extra_tab <- with(
   descriptions$body$table$note$extra,
-  if_else(eval(parse(text = condition)), as.character(glue(content)), "")
+  ifelse(eval(parse(text = condition)), as.character(glue(content)), "")
 )
 extra_bp <- with(
   descriptions$body$boxplot$note$extra,
-  if_else(eval(parse(text = condition)), as.character(glue(content)), "")
+  ifelse(eval(parse(text = condition)), as.character(glue(content)), "")
 ) 
 ```
 
