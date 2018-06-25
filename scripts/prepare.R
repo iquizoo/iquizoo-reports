@@ -177,7 +177,7 @@ main <- function(loc) {
     mutate(cls = glue("{cls}班"))
 
   # side effects: output all ability scores after clensing
-  write_excel_csv(ability_scores, file.path(res_dir, glue("{loc}.csv")), na = "")
+  write_xlsx(ability_scores, file.path(res_dir, glue("{loc}.xlsx")))
 }
 
 if (interactive()) {
