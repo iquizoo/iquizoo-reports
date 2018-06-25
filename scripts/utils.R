@@ -8,6 +8,78 @@
 require(tidyverse)
 require(glue)
 
+#' Helper funtion used to get config file content
+#'
+#' @param name The name of the configuration
+#' @param regionid The identifier of region
+#' @param type The report type
+#' @param ext File extension
+get_config <- function(..., ext = "yml") {
+  config_dir <- getOption("report.include.path")["config"]
+  if (is.null(config_dir)) {
+    warning(
+      "No config path specified! Please set it in option \"report.include.path\"!\n",
+      "Will use default path: \"config\""
+    )
+    config_dir <- "config"
+  }
+  # note the file name rule
+  config_file <- file.path(
+    config_dir, paste(..., ext, sep = ".")
+  )
+  if (!file.exists(config_file)) {
+    stop(sprintf("Critical error! Config file \"%s\" not found!", config_file))
+  }
+  # read content
+  config_content <- switch(
+    ext,
+    yml = ,
+    yaml = read_yaml(config_file),
+    Rmd = read_file(config_file)
+  )
+  return(config_content)
+}
+
+#' Helper function to generate required \code{.Rmd} files
+#'
+#' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
+render_report <- function(...) {
+  # render context content as 'context.Rmd' ----
+  context_filename <- "context.Rmd"
+  # extraction context content from descriptions and substitute r codes in it with value
+  report_context <- as_tibble(descriptions$context) %>%
+    mutate(
+      md = render_title_content(
+        # all of these content will be at level 2 heading
+        title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
+      )
+    ) %>%
+    pull(md) %>%
+    paste(collapse = "\n\n")
+  context_content <- context_tmpl %>%
+    # note that 'report_context' will be pasted into it
+    glue(.open = "<<", .close = ">>")
+  write_lines(context_content, context_filename)
+
+  # render body content as 'body.Rmd' ----
+  body_filename <- "body.Rmd"
+  body_title <- "详细报告"
+  body_content_vector <- character()
+  for (ability_name_id in ability_names_id) {
+    # use one template of single ability to generate the 'body.Rmd'
+    body_content_vector[ability_name_id] <- body_tmpl %>%
+      glue(.open = "<<", .close = ">>")
+  }
+  body_content <- paste(body_content_vector, collapse = "\n\n")
+  write_lines(render_title_content(body_title, body_content), body_filename)
+
+  # render report for current school ----
+  bookdown::render_book("index.Rmd", ...)
+  # clean up generated building content
+  unlink(context_filename)
+  unlink(body_filename)
+}
+
 #' Render heading according to level.
 #'
 #' @param text The text to be adjusted

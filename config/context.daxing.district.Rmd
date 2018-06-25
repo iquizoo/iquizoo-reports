@@ -1,0 +1,9 @@
+# 报告说明
+
+<<report_context>>
+
+## 学生参加测评的情况
+
+* 学校数目：`r n_school`所
+* 测评时间：`r test_date_string`
+* 实测人数：`r n_user`人
