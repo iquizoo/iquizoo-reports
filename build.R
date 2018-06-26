@@ -50,23 +50,20 @@ if (!interactive()) {
         "This signifies because it will be used to identify dataset and descriptions."
       )
     ),
-    make_option(c("-n", "--school-name"), help = "The name of school, used when `all` is true."),
     make_option(
-      c("-a", "--all"), action = "store_true", default = FALSE,
+      c("-n", "--school-name"),
+      help = "The name of school, do not set it if all schools need reporting."
+    ),
+    make_option(
+      c("-d", "--date-manual"),
       help = paste(
-        "For now, only works when 'type' is 'school',",
-        "if set, will build reports for all schools."
+        "Whether the dates in the report (report data and test date) are set manually?",
+        "Use \"report\", \"test\" or \"all\" to manually set one or two dates",
+        "Or do not set it to if all the dates should be set automatically.",
+        "When set, the corresponding report-date or test-date are required."
       )
     ),
-    make_option(
-      c("--report-date-auto"), action = "store_true", default = TRUE,
-      help = "Specify if set the report date automatically or not."
-    ),
     make_option(c("--report-date"), help = "The report date."),
-    make_option(
-      c("--test-date-auto"), action = "store_true", default = TRUE,
-      help = "Specify if set the report date automatically or not."
-    ),
     make_option(c("--test-date"), help = "The test date.")
   )
   # get command line options, if help option encountered print help and exit,
@@ -128,10 +125,13 @@ ability_md <- rbind(ability_info, component_info) %>%
     )
   )
 # set report date: needs enhancement
-if (params$report_date_auto) {
-  report_date <- Sys.time()
-} else {
+if (
+  identical(params$date_manual, "report") ||
+  identical(params$date_manual, "all")
+) {
   report_date <- params$report_date
+} else {
+  report_date <- Sys.time()
 }
 report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
 
@@ -149,7 +149,7 @@ n_grade <- n_distinct(scores_origin$grade)
 n_user <- n_distinct(scores_origin$userId)
 # reconfigure `school_name` based on the dataset
 if (params$type == "school") {
-  if (params$all) {
+  if (is.null(params$school_name)) {
     school_names <- unique(scores_origin$school)
   } else {
     school_names <- params$school_name
@@ -179,10 +179,13 @@ switch(
         mutate(cls = if_else(region != "各班", region, cls)) %>%
         mutate(region = factor(region, c("各班", "本校", "本区")))
       # set test date
-      if (params$test_date_auto) {
-        test_date <- median(scores_school$createTime)
-      } else {
+      if (
+        identical(params$date_manual, "test") ||
+        identical(params$date_manual, "all")
+      ) {
         test_date <- params$test_date
+      } else {
+        test_date <- median(scores_school$createTime)
       }
       test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
