@@ -22,7 +22,7 @@ jobs:
       script:
         - Rscript 'build.R' -r 'daxing' -t 'school'
         - Rscript 'build.R' -r 'daxing' -t 'district'
-        - zip -r reports.zip reports
+        - zip -r reports.zip targets
       deploy:
         - provider: releases
           prerelease: true
