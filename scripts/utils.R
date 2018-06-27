@@ -38,6 +38,42 @@ get_config <- function(..., ext = "yml") {
   return(config_content)
 }
 
+#' Set all the dates in the report
+#'
+#' Currently, 'report date' and 'test date' are supported.
+#'
+#' @param params The parameters set for current report
+#' @param data The data used to extract date info, required when
+#'   \code{params$date_manual} is not \code{NULL}
+set_date <- function(params, data = NULL) {
+  # set report date: needs enhancement
+  if (
+    identical(params$date_manual, "report") ||
+    identical(params$date_manual, "all")
+  ) {
+    report_date <- params$report_date
+  } else {
+    report_date <- Sys.time()
+  }
+  report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
+  # set test date
+  if (
+    identical(params$date_manual, "test") ||
+    identical(params$date_manual, "all")
+  ) {
+    test_date <- params$test_date
+  } else {
+    test_date <- median(data$createTime)
+  }
+  test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+  return(
+    list(
+      report_date_string = report_date_string,
+      test_date_string = test_date_string
+    )
+  )
+}
+
 #' Helper function to generate required \code{.Rmd} files
 #'
 #' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
