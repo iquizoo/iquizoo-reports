@@ -44,18 +44,8 @@ get_config <- function(..., ext = "yml") {
 render_report <- function(...) {
   # render context content as 'context.Rmd' ----
   context_filename <- "context.Rmd"
-  # extraction context content from descriptions and substitute r codes in it with value
-  report_context <- as_tibble(descriptions$context) %>%
-    mutate(
-      md = render_title_content(
-        # all of these content will be at level 2 heading
-        title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
-      )
-    ) %>%
-    pull(md) %>%
-    paste(collapse = "\n\n")
   context_content <- context_tmpl %>%
-    # note that 'report_context' will be pasted into it
+    # substitute symbols enclosed by "<<" and ">>" with their values
     glue(.open = "<<", .close = ">>")
   write_lines(context_content, context_filename)
 
