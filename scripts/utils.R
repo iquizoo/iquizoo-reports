@@ -10,9 +10,7 @@ require(glue)
 
 #' Helper funtion used to get config file content
 #'
-#' @param name The name of the configuration
-#' @param regionid The identifier of region
-#' @param type The report type
+#' @param ... Constituent parts of config file, will be passed to \code{\link{paste}}
 #' @param ext File extension
 get_config <- function(..., ext = "yml") {
   config_dir <- getOption("report.include.path")["config"]
