@@ -169,7 +169,7 @@ switch(
         mutate(cls = if_else(region != "各班", region, cls)) %>%
         mutate(region = factor(region, c("各班", "本校", "本区")))
       # set dates
-      attach(set_date(params, scores_school))
+      attach(set_date(params, test_date = median(scores_school$createTime)))
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
@@ -187,12 +187,12 @@ switch(
       mutate(school = if_else(region != "各校", region, school)) %>%
       mutate(region = factor(region, c("本区", "各校")))
     # set dates
-    attach(set_date(params, scores_origin))
+    attach(set_date(params, test_date = median(scores_origin$createTime)))
     render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
     # set dates
-    attach(set_date(params, scores_origin))
+    attach(set_date(params, test_date = median(scores_origin$createTime)))
     render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
   },
   stop("Unsupported report type! Please specify as school/district only.")
