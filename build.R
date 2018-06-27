@@ -205,20 +205,26 @@ switch(
       mutate(school = if_else(region != "各校", region, school)) %>%
       mutate(region = factor(region, c("本区", "各校")))
     # set test date
-    if (!is.null(params$test_date_auto) && params$test_date_auto) {
-      test_date <- median(scores_origin$createTime)
-    } else {
+    if (
+      identical(params$date_manual, "test") ||
+      identical(params$date_manual, "all")
+    ) {
       test_date <- params$test_date
+    } else {
+      test_date <- median(scores_origin$createTime)
     }
     test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
     render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
     # set test date
-    if (params$test_date_auto) {
-      test_date <- median(scores_origin$createTime)
-    } else {
+    if (
+      identical(params$date_manual, "test") ||
+      identical(params$date_manual, "all")
+    ) {
       test_date <- params$test_date
+    } else {
+      test_date <- median(scores_origin$createTime)
     }
     test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
     render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
