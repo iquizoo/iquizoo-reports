@@ -99,7 +99,7 @@ body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
 # descriptions, or the content builder
 descriptions <- get_config("descriptions", params$region, params$type)
 # set test region
-region <- report_map$regionname[[params$region]]
+region <- report_map$region[[params$region]]
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
