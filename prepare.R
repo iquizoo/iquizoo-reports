@@ -37,15 +37,32 @@ main <- function(loc) {
     mod_tests_sp <- configs$score_correction$special
     mod_tests_com <- configs$score_correction$common
   }
-  ability_type_cn <- setNames(
-    c("基础学习能力", "基础数学能力"),
-    c("blai", "math")
+  # TABLE: ability name informations
+  abilities <- tribble(
+    ~abId, ~abParent, ~abName,        ~abNameEn,
+    1,     0,        "基础学习能力", "blai",
+    2,     0,        "基础数学能力", "math",
+    11,    1,        "注意力",       "attention",
+    12,    1,        "记忆力",       "memory",
+    13,    1,        "反应力",       "reaction",
+    14,    1,        "自控力",       "control",
+    15,    1,        "思维力",       "thinking",
+    16,    2,        "数字加工",     "digit",
+    17,    2,        "数学推理",     "reasoning",
+    18,    2,        "空间几何",     "geometry",
+    19,    2,        "数量加工",     "quantity",
+    20,    2,        "数学计算",     "computation"
   )
-  ability_components <- list(
-    blai = c("注意力", "记忆力", "反应力", "自控力", "思维力"),
-    math = c("数字加工", "数学推理", "空间几何", "数量加工", "数学计算")
+  key_vars <- list(
+    user = c(primary_key = "userId", "name", "sex", "school", "grade", "cls"),
+    exercise = c(primary_key = "excerciseId", "taskName", "taskIDName"),
+    score = c(
+      primary_key = "scoreId",
+      foreign_key_user = "userId",
+      foreign_key_exercise = "excerciseId",
+      "createTime", "stdScore"
+    )
   )
-  key_vars <- c("userId", "name", "sex", "school", "grade", "cls", "createTime", "ability")
   breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
   labels <- LETTERS[4:1]
 
@@ -54,24 +71,46 @@ main <- function(loc) {
   data_origin <- read_excel(
     file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
   )
-  # read exercise code information
-  task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
-    html_node("table") %>%
-    html_table(header = TRUE) %>%
-    rename(excerciseId = excerciseid)
+  # separate original data into three relational tables
+  # TABLE: users' information
+  users <- data_origin %>%
+    select(one_of(key_vars[["user"]])) %>%
+    unique()
+  # TABLE: exercises'/tasks' information
+  exercises <- data_origin %>%
+    select(one_of(key_vars[["exercise"]])) %>%
+    unique()
+  # # TABLE: scores data
+  # scores <- data_origin %>%
+  #   select(one_of(key_vars[["score"]])) %>%
+  #   unique() %>%
+  #   add_column(scoreId = 1:nrow(.), .before = 1)
+
   # load ability map tables
   abilities_info <- read_excel(file.path(info_dir, "abilities.xlsx"))
   exercises_info <- read_excel(file.path(info_dir, "exerciseInfo.xlsx"))
+  # TABLE: ability map between exercises and abilities
   ability_map <- exercises_info %>%
     left_join(abilities_info, by = c("ability_blai" = "subname")) %>%
     mutate(excerciseId = parse_double(ID)) %>%
     select(-ability_blai) %>% # no need to use subabilities now
-    rename(
-      taskname = name, # name is used for subjects' names
-      ability_blai = abname
-    )
+    mutate(
+      math = ifelse(ability_math == "null", NA_character_, ability_math),
+      blai = ifelse(abname == "null", NA_character_, abname)
+    ) %>%
+    select(excerciseId, blai, math) %>%
+    gather(type, abNameOld, blai, math) %>%
+    filter(!is.na(abNameOld)) %>%
+    mutate(abId = with(abilities, abId[match(abNameOld, abName)])) %>%
+    select(-abNameOld, -type) %>%
+    add_column(mapId = 1:nrow(.), .before = 1)
   # data correction
   if (norm_correct) {
+    # read exercise code information
+    task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
+      html_node("table") %>%
+      html_table(header = TRUE) %>%
+      rename(excerciseId = excerciseid)
     # common norms
     data_norms_common <- read_excel(
       file.path(info_dir, "norm_convert_release.xlsx"), skip = 1
@@ -97,7 +136,7 @@ main <- function(loc) {
       ) %>%
       filter(!is.na(excerciseId))
     # correct data by norms
-    data_corrected <- data_origin %>%
+    scores_corrected <- data_origin %>%
       left_join(task_codes, by = "excerciseId") %>%
       left_join(data_norms_common, by = "code") %>%
       left_join(data_norms_special, by = "excerciseId") %>%
@@ -112,21 +151,21 @@ main <- function(loc) {
         )
       )
   } else {
-    data_corrected <- data_origin %>%
+    scores_corrected <- data_origin %>%
       group_by(excerciseId, grade) %>%
       mutate(stdScore = scale(index) * 15 + 100)
   }
   # read extra datasets to merge
   if (!is.null(configs$data_extra_file)) {
     data_extra <- read_excel(file.path(data_dir, configs$data_extra_file))
-    data_corrected <- data_corrected %>%
+    scores_corrected <- scores_corrected %>%
       left_join(data_extra)
-    key_vars <- c(key_vars, "schoolCovert")
+    # TODO correct to use normal form of database
+    key_vars$user <- union(key_vars$user, "schoolCovert")
   }
   # data cleanse: remove duplicates and outliers based on boxplot rule
-  data_clean <- data_corrected %>%
-    # add ability information to data
-    left_join(ability_map, by = "excerciseId") %>%
+  # TABLE: scores of all users on all tasks/exercises
+  scores <- scores_corrected %>%
     # remove duplicates
     group_by(userId, excerciseId) %>%
     mutate(occurrence = row_number(desc(stdScore))) %>%
@@ -140,16 +179,17 @@ main <- function(loc) {
     mutate(
       stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
     ) %>%
-    ungroup()
-  # side effects: output data after clensing
-  write_xlsx(data_clean, file.path(data_dir, "data_clean.xlsx"))
+    ungroup() %>%
+    unique() %>%
+    add_column(scoreId = 1:nrow(.), .before = 1) %>%
+    select(one_of(key_vars[["score"]]))
 
   # calculate ability scores and levels ----
   # preallocate as a list
   ability_scores_list <- list()
   for (ability_type in names(ability_components)) {
     # calculate components scores by averaging
-    components_scores <- data_clean %>%
+    components_scores <- scores %>%
       rename(ability = !! sym(glue("ability_{ability_type}"))) %>%
       group_by(!!! syms(key_vars)) %>%
       summarise(
@@ -173,6 +213,8 @@ main <- function(loc) {
   ability_scores <- ability_scores_list %>%
     reduce(rbind) %>%
     mutate(cls = glue("{cls}班"))
+
+  # merge relavant data sets ----
 
   # side effects: output all ability scores after clensing
   write_xlsx(ability_scores, file.path(res_dir, glue("{loc}.xlsx")))
