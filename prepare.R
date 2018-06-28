@@ -15,14 +15,12 @@ library(writexl)
 library(rvest)
 library(glue)
 
-#' Main function used to do all the works. There needs to be one yaml config file.
-#' \code{
-#' data_file: filename
-#' score_correction:
-#'   norm: true/false
-#'   special: excerciseIds
-#'   common: excerciseIds
-#' }
+#' Main function used to prepare datasets
+#'
+#' Now the main function is a generic function to do preparation works for
+#' datasets from any region. The most important work here is to do score
+#' correction for some tasks. Configurations are load from a "config.yml"
+#' file from the dataset directory.
 #'
 #' @param loc Location of data, i.e., the specific data folder
 #' @return Returns 0 if succeeded.
@@ -171,7 +169,7 @@ main <- function(loc) {
       ungroup()
     ability_scores_list[[ability_type]] <- rbind(components_scores, total_scores)
   }
-  # combine into one table data
+  # combine into one tabular data
   ability_scores <- ability_scores_list %>%
     reduce(rbind) %>%
     mutate(cls = glue("{cls}班"))
