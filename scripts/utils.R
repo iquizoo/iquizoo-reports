@@ -10,9 +10,7 @@ require(glue)
 
 #' Helper funtion used to get config file content
 #'
-#' @param name The name of the configuration
-#' @param regionid The identifier of region
-#' @param type The report type
+#' @param ... Constituent parts of config file, will be passed to \code{\link{paste}}
 #' @param ext File extension
 get_config <- function(..., ext = "yml") {
   config_dir <- getOption("report.include.path")["config"]
@@ -40,24 +38,56 @@ get_config <- function(..., ext = "yml") {
   return(config_content)
 }
 
+#' Set all the dates in the report
+#'
+#' Currently, 'report date' and 'test date' are supported.
+#'
+#' @param params The parameters set for current report
+#' @param report_date The report date automatically set by the program, default
+#'   to \code{\link{Sys.time()}}
+#' @param test_date The test date automatically set by the program, required
+#'   when \code{params$date_manual} is not set as 'test' or 'all'
+set_date <- function(params, report_date = Sys.time(), test_date = NULL) {
+  # set report date
+  if (
+    identical(params$date_manual, "report") ||
+    identical(params$date_manual, "all")
+  ) {
+    if (is.null(params$report_date)) {
+      stop("Please set \"report_date\" at the command line!")
+    }
+    report_date <- params$report_date
+  }
+  # set test date
+  if (
+    identical(params$date_manual, "test") ||
+    identical(params$date_manual, "all")
+  ) {
+    if (is.null(params$test_date)) {
+      stop("Please set \"test_date\" at the command line!")
+    }
+    test_date <- params$test_date
+  } else {
+    if (is.null(test_date)) stop("Fatal error! Please tell me the test date.")
+  }
+  report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
+  test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+  return(
+    list(
+      report_date_string = report_date_string,
+      test_date_string = test_date_string
+    )
+  )
+}
+
 #' Helper function to generate required \code{.Rmd} files
 #'
 #' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
 render_report <- function(...) {
   # render context content as 'context.Rmd' ----
   context_filename <- "context.Rmd"
-  # extraction context content from descriptions and substitute r codes in it with value
-  report_context <- as_tibble(descriptions$context) %>%
-    mutate(
-      md = render_title_content(
-        # all of these content will be at level 2 heading
-        title, content, hlevel = 2, glue = TRUE, .open = "<<", .close = ">>"
-      )
-    ) %>%
-    pull(md) %>%
-    paste(collapse = "\n\n")
   context_content <- context_tmpl %>%
-    # note that 'report_context' will be pasted into it
+    # substitute symbols enclosed by "<<" and ">>" with their values
     glue(.open = "<<", .close = ">>")
   write_lines(context_content, context_filename)
 

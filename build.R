@@ -50,23 +50,20 @@ if (!interactive()) {
         "This signifies because it will be used to identify dataset and descriptions."
       )
     ),
-    make_option(c("-n", "--school-name"), help = "The name of school, used when `all` is true."),
     make_option(
-      c("-a", "--all"), action = "store_true", default = FALSE,
+      c("-n", "--school-name"),
+      help = "The name of school, do not set it if all schools need reporting."
+    ),
+    make_option(
+      c("-d", "--date-manual"),
       help = paste(
-        "For now, only works when 'type' is 'school',",
-        "if set, will build reports for all schools."
+        "Whether the dates in the report (report data and test date) are set manually?",
+        "Use \"report\", \"test\" or \"all\" to manually set one or two dates",
+        "Or do not set it to if all the dates should be set automatically.",
+        "When set, the corresponding report-date or test-date are required."
       )
     ),
-    make_option(
-      c("--report-date-auto"), action = "store_true", default = TRUE,
-      help = "Specify if set the report date automatically or not."
-    ),
     make_option(c("--report-date"), help = "The report date."),
-    make_option(
-      c("--test-date-auto"), action = "store_true", default = TRUE,
-      help = "Specify if set the report date automatically or not."
-    ),
     make_option(c("--test-date"), help = "The test date.")
   )
   # get command line options, if help option encountered print help and exit,
@@ -102,7 +99,7 @@ body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
 # descriptions, or the content builder
 descriptions <- get_config("descriptions", params$region, params$type)
 # set test region
-region <- report_map$regionname[[params$region]]
+region <- report_map$region[[params$region]]
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
@@ -127,13 +124,6 @@ ability_md <- rbind(ability_info, component_info) %>%
       hlevel = hlevel, style = style
     )
   )
-# set report date: needs enhancement
-if (params$report_date_auto) {
-  report_date <- Sys.time()
-} else {
-  report_date <- params$report_date
-}
-report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
 
 # datasets preparations ----
 # load ability scores
@@ -149,7 +139,7 @@ n_grade <- n_distinct(scores_origin$grade)
 n_user <- n_distinct(scores_origin$userId)
 # reconfigure `school_name` based on the dataset
 if (params$type == "school") {
-  if (params$all) {
+  if (is.null(params$school_name)) {
     school_names <- unique(scores_origin$school)
   } else {
     school_names <- params$school_name
@@ -178,13 +168,8 @@ switch(
         bind_rows(.id = "region") %>%
         mutate(cls = if_else(region != "各班", region, cls)) %>%
         mutate(region = factor(region, c("各班", "本校", "本区")))
-      # set test date
-      if (params$test_date_auto) {
-        test_date <- median(scores_school$createTime)
-      } else {
-        test_date <- params$test_date
-      }
-      test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+      # set dates
+      attach(set_date(params, test_date = median(scores_school$createTime)))
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
@@ -201,23 +186,13 @@ switch(
       bind_rows(.id = "region") %>%
       mutate(school = if_else(region != "各校", region, school)) %>%
       mutate(region = factor(region, c("本区", "各校")))
-    # set test date
-    if (!is.null(params$test_date_auto) && params$test_date_auto) {
-      test_date <- median(scores_origin$createTime)
-    } else {
-      test_date <- params$test_date
-    }
-    test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+    # set dates
+    attach(set_date(params, test_date = median(scores_origin$createTime)))
     render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
-    # set test date
-    if (params$test_date_auto) {
-      test_date <- median(scores_origin$createTime)
-    } else {
-      test_date <- params$test_date
-    }
-    test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
+    # set dates
+    attach(set_date(params, test_date = median(scores_origin$createTime)))
     render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
   },
   stop("Unsupported report type! Please specify as school/district only.")
