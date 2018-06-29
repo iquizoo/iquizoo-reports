@@ -214,10 +214,15 @@ main <- function(loc) {
   ability_scores <- rbind(components_scores, total_scores) %>%
     add_column(abscoreId = 1:nrow(.), .before = 1)
 
-  # merge relavant data sets ----
-
   # side effects: output all ability scores after clensing
-  write_xlsx(ability_scores, file.path(res_dir, glue("{loc}.xlsx")))
+  write_xlsx(
+    list(
+      ability_scores = ability_scores,
+      users = users,
+      abilities = abilities
+    ),
+    file.path(res_dir, glue("{loc}.xlsx"))
+  )
 }
 
 if (interactive()) {
