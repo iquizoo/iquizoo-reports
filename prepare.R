@@ -151,13 +151,13 @@ main <- function(loc) {
       group_by(excerciseId, grade) %>%
       mutate(stdScore = scale(index) * 15 + 100)
   }
-  # read extra datasets to merge
-  if (!is.null(configs$data_extra_file)) {
-    data_extra <- read_excel(file.path(data_dir, configs$data_extra_file))
-    scores_corrected <- scores_corrected %>%
-      left_join(data_extra)
-    # TODO correct to use normal form of database
-    key_vars$user <- union(key_vars$user, "schoolCovert")
+  # read extra datasets
+  if (!is.null(configs$data_extra)) {
+    # TABLE: extra database
+    assign(
+      configs$data_extra$name,
+      read_excel(file.path(data_dir, configs$data_extra$file))
+    )
   }
   # data cleanse: remove duplicates and outliers based on boxplot rule
   # TABLE: scores of all users on all tasks/exercises
