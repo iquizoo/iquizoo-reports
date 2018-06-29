@@ -61,6 +61,12 @@ main <- function(loc) {
       foreign_key_user = "userId",
       foreign_key_exercise = "excerciseId",
       "createTime", "stdScore"
+    ),
+    abscore = c(
+      primary_key = "abscoreId",
+      foreign_key_user = "userId",
+      foreign_key_ability = "abId",
+      "score", "level"
     )
   )
   breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
