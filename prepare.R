@@ -80,11 +80,6 @@ main <- function(loc) {
   exercises <- data_origin %>%
     select(one_of(key_vars[["exercise"]])) %>%
     unique()
-  # # TABLE: scores data
-  # scores <- data_origin %>%
-  #   select(one_of(key_vars[["score"]])) %>%
-  #   unique() %>%
-  #   add_column(scoreId = 1:nrow(.), .before = 1)
 
   # load ability map tables
   abilities_info <- read_excel(file.path(info_dir, "abilities.xlsx"))
