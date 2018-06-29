@@ -97,6 +97,7 @@ main <- function(loc) {
     gather(type, abNameOld, blai, math) %>%
     filter(!is.na(abNameOld)) %>%
     mutate(abId = with(abilities, abId[match(abNameOld, abName)])) %>%
+    filter(!is.na(abId)) %>%
     select(-abNameOld, -type) %>%
     add_column(mapId = 1:nrow(.), .before = 1)
   # data correction
@@ -180,34 +181,27 @@ main <- function(loc) {
     select(one_of(key_vars[["score"]]))
 
   # calculate ability scores and levels ----
-  # preallocate as a list
-  ability_scores_list <- list()
-  for (ability_type in names(ability_components)) {
-    # calculate components scores by averaging
-    components_scores <- scores %>%
-      rename(ability = !! sym(glue("ability_{ability_type}"))) %>%
-      group_by(!!! syms(key_vars)) %>%
-      summarise(
-        score = mean(stdScore, na.rm = TRUE),
-        level = cut(score, breaks, labels)
-      ) %>%
-      ungroup() %>%
-      filter(ability %in% ability_components[[ability_type]])
-    # calculate total score through component scores
-    total_scores <- components_scores %>%
-      mutate(ability = ability_type_cn[ability_type]) %>%
-      group_by(!!! syms(key_vars)) %>%
-      summarise(
-        score = mean(score, na.rm = TRUE),
-        level = cut(score, breaks, labels)
-      ) %>%
-      ungroup()
-    ability_scores_list[[ability_type]] <- rbind(components_scores, total_scores)
-  }
-  # combine into one tabular data
-  ability_scores <- ability_scores_list %>%
-    reduce(rbind) %>%
-    mutate(cls = glue("{cls}班"))
+  components_scores <- scores %>%
+    left_join(exercises) %>%
+    left_join(ability_map) %>%
+    left_join(abilities) %>%
+    group_by(userId, abId, abParent) %>%
+    summarise(
+      score = mean(stdScore, na.rm = TRUE),
+      level = cut(score, breaks, labels)
+    ) %>%
+    ungroup()
+  total_scores <- components_scores %>%
+    group_by(userId, abParent) %>%
+    summarise(
+      score = mean(score, na.rm = TRUE),
+      level = cut(score, breaks, labels)
+    ) %>%
+    ungroup() %>%
+    add_column(abId = .$abParent, .before = "abParent")
+  # TABLE: scores on each ability for all users
+  ability_scores <- rbind(components_scores, total_scores) %>%
+    add_column(abscoreId = 1:nrow(.), .before = 1)
 
   # merge relavant data sets ----
 
