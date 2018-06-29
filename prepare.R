@@ -54,7 +54,7 @@ main <- function(loc) {
     20,    2,        "数学计算",     "computation"
   )
   key_vars <- list(
-    user = c(primary_key = "userId", "name", "sex", "school", "grade", "cls"),
+    user = c(primary_key = "userId", "name", "sex", "school", "grade", "cls", "firstPartTime"),
     exercise = c(primary_key = "excerciseId", "taskName", "taskIDName"),
     score = c(
       primary_key = "scoreId",
@@ -72,10 +72,6 @@ main <- function(loc) {
     file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
   )
   # separate original data into three relational tables
-  # TABLE: users' information
-  users <- data_origin %>%
-    select(one_of(key_vars[["user"]])) %>%
-    unique()
   # TABLE: exercises'/tasks' information
   exercises <- data_origin %>%
     select(one_of(key_vars[["exercise"]])) %>%
@@ -160,8 +156,7 @@ main <- function(loc) {
     )
   }
   # data cleanse: remove duplicates and outliers based on boxplot rule
-  # TABLE: scores of all users on all tasks/exercises
-  scores <- scores_corrected %>%
+  user_scores_clean <- scores_corrected %>%
     # remove duplicates
     group_by(userId, excerciseId) %>%
     mutate(occurrence = row_number(desc(stdScore))) %>%
@@ -169,14 +164,24 @@ main <- function(loc) {
     select(-occurrence) %>%
     # remain the earliest createTime only for each user
     group_by(userId) %>%
-    mutate(createTime = createTime[1]) %>%
+    mutate(firstPartTime = createTime[1]) %>%
     # remove outliers based on boxplot rule
     group_by(excerciseId) %>%
     mutate(
       stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
     ) %>%
     ungroup() %>%
+    unique()
+  # TABLE: users' information
+  users <- user_scores_clean %>%
+    select(one_of(key_vars[["user"]])) %>%
     unique() %>%
+    mutate(
+      sex = factor(sex, levels = c("male", "female"), labels = c("男", "女")),
+      cls = glue("{cls}班")
+    )
+  # TABLE: scores of all users on all tasks/exercises
+  scores <- user_scores_clean %>%
     add_column(scoreId = 1:nrow(.), .before = 1) %>%
     select(one_of(key_vars[["score"]]))
 
