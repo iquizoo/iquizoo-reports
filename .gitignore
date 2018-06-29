@@ -44,8 +44,3 @@ rsconnect/
 
 
 # End of https://www.gitignore.io/api/r
-
-# user folders/files
-datasets/
-_*
-*.xls*
