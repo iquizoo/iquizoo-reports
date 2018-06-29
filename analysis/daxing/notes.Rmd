@@ -2,6 +2,8 @@
 title: "Notes on correlation analysis"
 output:
   html_notebook:
+    toc: true
+    toc_float: true
     theme: readable
 ---
 
