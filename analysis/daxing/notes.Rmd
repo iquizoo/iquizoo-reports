@@ -1,0 +1,10 @@
+---
+title: "Notes on correlation analysis"
+output:
+  html_notebook:
+    theme: readable
+---
+
+# Introduction
+
+Here we do some correlation analysis between cognitive score measure results and achivement scores.
