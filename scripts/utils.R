@@ -12,14 +12,14 @@ require(glue)
 #'
 #' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
 render_report <- function(...) {
-  # render context content as 'context.Rmd' ----
+  # render context content as 'context.Rmd'
   context_filename <- "context.Rmd"
-  context_content <- context_tmpl %>%
-    # substitute symbols enclosed by "<<" and ">>" with their values
-    glue(.open = "<<", .close = ">>")
-  write_lines(context_content, context_filename)
+  write_lines(
+    # substitute symbols enclosed by "<<" and ">>" with their values if existed
+    glue(context_tmpl, .open = "<<", .close = ">>"), context_filename
+  )
 
-  # render body content as 'body.Rmd' ----
+  # render body content as 'body.Rmd'
   body_filename <- "body.Rmd"
   body_title <- "详细报告"
   body_content_vector <- character()
@@ -31,11 +31,19 @@ render_report <- function(...) {
   body_content <- paste(body_content_vector, collapse = "\n\n")
   write_lines(render_title_content(body_title, body_content), body_filename)
 
-  # render report for current school ----
+  # render suggestion content as 'suggestion.Rmd'
+  suggestion_filename <- "suggestion.Rmd"
+  write_lines(
+    # substitute symbols enclosed by "<<" and ">>" with their values if existed
+    glue(suggestion_tmpl, .open = "<<", .close = ">>"), suggestion_filename
+  )
+
+  # render report for current school
   bookdown::render_book("index.Rmd", ...)
   # clean up generated building content
   unlink(context_filename)
   unlink(body_filename)
+  unlink(suggestion_filename)
 }
 
 #' Helper funtion used to get config file content
