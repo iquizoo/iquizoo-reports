@@ -92,10 +92,12 @@ if (!text_family %in% fonts()) {
 # get the content of all the configuration files
 # paramter map
 report_map <- get_config("report", "map")
-# context template
+# report intro: context template
 context_tmpl <- get_config("context", params$region, params$type, ext = "Rmd")
-# body template
+# report body: body template
 body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
+# report ending: suggestion template
+suggestion_tmpl <- get_config("suggestion", params$region, params$type, ext = "Rmd")
 # descriptions, or the content builder
 descriptions <- get_config("descriptions", params$region, params$type)
 # set test region
