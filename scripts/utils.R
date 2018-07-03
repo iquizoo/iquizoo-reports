@@ -8,6 +8,36 @@
 require(tidyverse)
 require(glue)
 
+#' Helper function to generate required \code{.Rmd} files
+#'
+#' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
+render_report <- function(...) {
+  # render context content as 'context.Rmd' ----
+  context_filename <- "context.Rmd"
+  context_content <- context_tmpl %>%
+    # substitute symbols enclosed by "<<" and ">>" with their values
+    glue(.open = "<<", .close = ">>")
+  write_lines(context_content, context_filename)
+
+  # render body content as 'body.Rmd' ----
+  body_filename <- "body.Rmd"
+  body_title <- "详细报告"
+  body_content_vector <- character()
+  for (ability_name_id in ability_names_id) {
+    # use one template of single ability to generate the 'body.Rmd'
+    body_content_vector[ability_name_id] <- body_tmpl %>%
+      glue(.open = "<<", .close = ">>")
+  }
+  body_content <- paste(body_content_vector, collapse = "\n\n")
+  write_lines(render_title_content(body_title, body_content), body_filename)
+
+  # render report for current school ----
+  bookdown::render_book("index.Rmd", ...)
+  # clean up generated building content
+  unlink(context_filename)
+  unlink(body_filename)
+}
+
 #' Helper funtion used to get config file content
 #'
 #' @param ... Constituent parts of config file, will be passed to \code{\link{paste}}
@@ -78,36 +108,6 @@ set_date <- function(params, report_date = Sys.time(), test_date = NULL) {
       test_date_string = test_date_string
     )
   )
-}
-
-#' Helper function to generate required \code{.Rmd} files
-#'
-#' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
-render_report <- function(...) {
-  # render context content as 'context.Rmd' ----
-  context_filename <- "context.Rmd"
-  context_content <- context_tmpl %>%
-    # substitute symbols enclosed by "<<" and ">>" with their values
-    glue(.open = "<<", .close = ">>")
-  write_lines(context_content, context_filename)
-
-  # render body content as 'body.Rmd' ----
-  body_filename <- "body.Rmd"
-  body_title <- "详细报告"
-  body_content_vector <- character()
-  for (ability_name_id in ability_names_id) {
-    # use one template of single ability to generate the 'body.Rmd'
-    body_content_vector[ability_name_id] <- body_tmpl %>%
-      glue(.open = "<<", .close = ">>")
-  }
-  body_content <- paste(body_content_vector, collapse = "\n\n")
-  write_lines(render_title_content(body_title, body_content), body_filename)
-
-  # render report for current school ----
-  bookdown::render_book("index.Rmd", ...)
-  # clean up generated building content
-  unlink(context_filename)
-  unlink(body_filename)
 }
 
 #' Render heading according to level.
