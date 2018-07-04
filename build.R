@@ -176,7 +176,6 @@ switch(
   params$type,
   school = {
     for (school_name in school_names) {
-      # data preparations ----
       # filter out scores for current school
       scores_school <- scores_origin %>%
         filter(school == school_name)
@@ -195,7 +194,6 @@ switch(
     }
   },
   district = {
-    # data preparations ----
     # use schoolCovert not school
     scores_origin <- scores_origin %>%
       rename(schoolOvert = school, school = schoolCovert)
