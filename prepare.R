@@ -244,7 +244,8 @@ main <- function(loc) {
     add_column(abId = .$abParent, .before = "abParent")
   # TABLE: scores on each ability for all users
   ability_scores <- rbind(components_scores, total_scores) %>%
-    add_column(abscoreId = 1:nrow(.), .before = 1)
+    add_column(abscoreId = 1:nrow(.), .before = 1) %>%
+    select(one_of(key_vars[["abscore"]]))
 
   # read extra datasets ----
   if (!is.null(configs$data_extra)) {
