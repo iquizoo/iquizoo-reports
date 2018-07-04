@@ -92,10 +92,12 @@ if (!text_family %in% fonts()) {
 # get the content of all the configuration files
 # paramter map
 report_map <- get_config("report", "map")
-# context template
+# report intro: context template
 context_tmpl <- get_config("context", params$region, params$type, ext = "Rmd")
-# body template
+# report body: body template
 body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
+# report ending: suggestion template
+suggestion_tmpl <- get_config("suggestion", params$region, params$type, ext = "Rmd")
 # descriptions, or the content builder
 descriptions <- get_config("descriptions", params$region, params$type)
 # set test region
@@ -126,13 +128,32 @@ ability_md <- rbind(ability_info, component_info) %>%
   )
 
 # datasets preparations ----
-# load ability scores
-scores_origin <- read_excel(
+# load datasets
+ability_scores <- read_excel(
   file.path(
     getOption("report.include.path")["database"],
     paste0(params$region, ".xlsx")
-  )
+  ),
+  sheet = "ability_scores"
 )
+users <- read_excel(
+  file.path(
+    getOption("report.include.path")["database"],
+    paste0(params$region, ".xlsx")
+  ),
+  sheet = "users"
+)
+abilities <- read_excel(
+  file.path(
+    getOption("report.include.path")["database"],
+    paste0(params$region, ".xlsx")
+  ),
+  sheet = "abilities"
+)
+scores_origin <- ability_scores %>%
+  left_join(users, by = "userId") %>%
+  left_join(abilities, by = "abId") %>%
+  filter(!is.na(score))
 # count number of school, grade and users
 n_school <- n_distinct(scores_origin$school)
 n_grade <- n_distinct(scores_origin$grade)
@@ -169,7 +190,7 @@ switch(
         mutate(cls = if_else(region != "各班", region, cls)) %>%
         mutate(region = factor(region, c("各班", "本校", "本区")))
       # set dates
-      attach(set_date(params, test_date = median(scores_school$createTime)))
+      attach(set_date(params, test_date = median(scores_school$firstPartTime)))
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
@@ -187,12 +208,12 @@ switch(
       mutate(school = if_else(region != "各校", region, school)) %>%
       mutate(region = factor(region, c("本区", "各校")))
     # set dates
-    attach(set_date(params, test_date = median(scores_origin$createTime)))
+    attach(set_date(params, test_date = median(scores_origin$firstPartTime)))
     render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
     # set dates
-    attach(set_date(params, test_date = median(scores_origin$createTime)))
+    attach(set_date(params, test_date = median(scores_origin$firstPartTime)))
     render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
   },
   stop("Unsupported report type! Please specify as school/district only.")
