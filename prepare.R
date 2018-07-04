@@ -211,12 +211,14 @@ main <- function(loc) {
     select(one_of(key_vars[["exercise"]])) %>%
     unique()
   # TABLE: users' information
+  # get the maximal class number to determine the 0's to be added
+  digits_cls <- floor(log10(max(scores_clean$cls))) + 1
   users <- scores_clean %>%
     select(one_of(key_vars[["user"]])) %>%
     unique() %>%
     mutate(
       sex = factor(sex, levels = c("male", "female"), labels = c("男", "女")),
-      cls = glue("{cls}班")
+      cls = sprintf(paste0("%0", digits_cls, "d班"), cls)
     )
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_clean %>%
