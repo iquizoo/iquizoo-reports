@@ -2,16 +2,16 @@
 title: "Notes on correlation analysis"
 output:
   html_notebook:
-    toc: true
-    toc_float: true
     theme: readable
+    toc: yes
+    toc_float: yes
 ---
 
 # Introduction
 
 Here we do some correlation analysis between cognitive score measure results and achievement scores.
 
-```{r load-data}
+```{r load-data, echo=FALSE, warning=FALSE, message=FALSE}
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(haven))
@@ -49,7 +49,7 @@ english_var_labels <- english_origin %>%
 
 We begin by do correlational analysis between Chinese achievement and all the ability scores.
 
-```{r chinese, warning=FALSE, message=FALSE, fig.asp=0.5}
+```{r chinese, echo=FALSE, warning=FALSE, message=FALSE, fig.asp=0.5}
 chinese_origin %>%
   gather(varId, score_subj, -STU_CODE) %>% 
   left_join(users_code) %>% 
@@ -90,7 +90,7 @@ The low correlations originating from **Reaction** ("反应力") and **Geometry*
 
 Then we explore correlations between ability scores and math scores.
 
-```{r math, warning=FALSE, message=FALSE, fig.asp=0.7}
+```{r math, echo=FALSE, warning=FALSE, message=FALSE, fig.asp=0.7}
 math_origin %>%
   gather(varId, score_subj, -stu_code) %>% 
   left_join(users_code, by = c("stu_code" = "STU_CODE")) %>% 
@@ -131,7 +131,7 @@ math_origin %>%
 
 At last, English scores and ability scores.
 
-```{r english, warning=FALSE, message=FALSE, fig.asp=0.5}
+```{r english, echo=FALSE, warning=FALSE, message=FALSE, fig.asp=0.5}
 english_origin %>%
   gather(varId, score_subj, -STU_CODE) %>% 
   left_join(users_code) %>% 
