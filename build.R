@@ -179,15 +179,26 @@ switch(
       # filter out scores for current school
       scores_school <- scores_origin %>%
         filter(school == school_name)
-      # combine data from whole district, this school and each class
-      scores_combined <- list(
-        本区 = scores_origin,
-        本校 = scores_school,
-        各班 = scores_school
-      ) %>%
-        bind_rows(.id = "region") %>%
-        mutate(cls = if_else(region != "各班", region, cls)) %>%
-        mutate(region = factor(region, c("各班", "本校", "本区")))
+      if (n_school > 1) {
+        # school are compared with district
+        scores_combined <- list(
+          本区 = scores_origin,
+          本校 = scores_school,
+          各班 = scores_school
+        ) %>%
+          bind_rows(.id = "region") %>%
+          mutate(cls = if_else(region != "各班", region, cls)) %>%
+          mutate(region = factor(region, c("各班", "本校", "本区")))
+      } else {
+        # no need to compare school and district
+        scores_combined <- list(
+          本校 = scores_school,
+          各班 = scores_school
+        ) %>%
+          bind_rows(.id = "region") %>%
+          mutate(cls = if_else(region != "各班", region, cls)) %>%
+          mutate(region = factor(region, c("各班", "本校")))
+      }
       # set dates
       attach(set_date(params, test_date = median(scores_school$firstPartTime)))
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
