@@ -159,12 +159,12 @@ n_school <- n_distinct(scores_origin$school)
 n_grade <- n_distinct(scores_origin$grade)
 n_user <- n_distinct(scores_origin$userId)
 # reconfigure `school_name` based on the dataset
+if (is.null(params$school_name)) {
+  school_names <- unique(scores_origin$school)
+} else {
+  school_names <- params$school_name
+}
 if (params$type == "school") {
-  if (is.null(params$school_name)) {
-    school_names <- unique(scores_origin$school)
-  } else {
-    school_names <- params$school_name
-  }
   # validate shcool names
   if (!all(school_names %in% scores_origin$school)) {
     stop("School not found!")
