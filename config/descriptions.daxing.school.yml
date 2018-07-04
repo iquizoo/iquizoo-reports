@@ -25,11 +25,11 @@ components:
     hlevel: 3
     style: ""
     nameid:
-    - attn
-    - mmry
-    - ctrl
-    - thnk
-    - rctn
+    - attention
+    - memory
+    - control
+    - thinking
+    - reaction
     name:
     - 注意力
     - 记忆力
@@ -46,11 +46,11 @@ components:
     hlevel: 3
     style: ""
     nameid:
-    - dgtl
-    - rsng
-    - gmtr
-    - qnty
-    - cmpt
+    - digit
+    - reasoning
+    - geometry
+    - quantity
+    - computation
     name:
     - 数字加工
     - 数学推理
