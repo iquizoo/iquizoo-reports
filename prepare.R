@@ -33,13 +33,6 @@ main <- function(loc) {
   # set the directory where the result data go
   res_dir <- configs$goal$res_path
   if (!dir.exists(res_dir)) dir.create(res_dir)
-  # score correction method
-  correct_method <- configs$score_correction$method
-  # norm_correct <- configs$score_correction$norm
-  # if (norm_correct) {
-  #   mod_tests_sp <- configs$score_correction$special
-  #   mod_tests_com <- configs$score_correction$common
-  # }
   # TABLE: ability name informations
   abilities <- tribble(
     ~abId, ~abParent, ~abName,        ~abNameEn,
@@ -101,73 +94,76 @@ main <- function(loc) {
     file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
   )
   # data correction
-  scores_corrected <- switch(
-    correct_method,
-    none = data_origin %>%
-      mutate(stdScore = standardScore),
-    iquizoo = {
-      # read exercise code information
-      task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
-        html_node("table") %>%
-        html_table(header = TRUE) %>%
-        rename(excerciseId = excerciseid)
-      # common norms
-      norms_common_global <- read_excel(
-        file.path(info_dir, "norm_common_global.xlsx"), skip = 1
-      ) %>%
-        mutate(code = parse_integer(交互题CODE)) %>%
-        select(-交互题CODE) %>%
-        rename(
-          title.com = 描述说明,
-          avg.com = 平均数,
-          std.com = 标准差
+  scores_corrected <- with(
+    configs$score_correction$pre,
+    switch(
+      type,
+      none = data_origin %>%
+        mutate(stdScore = standardScore),
+      iquizoo = {
+        # read exercise code information
+        task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
+          html_node("table") %>%
+          html_table(header = TRUE) %>%
+          rename(excerciseId = excerciseid)
+        # common norms
+        norms_common_global <- read_excel(
+          file.path(info_dir, "norm_common_global.xlsx"), skip = 1
         ) %>%
-        filter(!is.na(code))
-      # construct header
-      agewise_header <- read_excel(
-        file.path(info_dir, "norm_agewise.xlsx"), skip = 2,
-        col_names = FALSE, n_max = 2
-      )
-      # fill missing header
-      miss_header <- is.na(agewise_header[1, ])
-      agewise_header[1, miss_header] <- agewise_header[1, which(miss_header) - 1]
-      agewise_header_chr <- paste(agewise_header[1, ], agewise_header[2, ], sep = "_") %>%
-        str_replace("_NA", "")
-      norms_common_agewise <- read_excel(
-        file.path(info_dir, "norm_agewise.xlsx"), skip = 4,
-        col_names = agewise_header_chr
-      )
-      # special norms
-      norms_special_global <- read_excel(
-        file.path(info_dir, "norm_special_global.xlsx"), skip = 1
-      ) %>%
-        mutate(excerciseId = parse_double(交互题CODE)) %>%
-        select(-交互题CODE) %>%
-        rename(
-          title.sp = 描述说明,
-          avg.sp = 平均数,
-          std.sp = 标准差
-        ) %>%
-        filter(!is.na(excerciseId))
-      # correct data by norms
-      data_origin %>%
-        left_join(task_codes, by = "excerciseId") %>%
-        left_join(norms_common_global, by = "code") %>%
-        left_join(norms_special_global, by = "excerciseId") %>%
-        mutate(
-          stdScore = case_when(
-            excerciseId %in% configs$score_correction$args$special ~
-              (asin(sqrt(index)) - avg.sp) / std.sp * 15 + 100,
-            # note: use 'magic number' here for simplicity
-            excerciseId %in% configs$score_correction$args$common ~
-              (asin(sqrt(index)) - avg.com) / std.com * 15 - 14.4 + 100,
-            TRUE ~ standardScore
-          )
+          mutate(code = parse_integer(交互题CODE)) %>%
+          select(-交互题CODE) %>%
+          rename(
+            title.com = 描述说明,
+            avg.com = 平均数,
+            std.com = 标准差
+          ) %>%
+          filter(!is.na(code))
+        # construct header
+        agewise_header <- read_excel(
+          file.path(info_dir, "norm_agewise.xlsx"), skip = 2,
+          col_names = FALSE, n_max = 2
         )
-    },
-    scale = data_origin %>%
-      group_by(excerciseId, grade) %>%
-      mutate(stdScore = scale(index) * 15 + 100)
+        # fill missing header
+        miss_header <- is.na(agewise_header[1, ])
+        agewise_header[1, miss_header] <- agewise_header[1, which(miss_header) - 1]
+        agewise_header_chr <- paste(agewise_header[1, ], agewise_header[2, ], sep = "_") %>%
+          str_replace("_NA", "")
+        norms_common_agewise <- read_excel(
+          file.path(info_dir, "norm_agewise.xlsx"), skip = 4,
+          col_names = agewise_header_chr
+        )
+        # special norms
+        norms_special_global <- read_excel(
+          file.path(info_dir, "norm_special_global.xlsx"), skip = 1
+        ) %>%
+          mutate(excerciseId = parse_double(交互题CODE)) %>%
+          select(-交互题CODE) %>%
+          rename(
+            title.sp = 描述说明,
+            avg.sp = 平均数,
+            std.sp = 标准差
+          ) %>%
+          filter(!is.na(excerciseId))
+        # correct data by norms
+        data_origin %>%
+          left_join(task_codes, by = "excerciseId") %>%
+          left_join(norms_common_global, by = "code") %>%
+          left_join(norms_special_global, by = "excerciseId") %>%
+          mutate(
+            stdScore = case_when(
+              excerciseId %in% args$special ~
+                (asin(sqrt(index)) - avg.sp) / std.sp * 15 + 100,
+              # note: use 'magic number' here for simplicity
+              excerciseId %in% args$common ~
+                (asin(sqrt(index)) - avg.com) / std.com * 15 - 14.4 + 100,
+              TRUE ~ standardScore
+            )
+          )
+      },
+      scale = data_origin %>%
+        group_by(excerciseId, grade) %>%
+        mutate(stdScore = scale(index) * 15 + 100)
+    )
   )
   # correction for user information
   if (!is.null(configs$user_correction)) {
@@ -231,21 +227,34 @@ main <- function(loc) {
     left_join(ability_map) %>%
     left_join(abilities) %>%
     group_by(userId, abId, abParent) %>%
-    summarise(
-      score = mean(stdScore, na.rm = TRUE),
-      level = cut(score, breaks, labels)
-    ) %>%
+    summarise(score = mean(stdScore, na.rm = TRUE)) %>%
     ungroup()
   total_scores <- components_scores %>%
     group_by(userId, abParent) %>%
-    summarise(
-      score = mean(score, na.rm = TRUE),
-      level = cut(score, breaks, labels)
-    ) %>%
+    summarise(score = mean(score, na.rm = TRUE)) %>%
     ungroup() %>%
     add_column(abId = .$abParent, .before = "abParent")
   # TABLE: scores on each ability for all users
-  ability_scores <- rbind(components_scores, total_scores) %>%
+  ability_scores_candidate <- rbind(components_scores, total_scores)
+
+  # correct ability scores directly
+  ability_scores <- with(
+    configs$score_correction$post,
+    switch(
+      type,
+      add = {
+        ability_scores_candidate %>%
+          mutate(
+            score = case_when(
+              abId == 2 ~ score + 5,
+              TRUE ~ score + 15
+            )
+          )
+      },
+      none = ability_scores_candidate
+    )
+  ) %>%
+    mutate(level = cut(score, breaks, labels)) %>%
     add_column(abscoreId = 1:nrow(.), .before = 1) %>%
     select(one_of(key_vars[["abscore"]]))
 
