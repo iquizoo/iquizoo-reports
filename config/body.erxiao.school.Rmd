@@ -58,6 +58,7 @@ scores_this_ability %>%
   filter(region != "各班") %>%
   ggplot(aes(score)) +
   geom_density(color = NA, fill = "lightblue", alpha = 0.5) +
+  geom_vline(xintercept = with(ability_summary, 平均分[region != "各班"]), color = "red") +
   scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
   labs(x = "分数", y = "", fill = "") +
   set_theme_dist(base_family = text_family)
@@ -86,7 +87,7 @@ descriptions$body$table$description %>%
 scores_this_ability %>%
   mutate(
     cls = factor(
-      cls, levels = c("本校", ability_summary_cls_sortmed$cls)
+      cls, levels = rev(c("本校", ability_summary_cls_sortmed$cls))
     )
   ) %>%
   ggplot(aes(cls, score, fill = region)) +
@@ -94,7 +95,7 @@ scores_this_ability %>%
   scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
   coord_flip(ylim = bp_stats$stats[c(1, 5)]) +
-  set_theme_panels(base_family = text_family)
+  set_theme_panels(base_size = 10, base_family = text_family)
 ```
 
 ```{r <<ability_name_id>>-boxplot-description, echo=FALSE, results="asis"}
@@ -105,23 +106,31 @@ descriptions$body$boxplot$description %>%
 
 ```{r <<ability_name_id>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$grading$caption)}
 ability_summary %>%
+  select(cls, 实测人数, A:D) %>% 
+  add_row(
+    cls = "全国平均",
+    实测人数 = 100,
+    A = 10, B = 20, C = 40, D = 30
+  ) %>% 
   mutate(
     cls = factor(
-      cls, levels = c("本校", ability_summary_cls_sortmed$cls)
+      cls, levels = rev(c("全国平均", "本校", ability_summary_cls_sortmed$cls))
     )
   ) %>%
   gather(level, n, A:D) %>%
   mutate(
     prop = n / 实测人数 * 100,
+    n_label = if_else(n == 0, NA_real_, n),
     prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
   ) %>%
-  ggplot(aes(cls, prop, fill = level, label = prop_label)) +
+  ggplot(aes(cls, prop, fill = level, label = n_label)) +
   geom_col(position = "stack", width = 0.5) +
   geom_text(position = position_stack(vjust = 0.5), size = 3) +
   scale_fill_brewer(palette = "Blues") +
+  scale_y_continuous(breaks = c(0, 30, 70, 90, 100)) +
   labs(x = "", y = "比例（%）", fill = "") +
   coord_flip() +
-  set_theme_panels(base_family = text_family)
+  set_theme_panels(base_size = 10, base_family = text_family)
 ```
 
 ```{r <<ability_name_id>>-grading-description, echo=FALSE, results="asis"}
