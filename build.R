@@ -191,7 +191,7 @@ switch(
           mutate(region = factor(region, c("各班", "本校")))
       }
       # set dates
-      attach(set_date(params, test_date = median(scores_school$firstPartTime)))
+      attach(set_date(params, test_date = median(as.Date(scores_school$firstPartTime))))
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
