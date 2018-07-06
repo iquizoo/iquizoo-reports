@@ -226,7 +226,7 @@ main <- function(loc) {
     components_scores <- scores_with_ability %>%
       filter(!abId == 0) %>%
       group_by(userId, abId) %>%
-    summarise(score = mean(score, na.rm = TRUE)) %>%
+      summarise(score = mean(score, na.rm = TRUE)) %>%
       ungroup()
     ability_scores_list <- c(ability_scores_list, list(components_scores))
     scores_with_ability <- components_scores %>%
@@ -270,9 +270,20 @@ main <- function(loc) {
   dbWriteTable(iquizoo_db, name = loc, value = ability_scores, overwrite = TRUE)
   # update users in the local SQLite database
   if (db_has_table(iquizoo_db, "users")) {
-    users_to_append <- users %>%
-      anti_join(tbl(iquizoo_db, "users"), copy = TRUE)
-    dbWriteTable(iquizoo_db, name = "users", value = users_to_append, append = TRUE)
+    users_existed <- collect(tbl(iquizoo_db, "users"))
+    users_overwrite <- list(
+      new = users %>%
+        anti_join(users_existed),
+      update = users %>%
+        filter(userId %in% users_existed$userId),
+      old = users_existed %>%
+        anti_join(users)
+    ) %>%
+      bind_rows()
+    if (!identical(users_existed, users_overwrite)) {
+      message("There are users to be added or updated, overwriting...")
+      dbWriteTable(iquizoo_db, name = "users", value = users_overwrite, overwrite = TRUE)
+    }
   } else {
     dbWriteTable(iquizoo_db, name = "users", value = users)
   }
