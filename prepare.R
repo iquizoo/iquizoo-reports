@@ -9,11 +9,36 @@
 
 # load packages and settings ----
 library(tidyverse)
+library(dbplyr)
 library(yaml)
 library(readxl)
 library(writexl)
 library(rvest)
 library(glue)
+library(DBI)
+library(RSQLite)
+
+# open database connection by SQLite ----
+iquizoo_db <- dbConnect(SQLite(), dbname = "iquizoo.db")
+
+# metadata preparation ----
+info_dir <- file.path("_info")
+if (!db_has_table(iquizoo_db, "abilities")) {
+  abilities <- read_excel(file.path(info_dir, "abilities.xlsx"))
+  dbWriteTable(iquizoo_db, name = "abilities", value = abilities)
+}
+# add exercises information if not found
+if (!db_has_table(iquizoo_db, "exercises")) {
+  exercises <- read_excel(file.path(info_dir, "exerciseInfo.xlsx")) %>%
+    mutate(excerciseId = parse_double(ID)) %>%
+    gather(type, abName, ability_blai, ability_math) %>%
+    filter(abName != "null") %>%
+    left_join(abilities, copy = TRUE) %>%
+    filter(!is.na(abId)) %>%
+    unique() %>%
+    select(excerciseId, name, title, abId)
+  dbWriteTable(iquizoo_db, name = "exercises", value = exercises)
+}
 
 #' Main function used to prepare datasets
 #'
@@ -25,68 +50,20 @@ library(glue)
 #' @param loc Location of data, i.e., the specific data folder
 #' @return Returns 0 if succeeded.
 main <- function(loc) {
+  # ensure database is disconnected after processing
+  on.exit(dbDisconnect(iquizoo_db))
   # environmental settings ----
   data_dir <- file.path("datasets", loc)
-  info_dir <- file.path("_info")
   # load configurations
   configs <- read_yaml(file.path(data_dir, "config.yml"), fileEncoding = "UTF-8")
-  # set the directory where the result data go
-  res_dir <- configs$goal$res_path
-  if (!dir.exists(res_dir)) dir.create(res_dir)
-  # TABLE: ability name informations
-  abilities <- tribble(
-    ~abId, ~abParent, ~abName,        ~abNameEn,
-    1,     0,        "基础学习能力", "blai",
-    2,     0,        "基础数学能力", "math",
-    11,    1,        "注意力",       "attention",
-    12,    1,        "记忆力",       "memory",
-    13,    1,        "反应力",       "reaction",
-    14,    1,        "自控力",       "control",
-    15,    1,        "思维力",       "thinking",
-    16,    2,        "数字加工",     "digit",
-    17,    2,        "数学推理",     "reasoning",
-    18,    2,        "空间几何",     "geometry",
-    19,    2,        "数量加工",     "quantity",
-    20,    2,        "数学计算",     "computation"
-  )
+  # future work will be to create table with SQL queries
   key_vars <- list(
-    user = c(primary_key = "userId", "name", "sex", "school", "grade", "cls", "firstPartTime"),
-    exercise = c(primary_key = "excerciseId", "taskName", "taskIDName"),
-    score = c(
-      primary_key = "scoreId",
-      foreign_key_user = "userId",
-      foreign_key_exercise = "excerciseId",
-      "createTime", "stdScore"
-    ),
-    abscore = c(
-      primary_key = "abscoreId",
-      foreign_key_user = "userId",
-      foreign_key_ability = "abId",
-      "score", "level"
-    )
+    user = c("userId", "name", "sex", "school", "grade", "cls", "firstPartTime"),
+    score = c("userId", "excerciseId", "createTime", "stdScore"),
+    abscore = c("abscoreId", "userId", "abId", "score", "level")
   )
   breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
   labels <- LETTERS[4:1]
-
-  # load ability map tables ----
-  abilities_info <- read_excel(file.path(info_dir, "abilities.xlsx"))
-  exercises_info <- read_excel(file.path(info_dir, "exerciseInfo.xlsx"))
-  # TABLE: ability map between exercises and abilities
-  ability_map <- exercises_info %>%
-    left_join(abilities_info, by = c("ability_blai" = "subname")) %>%
-    mutate(excerciseId = parse_double(ID)) %>%
-    select(-ability_blai) %>% # no need to use subabilities now
-    mutate(
-      math = ifelse(ability_math == "null", NA_character_, ability_math),
-      blai = ifelse(abname == "null", NA_character_, abname)
-    ) %>%
-    select(excerciseId, blai, math) %>%
-    gather(type, abNameOld, blai, math) %>%
-    filter(!is.na(abNameOld)) %>%
-    mutate(abId = with(abilities, abId[match(abNameOld, abName)])) %>%
-    filter(!is.na(abId)) %>%
-    select(-abNameOld, -type) %>%
-    add_column(mapId = 1:nrow(.), .before = 1)
 
   # clean data / correct data ----
   # load dataset
@@ -201,31 +178,27 @@ main <- function(loc) {
     ungroup() %>%
     unique()
 
-  # separate original data into three relational tables ----
-  # TABLE: exercises'/tasks' information
-  exercises <- scores_clean %>%
-    select(one_of(key_vars[["exercise"]])) %>%
-    unique()
-  # TABLE: users' information
+  # separate original data into relational tables ----
   # get the maximal class number to determine the 0's to be added
   digits_cls <- floor(log10(max(scores_clean$cls))) + 1
   users <- scores_clean %>%
     select(one_of(key_vars[["user"]])) %>%
     unique() %>%
     mutate(
-      sex = factor(sex, levels = c("male", "female"), labels = c("男", "女")),
-      cls = sprintf(paste0("%0", digits_cls, "d班"), cls)
+      sex = case_when(sex == "female" ~ "女", sex == "male" ~ "男"),
+      cls = sprintf(paste0("%0", digits_cls, "d班"), cls),
+      firstPartTime = as.character(firstPartTime)
     )
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_clean %>%
-    add_column(scoreId = 1:nrow(.), .before = 1) %>%
-    select(one_of(key_vars[["score"]]))
+    select(one_of(key_vars[["score"]])) %>%
+    unique() %>%
+    mutate(createTime = as.character(createTime))
 
   # calculate ability scores and levels ----
   components_scores <- scores %>%
-    left_join(exercises) %>%
-    left_join(ability_map) %>%
-    left_join(abilities) %>%
+    left_join(tbl(iquizoo_db, "exercises"), copy = TRUE) %>%
+    left_join(tbl(iquizoo_db, "abilities"), copy = TRUE) %>%
     group_by(userId, abId, abParent) %>%
     summarise(score = mean(stdScore, na.rm = TRUE)) %>%
     ungroup()
@@ -237,7 +210,7 @@ main <- function(loc) {
   # TABLE: scores on each ability for all users
   ability_scores_candidate <- rbind(components_scores, total_scores)
 
-  # correct ability scores directly
+  # correct ability scores directly ----
   ability_scores <- with(
     configs$score_correction$post,
     switch(
@@ -268,13 +241,24 @@ main <- function(loc) {
   }
 
   # side effects: save all useful information as Excel files ----
-  # future plan will be to store them to the local/remote MySQL database
-  output_tables <- configs$goal$tables
-  outputs <- list()
-  for (output_table in output_tables) {
-    outputs[[output_table]] <- eval(as.symbol(output_table))
+  # store ability scores in the local SQLite database
+  dbWriteTable(iquizoo_db, name = loc, value = ability_scores, overwrite = TRUE)
+  # update users in the local SQLite database
+  if (db_has_table(iquizoo_db, "users")) {
+    users_to_append <- users %>%
+      anti_join(tbl(iquizoo_db, "users"), copy = TRUE)
+    dbWriteTable(iquizoo_db, name = "users", value = users_to_append, append = TRUE)
+  } else {
+    dbWriteTable(iquizoo_db, name = "users", value = users)
   }
-  write_xlsx(outputs, file.path(res_dir, glue("{loc}.xlsx")))
+  # update scores in the local SQLite database
+  if (db_has_table(iquizoo_db, "scores")) {
+    scores_to_append <- scores %>%
+      anti_join(tbl(iquizoo_db, "scores"), copy = TRUE)
+    dbWriteTable(iquizoo_db, name = "scores", value = scores_to_append, append = TRUE)
+  } else {
+    dbWriteTable(iquizoo_db, name = "scores", value = scores)
+  }
 }
 
 if (interactive()) {
