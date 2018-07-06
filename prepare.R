@@ -192,7 +192,11 @@ main <- function(loc) {
   users <- scores_clean %>%
     select(one_of(key_vars[["user"]])) %>%
     unique() %>%
-    mutate(firstPartTime = as.character(firstPartTime))
+    mutate(
+      firstPartTime = as.character(firstPartTime),
+      school = str_replace_all(school, "\\s", "")
+    ) %>%
+    filter(!str_detect(school, "\\d"))
   if (is.numeric(scores_clean$cls)) {
     # get the maximal class number to determine the 0's to be added
     digits_cls <- floor(log10(max(scores_clean$cls))) + 1
