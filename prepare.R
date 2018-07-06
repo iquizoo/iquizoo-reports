@@ -67,8 +67,17 @@ main <- function(loc) {
 
   # clean data / correct data ----
   # load dataset
-  data_origin <- read_excel(
-    file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
+  data_origin <- switch(
+    tools::file_ext(configs$data_file),
+    xls = ,
+    xlsx = read_excel(
+      file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
+    ),
+    json = jsonlite::read_json(
+      file.path(data_dir, configs$data_file), simplifyVector = TRUE
+    ) %>%
+      as.tbl() %>%
+      mutate(createTime = lubridate::as_datetime(createTime))
   )
   # data correction
   scores_corrected <- with(
@@ -179,16 +188,25 @@ main <- function(loc) {
     unique()
 
   # separate original data into relational tables ----
-  # get the maximal class number to determine the 0's to be added
-  digits_cls <- floor(log10(max(scores_clean$cls))) + 1
+  # TABLE: user information
   users <- scores_clean %>%
     select(one_of(key_vars[["user"]])) %>%
     unique() %>%
-    mutate(
-      sex = case_when(sex == "female" ~ "女", sex == "male" ~ "男"),
-      cls = sprintf(paste0("%0", digits_cls, "d班"), cls),
-      firstPartTime = as.character(firstPartTime)
-    )
+    mutate(firstPartTime = as.character(firstPartTime))
+  if (is.numeric(scores_clean$cls)) {
+    # get the maximal class number to determine the 0's to be added
+    digits_cls <- floor(log10(max(scores_clean$cls))) + 1
+    users <- users %>%
+      mutate(cls = sprintf(paste0("%0", digits_cls, "d班"), cls))
+  }
+  if (!all(is.na(scores_clean$sex))) {
+    users <- users %>%
+      mutate(sex = recode("female" = "女", "male" = "男"))
+  } else {
+    users <- users %>%
+      mutate(sex = NA_character_)
+  }
+
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_clean %>%
     select(one_of(key_vars[["score"]])) %>%
