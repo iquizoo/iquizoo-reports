@@ -59,7 +59,7 @@ main <- function(loc) {
   # future work will be to create table with SQL queries
   key_vars <- list(
     user = c("userId", "name", "sex", "school", "grade", "cls", "firstPartTime"),
-    score = c("userId", "excerciseId", "createTime", "stdScore"),
+    score = c("userId", "excerciseId", "createTime", "score"),
     abscore = c("abscoreId", "userId", "abId", "score", "level")
   )
   breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
@@ -85,7 +85,7 @@ main <- function(loc) {
     switch(
       type,
       none = data_origin %>%
-        mutate(stdScore = standardScore),
+        mutate(score = standardScore),
       iquizoo = {
         # read exercise code information
         task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
@@ -136,7 +136,7 @@ main <- function(loc) {
           left_join(norms_common_global, by = "code") %>%
           left_join(norms_special_global, by = "excerciseId") %>%
           mutate(
-            stdScore = case_when(
+            score = case_when(
               excerciseId %in% args$special ~
                 (asin(sqrt(index)) - avg.sp) / std.sp * 15 + 100,
               # note: use 'magic number' here for simplicity
@@ -148,7 +148,7 @@ main <- function(loc) {
       },
       scale = data_origin %>%
         group_by(excerciseId, grade) %>%
-        mutate(stdScore = scale(index) * 15 + 100)
+        mutate(score = scale(index) * 15 + 100)
     )
   )
   # correction for user information
@@ -173,7 +173,7 @@ main <- function(loc) {
   scores_clean <- scores_corrected %>%
     # remove duplicates
     group_by(userId, excerciseId) %>%
-    mutate(occurrence = row_number(desc(stdScore))) %>%
+    mutate(occurrence = row_number(desc(score))) %>%
     filter(occurrence == 1) %>%
     select(-occurrence) %>%
     # remain the earliest createTime only for each user
@@ -182,7 +182,7 @@ main <- function(loc) {
     # remove outliers based on boxplot rule
     group_by(excerciseId) %>%
     mutate(
-      stdScore = ifelse(stdScore %in% boxplot.stats(stdScore)$out, NA, stdScore)
+      score = ifelse(score %in% boxplot.stats(score)$out, NA, score)
     ) %>%
     ungroup() %>%
     unique()
@@ -213,22 +213,25 @@ main <- function(loc) {
     unique() %>%
     mutate(createTime = as.character(createTime))
 
-  # calculate ability scores and levels ----
-  components_scores <- scores %>%
+  # calculate ability scores ----
+  scores_with_ability <- scores %>%
     left_join(tbl(iquizoo_db, "exercises"), copy = TRUE) %>%
-    left_join(tbl(iquizoo_db, "abilities"), copy = TRUE) %>%
-    group_by(userId, abId, abParent) %>%
-    summarise(score = mean(stdScore, na.rm = TRUE)) %>%
-    ungroup()
-  total_scores <- components_scores %>%
-    group_by(userId, abParent) %>%
+    left_join(tbl(iquizoo_db, "abilities"), copy = TRUE)
+  ability_scores_list <- list()
+  repeat {
+    components_scores <- scores_with_ability %>%
+      filter(!abId == 0) %>%
+      group_by(userId, abId) %>%
     summarise(score = mean(score, na.rm = TRUE)) %>%
-    ungroup() %>%
-    add_column(abId = .$abParent, .before = "abParent")
-  # TABLE: scores on each ability for all users
-  ability_scores_candidate <- rbind(components_scores, total_scores)
-
-  # correct ability scores directly ----
+      ungroup()
+    ability_scores_list <- c(ability_scores_list, list(components_scores))
+    scores_with_ability <- components_scores %>%
+      left_join(tbl(iquizoo_db, "abilities"), copy = TRUE) %>%
+      mutate(abId = abParent)
+    if (all(scores_with_ability$abId == 0)) break
+  }
+  ability_scores_candidate <- bind_rows(ability_scores_list)
+  # correct ability scores directly
   ability_scores <- with(
     configs$score_correction$post,
     switch(
