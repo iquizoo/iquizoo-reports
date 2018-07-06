@@ -12,6 +12,9 @@ suppressPackageStartupMessages(library(yaml))
 suppressPackageStartupMessages(library(glue))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(dbplyr))
+suppressPackageStartupMessages(library(DBI))
+suppressPackageStartupMessages(library(RSQLite))
 
 # options used in reports configurations ----
 options(
@@ -128,32 +131,20 @@ ability_md <- rbind(ability_info, component_info) %>%
   )
 
 # datasets preparations ----
-# load datasets
-ability_scores <- read_excel(
-  file.path(
+# connect to database and download data
+iquizoo_db <- dbConnect(
+  SQLite(),
+  dbname = file.path(
     getOption("report.include.path")["database"],
-    paste0(params$region, ".xlsx")
-  ),
-  sheet = "ability_scores"
+    "iquizoo.db"
+  )
 )
-users <- read_excel(
-  file.path(
-    getOption("report.include.path")["database"],
-    paste0(params$region, ".xlsx")
-  ),
-  sheet = "users"
-)
-abilities <- read_excel(
-  file.path(
-    getOption("report.include.path")["database"],
-    paste0(params$region, ".xlsx")
-  ),
-  sheet = "abilities"
-)
-scores_origin <- ability_scores %>%
-  left_join(users, by = "userId") %>%
-  left_join(abilities, by = "abId") %>%
-  filter(!is.na(score))
+scores_origin <- tbl(iquizoo_db, params$region) %>%
+  left_join(tbl(iquizoo_db, "users")) %>%
+  left_join(tbl(iquizoo_db, "abilities")) %>%
+  filter(!is.na(score)) %>%
+  collect()
+dbDisconnect(iquizoo_db)
 # count number of school, grade and users
 n_school <- n_distinct(scores_origin$school)
 n_grade <- n_distinct(scores_origin$grade)
