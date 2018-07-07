@@ -272,12 +272,9 @@ main <- function(loc) {
   if (db_has_table(iquizoo_db, "users")) {
     users_existed <- collect(tbl(iquizoo_db, "users"))
     users_overwrite <- list(
-      new = users %>%
-        anti_join(users_existed),
-      update = users %>%
-        filter(userId %in% users_existed$userId),
-      old = users_existed %>%
-        anti_join(users)
+      old = setdiff(users_existed, users),
+      update = filter(users, userId %in% users_existed$userId),
+      new = setdiff(users, users_existed)
     ) %>%
       bind_rows()
     if (!identical(users_existed, users_overwrite)) {
