@@ -3,6 +3,6 @@ CREATE TABLE exercises (
     name VARCHAR(100), -- exercise name
     title VARCHAR(100), -- exercise title displayed
     PRIMARY KEY (exerciseId),
-        CONSTRAINT chk_id
+        CONSTRAINT exercise_id_positive
         CHECK (exerciseId > 0)
 );

@@ -6,7 +6,7 @@ CREATE TABLE users (
     grade  INT,
     class  CHAR(10),
     PRIMARY KEY (userId),
-        CONSTRAINT id_positive
+        CONSTRAINT user_id_positive
         CHECK (userId > 0),
         CONSTRAINT sex_chinese
         CHECK (sex IN ('男', '女')),

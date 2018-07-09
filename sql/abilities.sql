@@ -4,6 +4,6 @@ CREATE TABLE abilities (
     name    VARCHAR(10), -- ability name
     name_en VARCHAR(30), -- ability english name
     PRIMARY KEY (abId),
-        CONSTRAINT chk_abId
+        CONSTRAINT ability_id_positive
         CHECK (abId > 0)
 );
