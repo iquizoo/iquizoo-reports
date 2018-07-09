@@ -47,3 +47,7 @@ rsconnect/
 
 # R notebook preview files
 *.nb.html
+
+# SQLite database files
+*.sqlite
+*.db
