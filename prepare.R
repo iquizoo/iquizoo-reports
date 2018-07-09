@@ -18,27 +18,73 @@ library(glue)
 library(DBI)
 library(RSQLite)
 
-# open database connection by SQLite ----
-iquizoo_db <- dbConnect(SQLite(), dbname = "iquizoo.db")
+# database preparations ----
+# open connection
+iquizoo_db <- dbConnect(SQLite(), dbname = "iquizoo.sqlite")
+# initializing database tables
+creation_query_folder <- "sql"
+creation_query_files <- list.files(creation_query_folder, "\\.sql")
+for (creation_query_file in creation_query_files) {
+  table_name <- tools::file_path_sans_ext(creation_query_file)
+  if (!db_has_table(iquizoo_db, table_name)) {
+    dbSendQuery(iquizoo_db, "BEGIN;")
+    dbSendQuery(
+      iquizoo_db, read_file(
+        file.path(creation_query_folder, creation_query_file)
+      )
+    )
+    dbSendQuery(iquizoo_db, "COMMIT;")
+  }
+}
 
-# metadata preparation ----
-info_dir <- file.path("_info")
-if (!db_has_table(iquizoo_db, "abilities")) {
-  abilities <- read_excel(file.path(info_dir, "abilities.xlsx"))
-  dbWriteTable(iquizoo_db, name = "abilities", value = abilities)
-}
-# add exercises information if not found
-if (!db_has_table(iquizoo_db, "exercises")) {
-  exercises <- read_excel(file.path(info_dir, "exerciseInfo.xlsx")) %>%
-    mutate(excerciseId = parse_double(ID)) %>%
-    gather(type, abName, ability_blai, ability_math) %>%
-    filter(abName != "null") %>%
-    left_join(abilities, copy = TRUE) %>%
-    filter(!is.na(abId)) %>%
-    unique() %>%
-    select(excerciseId, name, title, abId)
-  dbWriteTable(iquizoo_db, name = "exercises", value = exercises)
-}
+# info_dir <- file.path("_info")
+# # update abilities
+# abilities <- read_excel(file.path(info_dir, "abilities.xlsx"))
+# copy_to(iquizoo_db, abilities, "abilities_to_write")
+# dbSendQuery(iquizoo_db, "Begin;")
+# dbSendQuery(
+#   iquizoo_db, "
+# DELETE
+# FROM abilities
+# WHERE abId IN (SELECT abId FROM abilities_to_write);
+#   "
+# )
+# dbSendQuery(
+#   iquizoo_db, "
+# INSERT INTO abilities
+# SELECT *
+# FROM abilities_to_write;
+#   "
+# )
+# dbSendQuery(iquizoo_db, "Commit;")
+# # update exercises
+# exercises <- read_excel(file.path(info_dir, "exerciseInfo.xlsx")) %>%
+#   mutate(excerciseId = parse_double(ID)) %>%
+#   gather(type, abName, ability_blai, ability_math) %>%
+#   filter(abName != "null") %>%
+#   left_join(abilities, by = c("abName" = "name")) %>%
+#   filter(!is.na(abId)) %>%
+#   select(excerciseId, abId, name, title) %>%
+#   rename(exerciseId = excerciseId) %>%
+#   unique()
+# copy_to(iquizoo_db, exercises, "exercises_to_write")
+# dbSendQuery(iquizoo_db, "Begin;")
+# dbSendQuery(
+#   iquizoo_db, "
+# DELETE
+# FROM exercises
+# WHERE abId IN (SELECT abId FROM exercises_to_write);
+#   "
+# )
+# dbSendQuery(
+#   iquizoo_db, "
+# INSERT INTO exercises
+# SELECT *
+# FROM exercises_to_write;
+#   "
+# )
+# dbSendQuery(iquizoo_db, "Commit;")
+dbDisconnect(iquizoo_db)
 
 #' Main function used to prepare datasets
 #'
