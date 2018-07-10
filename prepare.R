@@ -186,22 +186,22 @@ main <- function(loc) {
   }
   # update users table of database
   copy_to(iquizoo_db, users, "users_to_write")
-  dbSendQuery(iquizoo_db, "BEGIN;")
-  dbSendQuery(
+  dbExecute(iquizoo_db, "BEGIN;")
+  dbExecute(
     iquizoo_db, "
 DELETE
   FROM users
  WHERE userId IN (SELECT userId FROM users_to_write);
     "
   )
-  dbSendQuery(
+  dbExecute(
     iquizoo_db, "
 INSERT INTO users
      SELECT *
        FROM users_to_write;
     "
   )
-  dbSendQuery(iquizoo_db, "COMMIT;")
+  dbExecute(iquizoo_db, "COMMIT;")
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_clean %>%
     select(one_of(key_vars[["score"]])) %>%
