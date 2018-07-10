@@ -21,11 +21,10 @@ library(RSQLite)
 #'
 #' Now the main function is a generic function to do preparation works for
 #' datasets from any region. The most important work here is to do score
-#' correction for some tasks. Configurations are load from a "config.yml"
-#' file from the dataset directory.
+#' correction for some tasks. Configurations are load from a "config.yml" file
+#' from the dataset directory.
 #'
 #' @param loc Location of data, i.e., the specific data folder
-#' @return Returns 0 if succeeded.
 main <- function(loc) {
   # ensure database is disconnected after processing
   on.exit(dbDisconnect(iquizoo_db))
@@ -48,7 +47,8 @@ main <- function(loc) {
     tools::file_ext(configs$data_file),
     xls = ,
     xlsx = read_excel(
-      file.path(data_dir, configs$data_file), guess_max = 1048576 # maximal number of rows
+      file.path(data_dir, configs$data_file),
+      guess_max = 1048576 # maximal number of rows
     ),
     json = jsonlite::read_json(
       file.path(data_dir, configs$data_file), simplifyVector = TRUE
