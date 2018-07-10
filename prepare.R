@@ -35,8 +35,8 @@ main <- function(loc) {
   configs <- read_yaml(file.path(data_dir, "config.yml"), fileEncoding = "UTF-8")
   # future work will be to create table with SQL queries
   key_vars <- list(
-    user = c("userId", "name", "sex", "school", "grade", "cls", "firstPartTime"),
-    score = c("userId", "excerciseId", "createTime", "score"),
+    user = c("userId", "name", "sex", "school", "grade", "class"),
+    score = c("userId", "exerciseId", "createTime", "score"),
     abscore = c("abscoreId", "userId", "abId", "score", "level")
   )
   breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
@@ -55,7 +55,8 @@ main <- function(loc) {
     ) %>%
       as.tbl() %>%
       mutate(createTime = lubridate::as_datetime(createTime))
-  )
+  ) %>%
+    rename(exerciseId = excerciseId, class = cls)
   # data correction
   scores_corrected <- with(
     configs$score_correction$pre,
@@ -68,7 +69,7 @@ main <- function(loc) {
         task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
           html_node("table") %>%
           html_table(header = TRUE) %>%
-          rename(excerciseId = excerciseid)
+          rename(exerciseId = excerciseid)
         # common norms
         norms_common_global <- read_excel(
           file.path(info_dir, "norm_common_global.xlsx"), skip = 1
@@ -99,32 +100,32 @@ main <- function(loc) {
         norms_special_global <- read_excel(
           file.path(info_dir, "norm_special_global.xlsx"), skip = 1
         ) %>%
-          mutate(excerciseId = parse_double(交互题CODE)) %>%
+          mutate(exerciseId = parse_double(交互题CODE)) %>%
           select(-交互题CODE) %>%
           rename(
             title.sp = 描述说明,
             avg.sp = 平均数,
             std.sp = 标准差
           ) %>%
-          filter(!is.na(excerciseId))
+          filter(!is.na(exerciseId))
         # correct data by norms
         data_origin %>%
-          left_join(task_codes, by = "excerciseId") %>%
+          left_join(task_codes, by = "exerciseId") %>%
           left_join(norms_common_global, by = "code") %>%
-          left_join(norms_special_global, by = "excerciseId") %>%
+          left_join(norms_special_global, by = "exerciseId") %>%
           mutate(
             score = case_when(
-              excerciseId %in% args$special ~
+              exerciseId %in% args$special ~
                 (asin(sqrt(index)) - avg.sp) / std.sp * 15 + 100,
               # note: use 'magic number' here for simplicity
-              excerciseId %in% args$common ~
+              exerciseId %in% args$common ~
                 (asin(sqrt(index)) - avg.com) / std.com * 15 - 14.4 + 100,
               TRUE ~ standardScore
             )
           )
       },
       scale = data_origin %>%
-        group_by(excerciseId, grade) %>%
+        group_by(exerciseId, grade) %>%
         mutate(score = scale(index) * 15 + 100)
     )
   )
@@ -149,7 +150,7 @@ main <- function(loc) {
   # data cleanse: remove duplicates and outliers based on boxplot rule
   scores_clean <- scores_corrected %>%
     # remove duplicates
-    group_by(userId, excerciseId) %>%
+    group_by(userId, exerciseId) %>%
     mutate(occurrence = row_number(desc(score))) %>%
     filter(occurrence == 1) %>%
     select(-occurrence) %>%
@@ -157,7 +158,7 @@ main <- function(loc) {
     group_by(userId) %>%
     mutate(firstPartTime = createTime[1]) %>%
     # remove outliers based on boxplot rule
-    group_by(excerciseId) %>%
+    group_by(exerciseId) %>%
     mutate(
       score = ifelse(score %in% boxplot.stats(score)$out, NA, score)
     ) %>%
