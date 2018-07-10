@@ -122,9 +122,9 @@ main <- function(loc) {
   )
   dbExecute(iquizoo_db, "COMMIT;")
 
-  # score correction ----
+  # correction for exercise scores ----
   scores_corrected <- with(
-    configs$score_correction$pre,
+    configs$score_correction,
     switch(
       type,
       none = data_origin %>%
@@ -191,27 +191,34 @@ main <- function(loc) {
       },
       scale = data_origin %>%
         group_by(exerciseId, grade) %>%
-        mutate(score = scale(index) * 15 + 100)
-    )
-  )
-  # correction for user information
-  if (!is.null(configs$user_correction)) {
-    user_correction_varnames <- names(configs$user_correction$replace)
-    for (user_correction_varname in user_correction_varnames) {
-      scores_corrected[[user_correction_varname]] <-
-        configs$user_correction$replace[[user_correction_varname]]
+        mutate(score = scale(index) * 15 + 100),
+      modify = {
+        deltas <- as_tibble(args)
+        abilities <- collect(tbl(iquizoo_db, "abilities"))
+        exercises <- collect(tbl(iquizoo_db, "exercises"))
+        exercise_ability <- collect(tbl(iquizoo_db, "exercise_ability"))
+        ab_parents <- setNames(abilities$parent, abilities$abId)
+        data_origin %>%
+          left_join(exercises, by = "exerciseId") %>%
+          left_join(exercise_ability, by = "exerciseId", suffix = c(".x", "")) %>%
+          left_join(abilities, by = "abId") %>%
+          mutate(
+            abRoot = map_dbl(
+              abId, function(id) {
+                repeat {
+                  root <- id
+                  id <- ab_parents[as.character(id)]
+                  if (id == 0) break
     }
+                root
   }
-  # this is a special correction, currently only used for 'erxiao' dataset
-  if (!is.null(configs$user_correction$special)) {
-    scores_corrected <- switch(
-      configs$user_correction$special,
-      jcAccount = scores_corrected %>%
-        mutate(
-          class = parse_double(str_sub(jcAccount, 6, 7))
+            )
+          ) %>%
+          left_join(deltas, by = c("abRoot" = "abId")) %>%
+          mutate(score = standardScore + delta)
+      }
         )
     )
-  }
   # data cleanse: remove duplicates and outliers based on boxplot rule
   scores_clean <- scores_corrected %>%
     # remove duplicates
@@ -249,27 +256,7 @@ main <- function(loc) {
       mutate(abId = abParent)
     if (all(scores_with_ability$abId == 0)) break
   }
-  ability_scores_candidate <- bind_rows(ability_scores_list)
-  # correct ability scores directly
-  ability_scores <- with(
-    configs$score_correction$post,
-    switch(
-      type,
-      add = {
-        ability_scores_candidate %>%
-          mutate(
-            score = case_when(
-              abId == 2 ~ score + 5,
-              TRUE ~ score + 15
-            )
-          )
-      },
-      none = ability_scores_candidate
-    )
-  ) %>%
-    mutate(level = cut(score, breaks, labels)) %>%
-    add_column(abscoreId = 1:nrow(.), .before = 1) %>%
-    select(one_of(key_vars[["abscore"]]))
+  ability_scores <- bind_rows(ability_scores_list)
 
   # read extra datasets ----
   if (!is.null(configs$data_extra)) {
@@ -279,8 +266,6 @@ main <- function(loc) {
       read_excel(file.path(data_dir, configs$data_extra$file))
     )
   }
-
-  # side effects: save all useful information as Excel files ----
   # store ability scores in the local SQLite database
   db_insert_into(iquizoo_db, loc, ability_scores, overwrite = TRUE)
 }
