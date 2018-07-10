@@ -17,15 +17,16 @@ creation_query_folder <- "sql"
 creation_query_files <- list.files(creation_query_folder, "\\.sql")
 for (creation_query_file in creation_query_files) {
   table_name <- tools::file_path_sans_ext(creation_query_file)
-  if (!db_has_table(iquizoo_db, table_name)) {
-    dbSendQuery(iquizoo_db, "BEGIN;")
-    dbSendQuery(
-      iquizoo_db, read_file(
-        file.path(creation_query_folder, creation_query_file)
-      )
-    )
-    dbSendQuery(iquizoo_db, "COMMIT;")
+  dbSendQuery(iquizoo_db, "BEGIN;")
+  if (db_has_table(iquizoo_db, table_name)) {
+    dbSendQuery(iquizoo_db, glue::glue("DROP TABLE {table_name};"))
   }
+  dbSendQuery(
+    iquizoo_db, read_file(
+      file.path(creation_query_folder, creation_query_file)
+    )
+  )
+  dbSendQuery(iquizoo_db, "COMMIT;")
 }
 # prepare exercises, abilities
 info_dir <- file.path("_info")
