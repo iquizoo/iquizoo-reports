@@ -26,6 +26,8 @@ library(RSQLite)
 #'
 #' @param loc Location of data, i.e., the specific data folder
 main <- function(loc) {
+  # open connection
+  iquizoo_db <- dbConnect(SQLite(), dbname = "iquizoo.sqlite")
   # ensure database is disconnected after processing
   on.exit(dbDisconnect(iquizoo_db))
   # environmental settings ----
@@ -38,8 +40,6 @@ main <- function(loc) {
     score = c("userId", "exerciseId", "createTime", "score"),
     abscore = c("abscoreId", "userId", "abId", "score", "level")
   )
-  breaks <- qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
-  labels <- LETTERS[4:1]
 
   # clean data / correct data ----
   # load dataset
@@ -56,6 +56,8 @@ main <- function(loc) {
       as.tbl() %>%
       mutate(createTime = lubridate::as_datetime(createTime))
   ) %>%
+    # SQLite does not support datetime data type now, store datetime as text
+    mutate(createTime = as.character(createTime)) %>%
     rename(exerciseId = excerciseId, class = cls)
   # data correction
   scores_corrected <- with(
@@ -143,7 +145,7 @@ main <- function(loc) {
       configs$user_correction$special,
       jcAccount = scores_corrected %>%
         mutate(
-          cls = parse_double(str_sub(jcAccount, 6, 7))
+          class = parse_double(str_sub(jcAccount, 6, 7))
         )
     )
   }
@@ -154,9 +156,6 @@ main <- function(loc) {
     mutate(occurrence = row_number(desc(score))) %>%
     filter(occurrence == 1) %>%
     select(-occurrence) %>%
-    # remain the earliest createTime only for each user
-    group_by(userId) %>%
-    mutate(firstPartTime = createTime[1]) %>%
     # remove outliers based on boxplot rule
     group_by(exerciseId) %>%
     mutate(
@@ -170,16 +169,13 @@ main <- function(loc) {
   users <- scores_clean %>%
     select(one_of(key_vars[["user"]])) %>%
     unique() %>%
-    mutate(
-      firstPartTime = as.character(firstPartTime),
-      school = str_replace_all(school, "\\s", "")
-    ) %>%
+    mutate(school = str_replace_all(school, "\\s", "")) %>%
     filter(!str_detect(school, "\\d"))
-  if (is.numeric(scores_clean$cls)) {
+  if (is.numeric(scores_clean$class)) {
     # get the maximal class number to determine the 0's to be added
-    digits_cls <- floor(log10(max(scores_clean$cls))) + 1
+    digits_class <- floor(log10(max(scores_clean$class))) + 1
     users <- users %>%
-      mutate(cls = sprintf(paste0("%0", digits_cls, "d班"), cls))
+      mutate(class = sprintf(paste0("%0", digits_class, "d班"), class))
   }
   if (!all(is.na(scores_clean$sex))) {
     users <- users %>%
@@ -188,7 +184,24 @@ main <- function(loc) {
     users <- users %>%
       mutate(sex = NA_character_)
   }
-
+  # update users table of database
+  copy_to(iquizoo_db, users, "users_to_write")
+  dbSendQuery(iquizoo_db, "BEGIN;")
+  dbSendQuery(
+    iquizoo_db, "
+DELETE
+  FROM users
+ WHERE userId IN (SELECT userId FROM users_to_write);
+    "
+  )
+  dbSendQuery(
+    iquizoo_db, "
+INSERT INTO users
+     SELECT *
+       FROM users_to_write;
+    "
+  )
+  dbSendQuery(iquizoo_db, "COMMIT;")
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_clean %>%
     select(one_of(key_vars[["score"]])) %>%
@@ -245,31 +258,7 @@ main <- function(loc) {
 
   # side effects: save all useful information as Excel files ----
   # store ability scores in the local SQLite database
-  dbWriteTable(iquizoo_db, name = loc, value = ability_scores, overwrite = TRUE)
-  # update users in the local SQLite database
-  if (db_has_table(iquizoo_db, "users")) {
-    users_existed <- collect(tbl(iquizoo_db, "users"))
-    users_overwrite <- list(
-      old = setdiff(users_existed, users),
-      update = filter(users, userId %in% users_existed$userId),
-      new = setdiff(users, users_existed)
-    ) %>%
-      bind_rows()
-    if (!identical(users_existed, users_overwrite)) {
-      message("There are users to be added or updated, overwriting...")
-      dbWriteTable(iquizoo_db, name = "users", value = users_overwrite, overwrite = TRUE)
-    }
-  } else {
-    dbWriteTable(iquizoo_db, name = "users", value = users)
-  }
-  # update scores in the local SQLite database
-  if (db_has_table(iquizoo_db, "scores")) {
-    scores_to_append <- scores %>%
-      anti_join(tbl(iquizoo_db, "scores"), copy = TRUE)
-    dbWriteTable(iquizoo_db, name = "scores", value = scores_to_append, append = TRUE)
-  } else {
-    dbWriteTable(iquizoo_db, name = "scores", value = scores)
-  }
+  db_insert_into(iquizoo_db, loc, ability_scores, overwrite = TRUE)
 }
 
 if (interactive()) {
