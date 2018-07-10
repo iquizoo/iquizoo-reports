@@ -6,5 +6,5 @@ CREATE TABLE users (
         CONSTRAINT user_id_positive
         CHECK (userId > 0),
         CONSTRAINT sex_chinese
-        CHECK (sex IN ('男', '女')),
+        CHECK (sex IN ('男', '女'))
 );
