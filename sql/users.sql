@@ -1,10 +1,10 @@
 CREATE TABLE users (
     userId INT          NOT NULL,
-    name   VARCHAR(5),
-    sex    VARCHAR(1),
-    school VARCHAR(100),
+    name   NVARCHAR(5),
+    sex    NCHAR(1),
+    school NVARCHAR(100),
     grade  INT,
-    class  CHAR(10),
+    class  NVARCHAR(10),
     PRIMARY KEY (userId),
         CONSTRAINT user_id_positive
         CHECK (userId > 0),
