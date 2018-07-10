@@ -9,6 +9,7 @@
 
 # load packages and settings ----
 library(tidyverse)
+library(forcats)
 library(dbplyr)
 library(yaml)
 library(readxl)
@@ -41,8 +42,7 @@ main <- function(loc) {
     abscore = c("abscoreId", "userId", "abId", "score", "level")
   )
 
-  # clean data / correct data ----
-  # load dataset
+  # load dataset ----
   data_origin <- switch(
     tools::file_ext(configs$data_file),
     xls = ,
@@ -59,7 +59,70 @@ main <- function(loc) {
     # SQLite does not support datetime data type now, store datetime as text
     mutate(createTime = as.character(createTime)) %>%
     rename(exerciseId = excerciseId, class = cls)
-  # data correction
+
+  # correction for user information ----
+  if (!is.null(configs$user_correction)) {
+    user_correction_varnames <- names(configs$user_correction$replace)
+    for (user_correction_varname in user_correction_varnames) {
+      data_origin[[user_correction_varname]] <-
+        configs$user_correction$replace[[user_correction_varname]]
+    }
+  }
+  # this is a special correction, currently only used for 'erxiao' dataset
+  if (!is.null(configs$user_correction$special)) {
+    data_origin <- switch(
+      configs$user_correction$special,
+      jcAccount = data_origin %>%
+        mutate(
+          class = parse_double(str_sub(jcAccount, 6, 7))
+        )
+    )
+  }
+  # recode sex as a factor with Chinese labels
+  data_origin <- data_origin %>%
+    mutate(
+      sex = fct_collapse(
+        as_factor(tolower(sex)),
+        男 = c("男", "male", "m"),
+        女 = c("女", "female", "f")
+      )
+    )
+  # check school name, will REMOVE data with numeric school name
+  data_origin <- data_origin %>%
+    mutate(school = str_replace_all(school, "\\s", "")) %>%
+    filter(!str_detect(school, "\\d"))
+  # TODO: check grade (ensure grade is numeric and between 1 and 9)
+  # check class name
+  if (is.numeric(data_origin$class)) {
+    # get the maximal class number to determine the 0's to be added
+    digits_class <- floor(log10(max(data_origin$class))) + 1
+    data_origin <- data_origin %>%
+      mutate(class = sprintf(paste0("%0", digits_class, "d班"), class))
+  }
+  # extract users information
+  users <- data_origin %>%
+    select(one_of(key_vars[["user"]])) %>%
+    unique()
+  # update users table of database
+  copy_to(iquizoo_db, users, "users_to_write")
+  dbExecute(iquizoo_db, "BEGIN;")
+  dbExecute(
+    iquizoo_db, "
+    DELETE
+    FROM users
+    WHERE userId IN (SELECT userId FROM users_to_write);
+    "
+  )
+  dbExecute(
+    iquizoo_db, "
+    INSERT INTO users
+    SELECT *
+    FROM users_to_write;
+    "
+  )
+  dbExecute(iquizoo_db, "COMMIT;")
+
+  # score correction ----
   scores_corrected <- with(
     configs$score_correction$pre,
     switch(
@@ -163,45 +226,6 @@ main <- function(loc) {
     ) %>%
     ungroup() %>%
     unique()
-
-  # separate original data into relational tables ----
-  # TABLE: user information
-  users <- scores_clean %>%
-    select(one_of(key_vars[["user"]])) %>%
-    unique() %>%
-    mutate(school = str_replace_all(school, "\\s", "")) %>%
-    filter(!str_detect(school, "\\d"))
-  if (is.numeric(scores_clean$class)) {
-    # get the maximal class number to determine the 0's to be added
-    digits_class <- floor(log10(max(scores_clean$class))) + 1
-    users <- users %>%
-      mutate(class = sprintf(paste0("%0", digits_class, "d班"), class))
-  }
-  if (!all(is.na(scores_clean$sex))) {
-    users <- users %>%
-      mutate(sex = recode("female" = "女", "male" = "男"))
-  } else {
-    users <- users %>%
-      mutate(sex = NA_character_)
-  }
-  # update users table of database
-  copy_to(iquizoo_db, users, "users_to_write")
-  dbExecute(iquizoo_db, "BEGIN;")
-  dbExecute(
-    iquizoo_db, "
-DELETE
-  FROM users
- WHERE userId IN (SELECT userId FROM users_to_write);
-    "
-  )
-  dbExecute(
-    iquizoo_db, "
-INSERT INTO users
-     SELECT *
-       FROM users_to_write;
-    "
-  )
-  dbExecute(iquizoo_db, "COMMIT;")
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_clean %>%
     select(one_of(key_vars[["score"]])) %>%
