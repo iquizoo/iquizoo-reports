@@ -6,7 +6,5 @@ CREATE TABLE scores (
     PRIMARY KEY (userId, exerciseId, createTime),
     FOREIGN KEY (exerciseId) REFERENCES exercises (exerciseId),
         CONSTRAINT score_id_positive
-        CHECK (userId > 0 AND exerciseId > 0),
-        CONSTRAINT score_range
-        CHECK (score BETWEEN 50 AND 150)
+        CHECK (userId > 0 AND exerciseId > 0)
 )
