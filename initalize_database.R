@@ -10,24 +10,15 @@ library(DBI)
 library(RSQLite)
 
 # database preparations ----
+# configurations
+db_filename <- "iquizoo.sqlite"
+# remove database file beforehand
+unlink(db_filename, force = TRUE)
 # open connection
 iquizoo_db <- dbConnect(SQLite(), dbname = "iquizoo.sqlite")
 # initializing database tables
-creation_query_folder <- "sql"
-creation_query_files <- list.files(creation_query_folder, "\\.sql")
-for (creation_query_file in creation_query_files) {
-  table_name <- tools::file_path_sans_ext(creation_query_file)
-  dbExecute(iquizoo_db, "BEGIN;")
-  if (db_has_table(iquizoo_db, table_name)) {
-    dbExecute(iquizoo_db, glue::glue("DROP TABLE {table_name};"))
-  }
-  dbExecute(
-    iquizoo_db, read_file(
-      file.path(creation_query_folder, creation_query_file)
-    )
-  )
-  dbExecute(iquizoo_db, "COMMIT;")
-}
+sql_files <- list.files("sql", "\\.sql", full.names = TRUE)
+walk(sql_files, ~dbExecute(iquizoo_db, read_file(.x)))
 # prepare exercises, abilities
 info_dir <- file.path("_info")
 # update abilities
