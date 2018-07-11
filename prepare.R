@@ -39,7 +39,9 @@ main <- function(loc) {
   key_vars <- list(
     user = c("userId", "name", "sex", "school", "grade", "class"),
     score = c("userId", "exerciseId", "createTime", "score"),
-    abscore = c("userId", "abId", "score")
+    abscore = c("userId", "abId", "score"),
+    class_cover = c("school", "grade", "class", "cover"),
+    school_cover = c("school", "cover")
   )
 
   # load dataset ----
@@ -284,13 +286,52 @@ FROM ab_scores_to_write;
   )
   dbExecute(iquizoo_db, "COMMIT;")
 
-  # read extra datasets ----
-  if (!is.null(configs$data_extra)) {
-    # TABLE: extra database
-    assign(
-      configs$data_extra$name,
-      read_excel(file.path(data_dir, configs$data_extra$file))
+  # update covers datasets ----
+  # update class_covers table of database
+  if (!is.null(configs$cover$class)) {
+    class_covers <- read_excel(file.path(data_dir, configs$cover$class)) %>%
+      select(one_of(key_vars[["class_cover"]]))
+    copy_to(iquizoo_db, class_covers, "class_covers_to_write")
+    dbExecute(iquizoo_db, "BEGIN;")
+    dbExecute(
+      iquizoo_db, "
+DELETE FROM class_covers
+ WHERE (school, grade, class) IN
+       (SELECT school, grade, class
+          FROM class_covers_to_write)
+      "
     )
+    dbExecute(
+      iquizoo_db, "
+INSERT INTO class_covers
+SELECT *
+  FROM class_covers_to_write;
+      "
+    )
+    dbExecute(iquizoo_db, "COMMIT;")
+  }
+  # update school_covers table of database
+  if (!is.null(configs$cover$school)) {
+    school_covers <- read_excel(file.path(data_dir, configs$cover$school)) %>%
+      select(one_of(key_vars[["school_cover"]]))
+    copy_to(iquizoo_db, school_covers, "school_covers_to_write")
+    dbExecute(iquizoo_db, "BEGIN;")
+    dbExecute(
+      iquizoo_db, "
+DELETE FROM school_covers
+ WHERE school IN
+       (SELECT school
+          FROM school_covers_to_write)
+      "
+    )
+    dbExecute(
+      iquizoo_db, "
+INSERT INTO school_covers
+SELECT *
+  FROM school_covers_to_write;
+      "
+    )
+    dbExecute(iquizoo_db, "COMMIT;")
   }
 }
 
