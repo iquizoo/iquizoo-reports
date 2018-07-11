@@ -39,7 +39,7 @@ main <- function(loc) {
   key_vars <- list(
     user = c("userId", "name", "sex", "school", "grade", "class"),
     score = c("userId", "exerciseId", "createTime", "score"),
-    abscore = c("abscoreId", "userId", "abId", "score", "level")
+    abscore = c("userId", "abId", "score")
   )
 
   # load dataset ----
@@ -221,8 +221,8 @@ FROM scores_to_write;
 
   # calculate ability scores ----
   scores_with_ability <- scores %>%
-    left_join(tbl(iquizoo_db, "exercises"), copy = TRUE) %>%
-    left_join(tbl(iquizoo_db, "abilities"), copy = TRUE)
+    left_join(tbl(iquizoo_db, "exercise_ability"), by = "exerciseId", copy = TRUE) %>%
+    left_join(tbl(iquizoo_db, "abilities"), by = "abId", copy = TRUE)
   ability_scores_list <- list()
   repeat {
     components_scores <- scores_with_ability %>%
@@ -232,11 +232,57 @@ FROM scores_to_write;
       ungroup()
     ability_scores_list <- c(ability_scores_list, list(components_scores))
     scores_with_ability <- components_scores %>%
-      left_join(tbl(iquizoo_db, "abilities"), copy = TRUE) %>%
-      mutate(abId = abParent)
+      left_join(tbl(iquizoo_db, "abilities"), by = "abId", copy = TRUE) %>%
+      mutate(abId = parent)
     if (all(scores_with_ability$abId == 0)) break
   }
   ability_scores <- bind_rows(ability_scores_list)
+  if (!is.null(configs$ability_correction)) {
+    ability_scores <- with(
+      configs$ability_correction,
+      switch(
+        type,
+        modify = {
+          # delta gives those to be added based on root abilities
+          deltas <- as_tibble(args)
+          abilities <- collect(tbl(iquizoo_db, "abilities"))
+          ab_root <- function(ab_id) {
+            repeat {
+              root <- ab_id
+              ab_id <- with(abilities, parent[abId == ab_id])
+              if (ab_id == 0) break
+            }
+            return(root)
+          }
+          ability_scores %>%
+            left_join(abilities, by = "abId") %>%
+            mutate(abRoot = map_dbl(abId, ab_root)) %>%
+            left_join(deltas, by = c("abRoot" = "abId")) %>%
+            mutate(score = score + delta) %>%
+            select(one_of(key_vars[["abscore"]]))
+        }
+      )
+    )
+  }
+  # update ability_scores table of database
+  copy_to(iquizoo_db, ability_scores, "ab_scores_to_write")
+  dbExecute(iquizoo_db, "BEGIN;")
+  dbExecute(
+    iquizoo_db, "
+DELETE FROM ability_scores
+ WHERE (userId, abId) IN
+       (SELECT userId, abId
+          FROM ab_scores_to_write)
+    "
+  )
+  dbExecute(
+    iquizoo_db, "
+INSERT INTO ability_scores
+SELECT *
+FROM ab_scores_to_write;
+    "
+  )
+  dbExecute(iquizoo_db, "COMMIT;")
 
   # read extra datasets ----
   if (!is.null(configs$data_extra)) {
@@ -246,8 +292,6 @@ FROM scores_to_write;
       read_excel(file.path(data_dir, configs$data_extra$file))
     )
   }
-  # store ability scores in the local SQLite database
-  db_insert_into(iquizoo_db, loc, ability_scores, overwrite = TRUE)
 }
 
 if (interactive()) {
