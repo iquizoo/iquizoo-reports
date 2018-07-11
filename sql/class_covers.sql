@@ -3,5 +3,6 @@ CREATE TABLE class_covers (
     grade  INT           NOT NULL,
     class  NVARCHAR(10)  NOT NULL,
     cover  NVARCHAR(10)  NOT NULL,
-    PRIMARY KEY (school, grade, class)
+    PRIMARY KEY (school, grade, class),
+    FOREIGN KEY (school) REFERENCES users (school)
 );
