@@ -108,9 +108,10 @@ main <- function(loc) {
   dbExecute(iquizoo_db, "BEGIN;")
   dbExecute(
     iquizoo_db, "
-    DELETE
-    FROM users
-    WHERE userId IN (SELECT userId FROM users_to_write);
+DELETE FROM users
+ WHERE userId IN
+       (SELECT userId
+          FROM users_to_write);
     "
   )
   dbExecute(
