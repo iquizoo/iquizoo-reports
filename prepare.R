@@ -118,9 +118,9 @@ DELETE FROM users
   )
   dbExecute(
     iquizoo_db, "
-    INSERT INTO users
-    SELECT *
-    FROM users_to_write;
+INSERT INTO users
+SELECT *
+  FROM users_to_write;
     "
   )
   dbExecute(iquizoo_db, "COMMIT;")
@@ -133,6 +133,7 @@ DELETE FROM users
       none = data_origin %>%
         mutate(score = standardScore),
       iquizoo = {
+        info_dir <- "_info"
         # read exercise code information
         task_codes <- read_html(file.path(info_dir, "exercise.html")) %>%
           html_node("table") %>%
@@ -194,9 +195,10 @@ DELETE FROM users
       },
       scale = data_origin %>%
         group_by(exerciseId, grade) %>%
-        mutate(score = scale(index) * 15 + 100)
-            )
-        )
+        mutate(score = scale(index) * 15 + 100) %>%
+        ungroup()
+    )
+  )
   # TABLE: scores of all users on all tasks/exercises
   scores <- scores_corrected %>%
     select(one_of(key_vars[["score"]])) %>%
