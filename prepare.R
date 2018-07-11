@@ -192,53 +192,32 @@ DELETE FROM users
       },
       scale = data_origin %>%
         group_by(exerciseId, grade) %>%
-        mutate(score = scale(index) * 15 + 100),
-      modify = {
-        deltas <- as_tibble(args)
-        abilities <- collect(tbl(iquizoo_db, "abilities"))
-        exercises <- collect(tbl(iquizoo_db, "exercises"))
-        exercise_ability <- collect(tbl(iquizoo_db, "exercise_ability"))
-        ab_parents <- setNames(abilities$parent, abilities$abId)
-        data_origin %>%
-          left_join(exercises, by = "exerciseId") %>%
-          left_join(exercise_ability, by = "exerciseId", suffix = c(".x", "")) %>%
-          left_join(abilities, by = "abId") %>%
-          mutate(
-            abRoot = map_dbl(
-              abId, function(id) {
-                repeat {
-                  root <- id
-                  id <- ab_parents[as.character(id)]
-                  if (id == 0) break
-    }
-                root
-  }
+        mutate(score = scale(index) * 15 + 100)
             )
-          ) %>%
-          left_join(deltas, by = c("abRoot" = "abId")) %>%
-          mutate(score = standardScore + delta)
-      }
         )
-    )
-  # data cleanse: remove duplicates and outliers based on boxplot rule
-  scores_clean <- scores_corrected %>%
-    # remove duplicates
-    group_by(userId, exerciseId) %>%
-    mutate(occurrence = row_number(desc(score))) %>%
-    filter(occurrence == 1) %>%
-    select(-occurrence) %>%
-    # remove outliers based on boxplot rule
-    group_by(exerciseId) %>%
-    mutate(
-      score = ifelse(score %in% boxplot.stats(score)$out, NA, score)
-    ) %>%
-    ungroup() %>%
-    unique()
   # TABLE: scores of all users on all tasks/exercises
-  scores <- scores_clean %>%
+  scores <- scores_corrected %>%
     select(one_of(key_vars[["score"]])) %>%
-    unique() %>%
-    mutate(createTime = as.character(createTime))
+    filter(!is.na(score))
+  # update scores table of database
+  copy_to(iquizoo_db, scores, "scores_to_write")
+  dbExecute(iquizoo_db, "BEGIN;")
+  dbExecute(
+    iquizoo_db, "
+DELETE FROM scores
+WHERE (userId, exerciseId, createTime) IN
+      (SELECT userId, exerciseId, createTime
+         FROM users_to_write)
+    "
+  )
+  dbExecute(
+    iquizoo_db, "
+INSERT INTO scores
+SELECT *
+FROM scores_to_write;
+    "
+  )
+  dbExecute(iquizoo_db, "COMMIT;")
 
   # calculate ability scores ----
   scores_with_ability <- scores %>%
