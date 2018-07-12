@@ -41,7 +41,8 @@ main <- function(loc) {
     score = c("userId", "exerciseId", "createTime", "score"),
     abscore = c("userId", "abId", "score"),
     class_cover = c("school", "grade", "class", "cover"),
-    school_cover = c("school", "cover")
+    school_cover = c("school", "cover"),
+    school_detail = c("school", "province", "prefecture", "county")
   )
 
   # load dataset ----
@@ -264,7 +265,7 @@ REPLACE INTO ability_scores
   )
   dbExecute(iquizoo_db, "COMMIT;")
 
-  # update covers datasets ----
+  # update additional tables ----
   # update class_covers table of database
   if (!is.null(configs$cover$class)) {
     class_covers <- read_excel(file.path(data_dir, configs$cover$class)) %>%
@@ -294,6 +295,21 @@ REPLACE INTO school_covers
       "
     )
     dbExecute(iquizoo_db, "COMMIT;")
+    # update school_details table of database
+    if (!is.null(configs$detail$school)) {
+      school_details <- read_excel(file.path(data_dir, configs$detail$school)) %>%
+        select(one_of(key_vars[["school_detail"]]))
+      copy_to(iquizoo_db, school_details, "school_details_to_write")
+      dbExecute(iquizoo_db, "BEGIN;")
+      dbExecute(
+        iquizoo_db, "
+REPLACE INTO school_details
+ SELECT *
+   FROM school_details_to_write;
+      "
+      )
+      dbExecute(iquizoo_db, "COMMIT;")
+    }
   }
 }
 
