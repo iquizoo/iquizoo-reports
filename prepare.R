@@ -110,17 +110,9 @@ main <- function(loc) {
   dbExecute(iquizoo_db, "BEGIN;")
   dbExecute(
     iquizoo_db, "
-DELETE FROM users
- WHERE userId IN
-       (SELECT userId
-          FROM users_to_write);
-    "
-  )
-  dbExecute(
-    iquizoo_db, "
-INSERT INTO users
-SELECT *
-  FROM users_to_write;
+REPLACE INTO users
+ SELECT *
+   FROM users_to_write;
     "
   )
   dbExecute(iquizoo_db, "COMMIT;")
@@ -208,17 +200,9 @@ SELECT *
   dbExecute(iquizoo_db, "BEGIN;")
   dbExecute(
     iquizoo_db, "
-DELETE FROM scores
-WHERE (userId, exerciseId, createTime) IN
-      (SELECT userId, exerciseId, createTime
-         FROM users_to_write)
-    "
-  )
-  dbExecute(
-    iquizoo_db, "
-INSERT INTO scores
-SELECT *
-FROM scores_to_write;
+REPLACE INTO scores
+ SELECT *
+   FROM scores_to_write;
     "
   )
   dbExecute(iquizoo_db, "COMMIT;")
@@ -273,17 +257,9 @@ FROM scores_to_write;
   dbExecute(iquizoo_db, "BEGIN;")
   dbExecute(
     iquizoo_db, "
-DELETE FROM ability_scores
- WHERE (userId, abId) IN
-       (SELECT userId, abId
-          FROM ab_scores_to_write)
-    "
-  )
-  dbExecute(
-    iquizoo_db, "
-INSERT INTO ability_scores
-SELECT *
-FROM ab_scores_to_write;
+REPLACE INTO ability_scores
+ SELECT *
+   FROM ab_scores_to_write;
     "
   )
   dbExecute(iquizoo_db, "COMMIT;")
@@ -297,17 +273,9 @@ FROM ab_scores_to_write;
     dbExecute(iquizoo_db, "BEGIN;")
     dbExecute(
       iquizoo_db, "
-DELETE FROM class_covers
- WHERE (school, grade, class) IN
-       (SELECT school, grade, class
-          FROM class_covers_to_write)
-      "
-    )
-    dbExecute(
-      iquizoo_db, "
-INSERT INTO class_covers
-SELECT *
-  FROM class_covers_to_write;
+REPLACE INTO class_covers
+ SELECT *
+   FROM class_covers_to_write;
       "
     )
     dbExecute(iquizoo_db, "COMMIT;")
@@ -320,17 +288,9 @@ SELECT *
     dbExecute(iquizoo_db, "BEGIN;")
     dbExecute(
       iquizoo_db, "
-DELETE FROM school_covers
- WHERE school IN
-       (SELECT school
-          FROM school_covers_to_write)
-      "
-    )
-    dbExecute(
-      iquizoo_db, "
-INSERT INTO school_covers
-SELECT *
-  FROM school_covers_to_write;
+REPLACE INTO school_covers
+ SELECT *
+   FROM school_covers_to_write;
       "
     )
     dbExecute(iquizoo_db, "COMMIT;")
