@@ -4,6 +4,7 @@ CREATE TABLE scores (
     createTime CHAR(19) NOT NULL,
     score      NUMERIC  NOT NULL,
     PRIMARY KEY (userId, exerciseId, createTime),
+    FOREIGN KEY (userId) REFERENCES users (userId),
     FOREIGN KEY (exerciseId) REFERENCES exercises (exerciseId),
         CONSTRAINT score_id_positive
         CHECK (userId > 0 AND exerciseId > 0),
