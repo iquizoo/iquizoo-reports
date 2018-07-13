@@ -1,11 +1,22 @@
 CREATE VIEW IF NOT EXISTS report_ability_scores AS
 SELECT users.userId, users.school, users.grade, users.class,
+       scores.createTime AS firstPartTime,
        school_details.province || coalesce (school_details.prefecture, "") || school_details.county AS region,
        school_covers.cover AS school_cover,
        class_covers.cover AS class_cover,
        abilities.name AS ab_name, abilities.name_en AS ab_name_en,
        ability_scores.score
   FROM users
+       LEFT JOIN scores
+       ON users.userId =
+       (
+       SELECT userId
+       FROM scores
+       WHERE scores.userId = users.userId
+       ORDER BY createTime DESC
+       LIMIT 1
+       )
+
        LEFT JOIN school_covers
        ON users.school = school_covers.school
 
