@@ -1,0 +1,29 @@
+default:
+  # to whom to report
+  customer:
+    id:
+    - daxing
+    - lishui
+    - erxiao
+    # customer identifier type, 'region' or 'school'
+    type:
+    - region
+    - region
+    - school
+    name:
+    - 北京市大兴区
+    - 广东省佛山市南海区里水镇
+    - 北京市第二实验小学
+  # useful contents to search from
+  include.path:
+    script: scripts
+    config: config
+    database: !expr file.path("assets", "db")
+    template: !expr file.path("assets", "template")
+  # use Android Sans font, more info at
+  # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
+  text.family: Droid Sans Fallback
+  encoding: UTF-8
+  score.level:
+    breaks: !expr qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
+    labels: !expr LETTERS[4:1]

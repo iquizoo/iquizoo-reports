@@ -16,24 +16,6 @@ suppressPackageStartupMessages(library(dbplyr))
 suppressPackageStartupMessages(library(DBI))
 suppressPackageStartupMessages(library(RSQLite))
 
-# options used in reports configurations ----
-options(
-  # knitr: do not display NA
-  knitr.kable.NA = "",
-  # general
-  report.encoding = "UTF-8",
-  # use Android Sans font, more info at
-  # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
-  report.text.family = "Droid Sans Fallback",
-  # include paths
-  report.include.path = c(
-    script = "scripts",
-    config = "config",
-    database = file.path("assets", "db"),
-    template = file.path("assets", "template")
-  )
-)
-
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
   # parse command line argument if not in interactive mode
@@ -43,68 +25,58 @@ if (!interactive()) {
   #               help="Show this help message and exit")
   option_list <- list(
     make_option(
-      c("-t", "--type"),
-      help = "Specify the report type, could be 'one' (default), 'school' or 'district'."
+      c("-t", "--report-type"),
+      help = "Required. Specify the report type, could be 'one', 'school' or 'district'."
     ),
     make_option(
-      c("-r", "--region"),
+      c("-c", "--customer-id"),
       help = paste(
-        "Specify the region identifier for reporting.",
-        "This signifies because it will be used to identify dataset and descriptions."
+        "Required. Specify the customer identifier for reporting.",
+        "This signifies because it will be used to identify datasets and descriptions.",
+        "The customer `id``, `type` and `name` should be able to be found in the configuration file `config.yml`."
       )
-    ),
-    make_option(
-      c("-n", "--school-name"),
-      help = "The name of school, do not set it if all schools need reporting."
     ),
     make_option(
       c("-d", "--date-manual"),
       help = paste(
-        "Whether the dates in the report (report data and test date) are set manually?",
-        "Use \"report\", \"test\" or \"all\" to manually set one or two dates",
+        "Optional. Whether the dates in the report (report data and test date) are set manually?",
+        "Use \"report\", \"test\" or \"all\" to manually set one or two dates.",
         "Or do not set it to if all the dates should be set automatically.",
         "When set, the corresponding report-date or test-date are required."
       )
     ),
-    make_option(c("--report-date"), help = "The report date."),
-    make_option(c("--test-date"), help = "The test date.")
+    make_option(c("--report-date"), help = "Required conditionally. The report date."),
+    make_option(c("--test-date"), help = "Required conditionally. The test date.")
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
   params <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 } else {
-  # read configurations from yaml config file if in interactive mode
-  params <- read_yaml(
-    file.path(getOption("report.include.path")["config"], "params.yml"),
-    fileEncoding = getOption("report.encoding")
-  )
+  # read configurations from yaml config file if in interactive mode (this is used for quick preview or debug)
+  params <- read_yaml("params.yml")
 }
 
 # environmental settings ----
 # source user script, which will be placed in script path
-# TODO: NEEDS ENHANCEMENT
+# TODO: write a package
 source(
-  file.path(getOption("report.include.path")["script"], "utils.R"),
-  encoding = getOption("report.encoding")
+  file.path(config::get("include.path")$script, "utils.R"),
+  encoding = config::get("encoding")
 )
 # import font if not found
-text_family <- getOption("report.text.family")
+text_family <- config::get("text.family")
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
 # get the content of all the configuration files
-# paramter map
-report_map <- get_config("report", "map")
 # report intro: context template
-context_tmpl <- get_config("context", params$region, params$type, ext = "Rmd")
+context_tmpl <- get_config("context", params$customer_id, params$report_type, ext = "Rmd")
 # report body: body template
-body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
+body_tmpl <- get_config("body", params$customer_id, params$report_type, ext = "Rmd")
 # report ending: suggestion template
-suggestion_tmpl <- get_config("suggestion", params$region, params$type, ext = "Rmd")
+suggestion_tmpl <- get_config("suggestion", params$customer_id, params$report_type, ext = "Rmd")
 # descriptions, or the content builder
-descriptions <- get_config("descriptions", params$region, params$type)
-# set test region
-region <- report_map$region[[params$region]]
+descriptions <- get_config("descriptions", params$customer_id, params$report_type)
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
@@ -130,13 +102,13 @@ ability_md <- rbind(ability_info, component_info) %>%
     )
   )
 
-# datasets preparations ----
+# dataset preparations ----
 # connect to database and download data
 iquizoo_db <- dbConnect(
   SQLite(),
   dbname = file.path(
-    getOption("report.include.path")["database"],
-    "iquizoo.db"
+    config::get("include.path")$database,
+    "iquizoo.sqlite"
   )
 )
 scores_origin <- tbl(iquizoo_db, params$region) %>%

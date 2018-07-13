@@ -51,10 +51,10 @@ render_report <- function(...) {
 #' @param ... Constituent parts of config file, will be passed to \code{\link{paste}}
 #' @param ext File extension
 get_config <- function(..., ext = "yml") {
-  config_dir <- getOption("report.include.path")["config"]
+  config_dir <- config::get("include.path")$config
   if (is.null(config_dir)) {
     warning(
-      "No config path specified! Please set it in option \"report.include.path\"!\n",
+      "No config path specified! Please set it in `config.yml`!\n",
       "Will use default path: \"config\""
     )
     config_dir <- "config"
