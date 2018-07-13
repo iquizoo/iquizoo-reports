@@ -11,7 +11,7 @@ erxiao:
   data_file: brain_lesson.xlsx
   user_correction:
     replace:
-      school: "北京第二实验小学"
+      school: "北京市第二实验小学"
       grade: 2
     special: jcAccount
   score_correction:
