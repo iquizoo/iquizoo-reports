@@ -111,28 +111,25 @@ iquizoo_db <- dbConnect(
     "iquizoo.sqlite"
   )
 )
-scores_origin <- tbl(iquizoo_db, params$region) %>%
-  left_join(tbl(iquizoo_db, "users")) %>%
-  left_join(tbl(iquizoo_db, "abilities")) %>%
-  filter(!is.na(score)) %>%
+scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
   collect()
 dbDisconnect(iquizoo_db)
-# count number of school, grade and users
-n_school <- n_distinct(scores_origin$school)
-n_grade <- n_distinct(scores_origin$grade)
-n_user <- n_distinct(scores_origin$userId)
-# reconfigure `school_name` based on the dataset
-if (is.null(params$school_name)) {
-  school_names <- unique(scores_origin$school)
-} else {
-  school_names <- params$school_name
+# filter out corresponding data based on the configurations
+customers <- as_tibble(config::get("customer"))
+customer_type <- with(customers, type[id %in% params$customer_id])
+scores_report <- switch(
+  customer_type,
+  region = {
+    region_name <- with(customers, name[id %in% params$customer_id])
+    scores_origin %>%
+      filter(str_detect(region, region_name))
+  },
+  school = {
+    school_name = with(customers, name[id %in% params$customer_id])
+    scores_origin %>%
+      filter(school == school_name)
 }
-if (params$type == "school") {
-  # validate shcool names
-  if (!all(school_names %in% scores_origin$school)) {
-    stop("School not found!")
-  }
-}
+)
 
 # build the three parts of the report ----
 switch(
