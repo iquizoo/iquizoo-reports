@@ -12,6 +12,9 @@ suppressPackageStartupMessages(library(yaml))
 suppressPackageStartupMessages(library(glue))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
+suppressPackageStartupMessages(library(dbplyr))
+suppressPackageStartupMessages(library(DBI))
+suppressPackageStartupMessages(library(RSQLite))
 
 # options used in reports configurations ----
 options(
@@ -128,24 +131,31 @@ ability_md <- rbind(ability_info, component_info) %>%
   )
 
 # datasets preparations ----
-# load ability scores
-scores_origin <- read_excel(
-  file.path(
+# connect to database and download data
+iquizoo_db <- dbConnect(
+  SQLite(),
+  dbname = file.path(
     getOption("report.include.path")["database"],
-    paste0(params$region, ".xlsx")
+    "iquizoo.db"
   )
 )
+scores_origin <- tbl(iquizoo_db, params$region) %>%
+  left_join(tbl(iquizoo_db, "users")) %>%
+  left_join(tbl(iquizoo_db, "abilities")) %>%
+  filter(!is.na(score)) %>%
+  collect()
+dbDisconnect(iquizoo_db)
 # count number of school, grade and users
 n_school <- n_distinct(scores_origin$school)
 n_grade <- n_distinct(scores_origin$grade)
 n_user <- n_distinct(scores_origin$userId)
 # reconfigure `school_name` based on the dataset
+if (is.null(params$school_name)) {
+  school_names <- unique(scores_origin$school)
+} else {
+  school_names <- params$school_name
+}
 if (params$type == "school") {
-  if (is.null(params$school_name)) {
-    school_names <- unique(scores_origin$school)
-  } else {
-    school_names <- params$school_name
-  }
   # validate shcool names
   if (!all(school_names %in% scores_origin$school)) {
     stop("School not found!")
@@ -157,26 +167,35 @@ switch(
   params$type,
   school = {
     for (school_name in school_names) {
-      # data preparations ----
       # filter out scores for current school
       scores_school <- scores_origin %>%
         filter(school == school_name)
-      # combine data from whole district, this school and each class
-      scores_combined <- list(
-        本区 = scores_origin,
-        本校 = scores_school,
-        各班 = scores_school
-      ) %>%
-        bind_rows(.id = "region") %>%
-        mutate(cls = if_else(region != "各班", region, cls)) %>%
-        mutate(region = factor(region, c("各班", "本校", "本区")))
+      if (n_school > 1) {
+        # school are compared with district
+        scores_combined <- list(
+          本区 = scores_origin,
+          本校 = scores_school,
+          各班 = scores_school
+        ) %>%
+          bind_rows(.id = "region") %>%
+          mutate(cls = if_else(region != "各班", region, cls)) %>%
+          mutate(region = factor(region, c("各班", "本校", "本区")))
+      } else {
+        # no need to compare school and district
+        scores_combined <- list(
+          本校 = scores_school,
+          各班 = scores_school
+        ) %>%
+          bind_rows(.id = "region") %>%
+          mutate(cls = if_else(region != "各班", region, cls)) %>%
+          mutate(region = factor(region, c("各班", "本校")))
+      }
       # set dates
-      attach(set_date(params, test_date = median(scores_school$createTime)))
+      attach(set_date(params, test_date = median(as.Date(scores_school$firstPartTime))))
       render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
     }
   },
   district = {
-    # data preparations ----
     # use schoolCovert not school
     scores_origin <- scores_origin %>%
       rename(schoolOvert = school, school = schoolCovert)
@@ -189,12 +208,12 @@ switch(
       mutate(school = if_else(region != "各校", region, school)) %>%
       mutate(region = factor(region, c("本区", "各校")))
     # set dates
-    attach(set_date(params, test_date = median(scores_origin$createTime)))
+    attach(set_date(params, test_date = median(scores_origin$firstPartTime)))
     render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
   },
   one = {
     # set dates
-    attach(set_date(params, test_date = median(scores_origin$createTime)))
+    attach(set_date(params, test_date = median(scores_origin$firstPartTime)))
     render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
   },
   stop("Unsupported report type! Please specify as school/district only.")

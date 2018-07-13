@@ -1,10 +1,10 @@
 ```{r <<ability_name_id>>-configs, include=FALSE}
 ability_name_id <- "<<ability_name_id>>"
-ability_name_cn <- ability_md %>% 
-  filter(nameid == ability_name_id) %>% 
+ability_name_cn <- ability_md %>%
+  filter(nameid == ability_name_id) %>%
   pull(name)
 scores_this_ability <- scores_combined %>%
-  filter(ability == ability_name_cn)
+  filter(abName == ability_name_cn)
 bp_stats <- boxplot.stats(scores_this_ability$score)
 # descriptive statistics
 ability_summary <- scores_this_ability %>%
@@ -27,7 +27,7 @@ if (n_school > 1) {
   diff_msg_mean <- with(
     descriptions$body$table$note,
     if_else(stats_mean$p.value[1] < 0.05, sig, nsig)
-  ) 
+  )
   stats_med <- broom::tidy(kruskal.test(with(scores_this_ability_school, split(score, school))))
   diff_msg_med <- with(
     descriptions$body$boxplot$note,
@@ -44,12 +44,12 @@ extra_bp <- with(
   ifelse(eval(parse(text = condition)), as.character(glue(content)), "")
 )
 # `Q1_gross` and `Q3_gross` are required
-scores_this_ability %>% 
-  filter(region == "本区") %>% 
+scores_this_ability %>%
+  filter(region == "本区") %>%
   summarise(
     Q1_gross = round(quantile(score, 0.25, na.rm = TRUE)),
     Q3_gross = round(quantile(score, 0.75, na.rm = TRUE))
-  ) %>% 
+  ) %>%
   attach()
 ```
 

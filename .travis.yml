@@ -18,6 +18,8 @@ jobs:
       script: Rscript 'build.R' -r 'daxing' -t 'district'
     - stage: test
       script: Rscript 'build.R' -r 'lishui' -t 'one'
+    - stage: test
+      script: Rscript 'build.R' -r 'erxiao' -t 'school'
     - stage: deploy
       script:
         - Rscript 'build.R' -r 'daxing' -t 'school'
