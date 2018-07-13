@@ -150,16 +150,15 @@ customize_style <- function(text, style = "") {
 #' @param content The section content
 #' @param hlevel The heading level, default to 1
 #' @param style The name of the custom style
-#' @param glue Logical value to indicate if the texts should be substituted
+#' @param to_glue Logical value to indicate if the texts should be substituted
 #' @param ... Additional parameters to be passed to \code{\link{glue::glue}}
 #' @return The markdown string to render as a section
-render_title_content <- function(title, content, hlevel = 1, style = "", glue = FALSE, ...) {
+render_title_content <- function(title, content, hlevel = 1, style = "", to_glue = FALSE, ...) {
   heading <- render_heading(title, hlevel) %>%
     customize_style(style = style)
   md <- paste(heading, content, sep = "\n\n")
-  if (glue) {
-    md <- md %>%
-      map_chr(function(x) {glue(x, ...)})
+  if (to_glue) {
+    md <- map_chr(md, glue, ...)
   }
   return(md)
 }
