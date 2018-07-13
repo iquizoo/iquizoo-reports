@@ -1,0 +1,43 @@
+default:
+  datasets: [daxing, erxiao, weiming]
+  data_path: datasets
+  cover:
+    school: school_codes.xlsx
+    class: cls_cover.xlsx
+  detail:
+    school: school_details.xlsx
+
+erxiao:
+  data_file: brain_lesson.xlsx
+  user_correction:
+    replace:
+      school: "北京第二实验小学"
+      grade: 2
+    special: jcAccount
+  score_correction:
+    type: none
+  ability_correction:
+    type: modify
+    args:
+      abId:
+      - 1
+      - 2
+      delta:
+      - 15
+      - 5
+
+daxing:
+  data_file: daxing_origin.xlsx
+  score_correction:
+    type: iquizoo
+    args:
+      special: [116039, 116041, 116042, 118036]
+      common: 97938
+
+weiming:
+  data_file: data.json
+  score_correction:
+    type: none
+  user_correction:
+    replace:
+      grade: 6
