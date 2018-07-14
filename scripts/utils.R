@@ -10,7 +10,8 @@ require(glue)
 
 #' Helper function to generate required \code{.Rmd} files
 #'
-#' @param ... These parameters are to be passed to \code{\link{bookdown::render_book}}
+#' @param ... These parameters are to be passed to
+#'   \code{\link[bookdown]{render_book}}
 render_report <- function(...) {
   # render context content as 'context.Rmd'
   context_filename <- "context.Rmd"
