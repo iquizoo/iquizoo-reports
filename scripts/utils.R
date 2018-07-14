@@ -6,7 +6,6 @@
 
 # package loading checking
 require(tidyverse)
-require(glue)
 
 #' Helper function to generate required \code{.Rmd} files
 #'
@@ -17,7 +16,7 @@ render_report <- function(...) {
   context_filename <- "context.Rmd"
   write_lines(
     # substitute symbols enclosed by "<<" and ">>" with their values if existed
-    glue(context_tmpl, .open = "<<", .close = ">>"), context_filename
+    str_glue(context_tmpl, .open = "<<", .close = ">>"), context_filename
   )
 
   # render body content as 'body.Rmd'
@@ -26,8 +25,7 @@ render_report <- function(...) {
   body_content_vector <- character()
   for (ability_name_id in ability_names_id) {
     # use one template of single ability to generate the 'body.Rmd'
-    body_content_vector[ability_name_id] <- body_tmpl %>%
-      glue(.open = "<<", .close = ">>")
+    body_content_vector[ability_name_id] <- str_glue(body_tmpl, .open = "<<", .close = ">>")
   }
   body_content <- paste(body_content_vector, collapse = "\n\n")
   write_lines(render_title_content(body_title, body_content), body_filename)
@@ -36,7 +34,7 @@ render_report <- function(...) {
   suggestion_filename <- "suggestion.Rmd"
   write_lines(
     # substitute symbols enclosed by "<<" and ">>" with their values if existed
-    glue(suggestion_tmpl, .open = "<<", .close = ">>"), suggestion_filename
+    str_glue(suggestion_tmpl, .open = "<<", .close = ">>"), suggestion_filename
   )
 
   # render report for current school
@@ -73,48 +71,6 @@ get_config <- function(..., type = NULL, ext = "yml", path = "config") {
   return(config_content)
 }
 
-#' Set all the dates in the report
-#'
-#' Currently, 'report date' and 'test date' are supported.
-#'
-#' @param params The parameters set for current report
-#' @param report_date The report date automatically set by the program, default
-#'   to \code{\link{Sys.time()}}
-#' @param test_date The test date automatically set by the program, required
-#'   when \code{params$date_manual} is not set as 'test' or 'all'
-set_date <- function(params, report_date = Sys.time(), test_date = NULL) {
-  # set report date
-  if (
-    identical(params$date_manual, "report") ||
-    identical(params$date_manual, "all")
-  ) {
-    if (is.null(params$report_date)) {
-      stop("Please set \"report_date\" at the command line!")
-    }
-    report_date <- params$report_date
-  }
-  # set test date
-  if (
-    identical(params$date_manual, "test") ||
-    identical(params$date_manual, "all")
-  ) {
-    if (is.null(params$test_date)) {
-      stop("Please set \"test_date\" at the command line!")
-    }
-    test_date <- params$test_date
-  } else {
-    if (is.null(test_date)) stop("Fatal error! Please tell me the test date.")
-  }
-  report_date_string <- glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
-  test_date_string <- glue("{year(test_date)}年{month(test_date)}月")
-  return(
-    list(
-      report_date_string = report_date_string,
-      test_date_string = test_date_string
-    )
-  )
-}
-
 #' Render heading according to level.
 #'
 #' @param text The text to be adjusted
@@ -134,7 +90,7 @@ render_heading <- function(text, hlevel = 1) {
 customize_style <- function(text, style = "") {
   prefix <- if_else(
     style == "", "",
-    unclass(glue("::: {{custom-style=\"{style}\"}}"))
+    unclass(str_glue("::: {{custom-style=\"{style}\"}}"))
   )
   suffix <- if_else(style == "", "", ":::")
   md <- paste(prefix, text, suffix, sep = "\n")
@@ -155,7 +111,7 @@ render_title_content <- function(title, content, hlevel = 1, style = "", to_glue
     customize_style(style = style)
   md <- paste(heading, content, sep = "\n\n")
   if (to_glue) {
-    md <- map_chr(md, glue, ...)
+    md <- map_chr(md, str_glue, ...)
   }
   return(md)
 }

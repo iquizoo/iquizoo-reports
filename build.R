@@ -8,7 +8,6 @@
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(extrafont))
-suppressPackageStartupMessages(library(glue))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(dbplyr))
@@ -176,5 +175,23 @@ report_units <- switch(
   school = unique(scores_region$school)
 )
 for (report_unit in report_units) {
-  render_report(output_file = glue("{region_name}-{report_unit}.docx"), clean_envir = FALSE)
+  if (report_type == "school") {
+    scores_unit <- scores_region %>%
+      filter(school == report_unit)
+  }
+  # set report date and test date
+  if (date_manual_report) {
+    report_date <- params$report_date
+  } else {
+    report_date <- Sys.time()
+  }
+  report_date_string <- str_glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
+  if (date_manual_test) {
+    test_date <- params$test_date
+  } else {
+    test_date <- median(as_datetime(scores_unit$firstPartTime))
+  }
+  test_date_string <- str_glue("{year(test_date)}年{month(test_date)}月")
+  # report rendering
+  render_report(output_file = str_glue("{region_name}-{report_unit}.docx"), clean_envir = FALSE)
 }
