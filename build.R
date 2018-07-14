@@ -25,16 +25,16 @@ if (!interactive()) {
   #               help="Show this help message and exit")
   option_list <- list(
     make_option(
-      c("-t", "--report-type"),
-      help = "Required. Specify the report type, could be 'one', 'school' or 'district'."
-    ),
-    make_option(
       c("-c", "--customer-id"),
       help = paste(
         "Required. Specify the customer identifier for reporting.",
         "This signifies because it will be used to identify datasets and descriptions.",
         "The customer `id``, `type` and `name` should be able to be found in the configuration file `config.yml`."
       )
+    ),
+    make_option(
+      c("-t", "--report-type"), default = "",
+      help = "Optional. Used when the customer(s) need different versions of reports."
     ),
     make_option(
       c("-d", "--date-manual"), default = "none",
@@ -59,9 +59,6 @@ if (!interactive()) {
 # check command line arguments ----
 if (is.null(params$customer_id)) {
   stop("Fatal error! You must specify the identifier of the customer.")
-}
-if (is.null(params$report_type)) {
-  stop("Fatal error! You must specify the type of the report.")
 }
 if (!params$date_manual %in% c("none", "report", "test", "all")) {
   warning("The \"--date-manual\" has unexpected value. Will set it to \"none\".")
@@ -91,13 +88,13 @@ if (!text_family %in% fonts()) {
 }
 # get the content of all the configuration files
 # report intro: context template
-context_tmpl <- get_config("context", params$customer_id, params$report_type, ext = "Rmd")
+context_tmpl <- get_config("context", params$customer_id, type = params$report_type, ext = "Rmd")
 # report body: body template
-body_tmpl <- get_config("body", params$customer_id, params$report_type, ext = "Rmd")
+body_tmpl <- get_config("body", params$customer_id, type = params$report_type, ext = "Rmd")
 # report ending: suggestion template
-suggestion_tmpl <- get_config("suggestion", params$customer_id, params$report_type, ext = "Rmd")
+suggestion_tmpl <- get_config("suggestion", params$customer_id, type = params$report_type, ext = "Rmd")
 # descriptions, or the content builder
-descriptions <- get_config("descriptions", params$customer_id, params$report_type)
+descriptions <- get_config("descriptions", params$customer_id, type = params$report_type)
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
