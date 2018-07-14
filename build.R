@@ -37,10 +37,10 @@ if (!interactive()) {
       )
     ),
     make_option(
-      c("-d", "--date-manual"),
+      c("-d", "--date-manual"), default = "none",
       help = paste(
         "Optional. Whether the dates in the report (report data and test date) are set manually?",
-        "Use \"report\", \"test\" or \"all\" to manually set one or two dates.",
+        "Use \"none\" (default), \"report\", \"test\" or \"all\" to manually set one or two dates.",
         "Or do not set it to if all the dates should be set automatically.",
         "When set, the corresponding report-date or test-date are required."
       )
@@ -54,6 +54,18 @@ if (!interactive()) {
 } else {
   # read configurations from yaml config file if in interactive mode (this is used for quick preview or debug)
   params <- read_yaml("params.yml")
+}
+
+# check command line arguments ----
+if (is.null(params$customer_id)) {
+  stop("Fatal error! You must specify the identifier of the customer.")
+}
+if (is.null(params$report_type)) {
+  stop("Fatal error! You must specify the type of the report.")
+}
+if (!params$date_manual %in% c("none", "report", "test", "all")) {
+  warning("The \"--date-manual\" has unexpected value. Will set it to \"none\".")
+  params$date_manual <- "none"
 }
 
 # environmental settings ----
