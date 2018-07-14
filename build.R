@@ -139,20 +139,30 @@ scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
   collect()
 dbDisconnect(iquizoo_db)
 # filter out corresponding data based on the configurations
-customers <- as_tibble(config::get("customer"))
-customer_type <- with(customers, type[id %in% params$customer_id])
-scores_report <- switch(
-  customer_type,
-  region = {
-    region_name <- with(customers, name[id %in% params$customer_id])
-    scores_origin %>%
-      filter(str_detect(region, region_name))
-  },
-  school = {
-    school_name = with(customers, name[id %in% params$customer_id])
-    scores_origin %>%
-      filter(school == school_name)
+customer_type <- config::get("type", config = customer_id)
+customer_name <- config::get("name", config = customer_id)
+# get the region name to extract data for report
+region_name <- scores_origin %>%
+  filter(str_detect(!!!syms(customer_type), customer_name)) %>%
+  pull(region) %>%
+  unique()
+if (length(region_name) > 1) {
+  warning(
+    "Multiple region names found, will try to use the first one.\n",
+    "This might cause unexpected results, so please have a careful check!"
+  )
+  region_name <- region_name[1]
   }
+# extract data for report
+scores_report <- scores_origin %>%
+  filter(region == region_name) %>%
+  # to avoid temporary variable names, calculate levels here
+  mutate(
+    level = cut(
+      score,
+      breaks = config::get("score.level")$breaks,
+      labels = config::get("score.level")$labels
+    )
 )
 
 # build the three parts of the report ----
@@ -167,11 +177,5 @@ report_units <- switch(
   school = unique(scores_report$school)
 )
 for (report_unit in report_units) {
-  if (report_unit != "全区报告") {
-    # the data are all from one region
-    region_name <- unique(scores_report$region)
-  } else {
-    region_name <- with(scores_report, unique(region[school == report_unit]))
-  }
   render_report(output_file = glue("{region_name}-{report_unit}.docx"), clean_envir = FALSE)
 }
