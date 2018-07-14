@@ -66,7 +66,7 @@ get_config <- function(..., type = NULL, ext = "yml", path = "config") {
   config_content <- switch(
     ext,
     yml = ,
-    yaml = read_yaml(config_file),
+    yaml = yaml::read_yaml(config_file),
     Rmd = read_file(config_file)
   )
   return(config_content)

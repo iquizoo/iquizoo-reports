@@ -8,7 +8,6 @@
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(extrafont))
-suppressPackageStartupMessages(library(yaml))
 suppressPackageStartupMessages(library(glue))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
@@ -57,7 +56,7 @@ if (!interactive()) {
   params <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 } else {
   # read configurations from yaml config file if in interactive mode (this is used for quick preview or debug)
-  params <- read_yaml("params.yml")
+  params <- config::get(file = "params.yml")
 }
 
 # check command line arguments ----
@@ -134,7 +133,7 @@ ability_md <- rbind(ability_info, component_info) %>%
 # connect to database and download data
 iquizoo_db <- dbConnect(
   SQLite(), dbname = file.path("assets", "db", "iquizoo.sqlite")
-  )
+)
 scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
   collect()
 dbDisconnect(iquizoo_db)
@@ -152,7 +151,7 @@ if (length(region_name) > 1) {
     "This might cause unexpected results, so please have a careful check!"
   )
   region_name <- region_name[1]
-  }
+}
 # extract data for report
 scores_report <- scores_origin %>%
   filter(region == region_name) %>%
@@ -163,14 +162,14 @@ scores_report <- scores_origin %>%
       breaks = config::get("score.level")$breaks,
       labels = config::get("score.level")$labels
     )
-)
+  )
 
 # build the three parts of the report ----
 if (is.null(params$report_type)) {
   report_type <- config::get("type", config = customer_id)
 } else {
   report_type <- params$report_type
-  }
+}
 report_units <- switch(
   report_type,
   region = "全区报告",
