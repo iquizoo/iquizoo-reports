@@ -88,13 +88,21 @@ if (!text_family %in% fonts()) {
 }
 # get the content of all the configuration files
 # report intro: context template
-context_tmpl <- get_config("context", params$customer_id, type = params$report_type, ext = "Rmd")
+context_tmpl <- get_config(
+  "context", params$customer_id, type = params$report_type, ext = "Rmd"
+)
 # report body: body template
-body_tmpl <- get_config("body", params$customer_id, type = params$report_type, ext = "Rmd")
+body_tmpl <- get_config(
+  "body", params$customer_id, type = params$report_type, ext = "Rmd"
+)
 # report ending: suggestion template
-suggestion_tmpl <- get_config("suggestion", params$customer_id, type = params$report_type, ext = "Rmd")
+suggestion_tmpl <- get_config(
+  "suggestion", params$customer_id, type = params$report_type, ext = "Rmd"
+)
 # descriptions, or the content builder
-descriptions <- get_config("descriptions", params$customer_id, type = params$report_type)
+descriptions <- get_config(
+  "descriptions", params$customer_id, type = params$report_type
+)
 # ability information preparation
 ability_info <- as_tibble(descriptions$ability) %>%
   mutate(ability = "general")
