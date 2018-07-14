@@ -51,20 +51,13 @@ render_report <- function(...) {
 #' @param ... Constituent parts of config file, will be passed to \code{\link{paste}}
 #' @param type Report type
 #' @param ext File extension
-get_config <- function(..., type = "", ext = "yml") {
-  config_dir <- config::get("include.path")$config
-  if (is.null(config_dir)) {
-    warning(
-      "No config path specified! Please set it in `config.yml`!\n",
-      "Will use default path: \"config\""
-    )
-    config_dir <- "config"
-  }
+#' @param path The path to configuration files, default: config
+get_config <- function(..., type = NULL, ext = "yml", path = "config") {
   # note the file name rule, 'default' can be ignored
-  if (nchar(type) = 0) {
-    config_file <- file.path(config_dir, paste(..., ext, sep = "."))
+  if (is.null(type)) {
+    config_file <- file.path(path, paste(..., ext, sep = "."))
   } else {
-    config_file <- file.path(config_dir, paste(..., type, ext, sep = "."))
+    config_file <- file.path(path, paste(..., type, ext, sep = "."))
   }
   if (!file.exists(config_file)) {
     stop(sprintf("Critical error! Config file \"%s\" not found!", config_file))

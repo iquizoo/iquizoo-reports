@@ -29,7 +29,7 @@ if (!interactive()) {
       help = paste(
         "Required. Specify the customer identifier for reporting.",
         "This signifies because it will be used to identify datasets and descriptions.",
-        "The customer `id``, `type` and `name` should be able to be found in the configuration file `config.yml`."
+        "The corresponding customer `type` and `name` should be found in the configuration file `config.yml`."
       )
     ),
     make_option(
@@ -75,14 +75,12 @@ if (date_manual_test && is.null(params$test_date)) {
 }
 
 # environmental settings ----
+customer_id <- params$customer_id
 # source user script, which will be placed in script path
 # TODO: write a package
-source(
-  file.path(config::get("include.path")$script, "utils.R"),
-  encoding = config::get("encoding")
-)
+source(file.path("scripts", "utils.R"), encoding = "UTF-8")
 # import font if not found
-text_family <- config::get("text.family")
+text_family <- config::get("text.family", config = customer_id)
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
@@ -131,12 +129,8 @@ ability_md <- rbind(ability_info, component_info) %>%
 # dataset preparations ----
 # connect to database and download data
 iquizoo_db <- dbConnect(
-  SQLite(),
-  dbname = file.path(
-    config::get("include.path")$database,
-    "iquizoo.sqlite"
+  SQLite(), dbname = file.path("assets", "db", "iquizoo.sqlite")
   )
-)
 scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
   collect()
 dbDisconnect(iquizoo_db)
