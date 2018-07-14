@@ -33,8 +33,12 @@ if (!interactive()) {
       )
     ),
     make_option(
-      c("-t", "--report-type"), default = "",
-      help = "Optional. Used when the customer(s) need different versions of reports."
+      c("-t", "--report-type"),
+      help = paste(
+        "Optional. Used when the customer(s) need different versions of reports.",
+        "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
+        "Change it to report different types of report, e.g., a `region` report for `school` customer."
+      )
     ),
     make_option(
       c("-d", "--date-manual"), default = "none",
@@ -152,15 +156,15 @@ scores_report <- switch(
 )
 
 # build the three parts of the report ----
-switch(
-  params$report_type,
-  district = {
-    report_units <- "全区报告"
-  },
-  school = ,
-  standalone = {
-    report_units <- unique(scores_report$school)
+if (is.null(params$report_type)) {
+  report_type <- config::get("type", config = customer_id)
+} else {
+  report_type <- params$report_type
   }
+report_units <- switch(
+  report_type,
+  region = "全区报告",
+  school = unique(scores_report$school)
 )
 for (report_unit in report_units) {
   if (report_unit != "全区报告") {
