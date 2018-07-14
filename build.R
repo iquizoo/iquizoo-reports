@@ -67,6 +67,15 @@ if (!params$date_manual %in% c("none", "report", "test", "all")) {
   warning("The \"--date-manual\" has unexpected value. Will set it to \"none\".")
   params$date_manual <- "none"
 }
+# check date arguments
+date_manual_report <- params$date_manual %in% c("report", "all")
+date_manual_test <- params$date_manual %in% c("test", "all")
+if (date_manual_report && is.null(params$report_date)) {
+  stop("Fatal error! You must specify the report date in manual report date mode.")
+}
+if (date_manual_test && is.null(params$test_date)) {
+  stop("Fatal error! You must specify the test date in manual test date mode.")
+}
 
 # environmental settings ----
 # source user script, which will be placed in script path
