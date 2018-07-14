@@ -152,8 +152,8 @@ if (length(region_name) > 1) {
   )
   region_name <- region_name[1]
 }
-# extract data for report
-scores_report <- scores_origin %>%
+# extract data for the whole region
+scores_region <- scores_origin %>%
   filter(region == region_name) %>%
   # to avoid temporary variable names, calculate levels here
   mutate(
@@ -173,7 +173,7 @@ if (is.null(params$report_type)) {
 report_units <- switch(
   report_type,
   region = "全区报告",
-  school = unique(scores_report$school)
+  school = unique(scores_region$school)
 )
 for (report_unit in report_units) {
   render_report(output_file = glue("{region_name}-{report_unit}.docx"), clean_envir = FALSE)
