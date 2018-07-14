@@ -8,14 +8,11 @@ SELECT users.userId, users.school, users.grade, users.class,
        ability_scores.score
   FROM users
        LEFT JOIN scores
-       ON users.userId =
-       (
-       SELECT userId
-       FROM scores
-       WHERE scores.userId = users.userId
-       ORDER BY createTime DESC
-       LIMIT 1
-       )
+       ON users.userId = scores.userId
+
+       LEFT JOIN scores AS filter
+       ON filter.userId = scores.userId
+       AND filter.createTime < filter.createTime
 
        LEFT JOIN school_covers
        ON users.school = school_covers.school
@@ -32,4 +29,6 @@ SELECT users.userId, users.school, users.grade, users.class,
        ON users.userId = ability_scores.userId
 
        LEFT JOIN abilities
-       ON ability_scores.abId = abilities.abId;
+       ON ability_scores.abId = abilities.abId
+
+ WHERE filter.userId IS NULL;
