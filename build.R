@@ -172,13 +172,15 @@ if (is.null(params$report_type)) {
 name_units <- switch(
   report_type,
   region = "全区报告",
-  school = unique(scores_region$school)
+  unique(scores_region$school)
 )
 for (name_unit in name_units) {
-  if (report_type == "school") {
-    scores_unit <- scores_region %>%
+  scores_unit <- switch(
+    report_type,
+    region = scores_region,
+    scores_region %>%
       filter(school == name_unit)
-  }
+  )
   # set report date and test date
   if (date_manual_report) {
     report_date <- params$report_date
