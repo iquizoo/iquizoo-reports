@@ -140,20 +140,20 @@ dbDisconnect(iquizoo_db)
 customer_type <- config::get("type", config = customer_id)
 customer_name <- config::get("name", config = customer_id)
 # get the region name to extract data for report
-region_name <- scores_origin %>%
+name_region <- scores_origin %>%
   filter(str_detect(!!!syms(customer_type), customer_name)) %>%
   pull(region) %>%
   unique()
-if (length(region_name) > 1) {
+if (length(name_region) > 1) {
   warning(
     "Multiple region names found, will try to use the first one.\n",
     "This might cause unexpected results, so please have a careful check!"
   )
-  region_name <- region_name[1]
+  name_region <- name_region[1]
 }
 # extract data for the whole region
 scores_region <- scores_origin %>%
-  filter(region == region_name) %>%
+  filter(region == name_region) %>%
   # to avoid temporary variable names, calculate levels here
   mutate(
     level = cut(
@@ -169,15 +169,15 @@ if (is.null(params$report_type)) {
 } else {
   report_type <- params$report_type
 }
-report_units <- switch(
+name_units <- switch(
   report_type,
   region = "全区报告",
   school = unique(scores_region$school)
 )
-for (report_unit in report_units) {
+for (name_unit in name_units) {
   if (report_type == "school") {
     scores_unit <- scores_region %>%
-      filter(school == report_unit)
+      filter(school == name_unit)
   }
   # set report date and test date
   if (date_manual_report) {
@@ -193,5 +193,5 @@ for (report_unit in report_units) {
   }
   test_date_string <- str_glue("{year(test_date)}年{month(test_date)}月")
   # report rendering
-  render_report(output_file = str_glue("{region_name}-{report_unit}.docx"), clean_envir = FALSE)
+  render_report(output_file = str_glue("{name_region}-{name_unit}.docx"))
 }
