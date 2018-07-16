@@ -1,8 +1,11 @@
 default:
-  # customer type (default to school)
-  type: school
-  # customer name
-  name:
+  # customer info
+  customer.type: school
+  customer.name: 客户名称
+  # report metadata
+  report.parts: [context, body, suggestion]
+  report.title: 大脑学习能力测评
+  report.subtitle: 学校集体报告
   # use Android Sans font, more info at
   # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
   text.family: Droid Sans Fallback
@@ -11,13 +14,17 @@ default:
     labels: !expr LETTERS[4:1]
 
 daxing:
-  type: region
-  name: 北京市大兴区
+  customer.type: region
+  customer.name: 北京市大兴区
+  report.subtitle:
+    region: 区县集体报告
+    school: 学校集体报告
 
 lishui:
-  type: region
-  name: 广东省佛山市南海区里水镇
+  customer.type: region
+  customer.name: 广东省佛山市南海区里水镇
 
 erxiao:
   type: school
   name: 北京市第二实验小学
+  report.subtitle: 学校集体报告
