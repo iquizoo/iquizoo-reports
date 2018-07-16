@@ -4,7 +4,6 @@ Version: 0.0.1
 Imports:
     bookdown,
     tidyverse,
-    readxl,
     extrafont,
     optparse,
     DBI,

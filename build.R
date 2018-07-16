@@ -6,7 +6,6 @@
 
 # load packages ----
 suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(extrafont))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
