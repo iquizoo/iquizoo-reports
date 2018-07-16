@@ -57,6 +57,12 @@ if (!interactive()) {
   params <- config::get(file = "params.yml")
 }
 
+# set package options ----
+old_opts <- options(
+  "yaml.eval.expr" = TRUE,
+  "knitr.kable.NA" = ""
+)
+
 # check command line arguments ----
 if (is.null(params$customer_id)) {
   stop("Fatal error! You must specify the identifier of the customer.")
@@ -196,3 +202,6 @@ for (name_unit in name_units) {
   # report rendering
   render_report(output_file = str_glue("{name_region}-{name_unit}.docx"))
 }
+
+# restore options ----
+options(old_opts)
