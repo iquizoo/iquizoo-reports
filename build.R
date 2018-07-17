@@ -37,18 +37,7 @@ if (!interactive()) {
         "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
         "Change it to report different types of report, e.g., a `region` report for `school` customer."
       )
-    ),
-    make_option(
-      c("-d", "--date-manual"), default = "none",
-      help = paste(
-        "Optional. Whether the dates in the report (report data and test date) are set manually?",
-        "Use \"none\" (default), \"report\", \"test\" or \"all\" to manually set one or two dates.",
-        "Or do not set it to if all the dates should be set automatically.",
-        "When set, the corresponding report-date or test-date are required."
       )
-    ),
-    make_option(c("--report-date"), help = "Required conditionally. The report date."),
-    make_option(c("--test-date"), help = "Required conditionally. The test date.")
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
@@ -135,19 +124,6 @@ for (name_unit in name_units) {
     scores_region %>%
       filter(school == name_unit)
   )
-  # set report date and test date
-  if (date_manual_report) {
-    report_date <- params$report_date
-  } else {
-    report_date <- Sys.time()
-  }
-  report_date_string <- str_glue("{year(report_date)}年{month(report_date)}月{day(report_date)}日")
-  if (date_manual_test) {
-    test_date <- params$test_date
-  } else {
-    test_date <- median(as_datetime(scores_unit$firstPartTime))
-  }
-  test_date_string <- str_glue("{year(test_date)}年{month(test_date)}月")
   # report rendering
   render_report(output_file = str_glue("{name_region}-{name_unit}.docx"))
 }
