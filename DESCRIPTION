@@ -9,3 +9,5 @@ Imports:
     DBI,
     RSQLite,
     config
+Remotes:
+    iquizoo/iquizoor

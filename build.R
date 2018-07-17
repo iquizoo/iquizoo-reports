@@ -12,6 +12,7 @@ suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(dbplyr))
 suppressPackageStartupMessages(library(DBI))
 suppressPackageStartupMessages(library(RSQLite))
+suppressPackageStartupMessages(library(iquizoor))
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
