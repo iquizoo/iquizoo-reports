@@ -123,6 +123,9 @@ for (name_unit in name_units) {
     scores_region %>%
       filter(school == name_unit)
   )
+
+  # render all the report parts
+  default_index <- "index.Rmd"
   # get metadata from `index.Rmd` and render `index.Rmd` to base
   index_file <- file.path(
     getOption("reports.archytype"),
@@ -131,7 +134,7 @@ for (name_unit in name_units) {
   if (!file.exists(index_file)) {
     # if the customer specific index template does not exist, use default
     index_file <- file.path(
-      getOption("reports.archytype"), "index.Rmd"
+      getOption("reports.archytype"), default_index
     )
   }
   report_metadata <- rmarkdown::yaml_front_matter(
@@ -157,9 +160,10 @@ for (name_unit in name_units) {
     }
     write_lines(report_part_md, paste0(report_part, ".Rmd"))
   }
+  rmd_files <- c(default_index, paste0(report_parts, ".Rmd"))
   # report rendering
   bookdown::render_book(
-    "index.Rmd",
+    default_index,
     output_file = str_glue("{name_region}-{name_unit}.docx"),
     clean_envir = FALSE
   )
