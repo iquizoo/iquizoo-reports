@@ -157,6 +157,9 @@ for (name_unit in name_units) {
     output_file = str_glue("{name_region}-{name_unit}.docx"),
     clean_envir = FALSE
   )
+  # remove generated files
+  unlink("index.Rmd")
+  for (report_part in report_parts) unlink(paste0(report_part, ".Rmd"))
 }
 
 # restore options ----
