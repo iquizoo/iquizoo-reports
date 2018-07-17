@@ -99,6 +99,7 @@ scores_region <- scores_origin %>%
   filter(region == name_region) %>%
   # to avoid temporary variable names, calculate levels here
   mutate(
+    firstPartTime = as_datetime(firstPartTime),
     level = cut(
       score,
       breaks = config::get("score.level")$breaks,
