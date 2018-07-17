@@ -37,7 +37,7 @@ if (!interactive()) {
         "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
         "Change it to report different types of report, e.g., a `region` report for `school` customer."
       )
-      )
+    )
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
