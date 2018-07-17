@@ -1,7 +1,7 @@
 book_filename: "report"
 delete_merged_file: true
 output_dir: "targets"
-rmd_files: [index.Rmd, context.Rmd, body.Rmd, suggestion.Rmd]
+rmd_files: !expr rmd_files
 language:
   label:
     tab: "表"
