@@ -64,10 +64,6 @@ if (!text_family %in% fonts()) {
 if (is.null(params$customer_id)) {
   stop("Fatal error! You must specify the identifier of the customer.")
 }
-if (!params$date_manual %in% c("none", "report", "test", "all")) {
-  warning("The \"--date-manual\" has unexpected value. Will set it to \"none\".")
-  params$date_manual <- "none"
-}
 
 # dataset preparations ----
 # connect to database and download data
