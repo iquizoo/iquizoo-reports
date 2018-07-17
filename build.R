@@ -47,12 +47,18 @@ if (!interactive()) {
   params <- config::get(file = "params.yml")
 }
 
-# set package options ----
+# environmental settings ----
+# package options
 old_opts <- options(
   "yaml.eval.expr" = TRUE,
   "knitr.kable.NA" = "",
   "reports.archytype" = "archetypes"
 )
+# import font if not found
+text_family <- config::get("text.family", config = params$customer_id)
+if (!text_family %in% fonts()) {
+  font_import(prompt = FALSE, pattern = "DroidSansFallback")
+}
 
 # check command line arguments ----
 if (is.null(params$customer_id)) {
