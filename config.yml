@@ -1,8 +1,9 @@
 default:
-  # customer type (default to school)
-  type: school
-  # customer name
-  name:
+  # customer info
+  customer.type: school
+  customer.name: 客户名称
+  # report parts, you could ignore "index", which will be added automatically
+  report.parts: [context, body, suggestion]
   # use Android Sans font, more info at
   # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
   text.family: Droid Sans Fallback
@@ -11,12 +12,12 @@ default:
     labels: !expr LETTERS[4:1]
 
 daxing:
-  type: region
-  name: 北京市大兴区
+  customer.type: region
+  customer.name: 北京市大兴区
 
 lishui:
-  type: region
-  name: 广东省佛山市南海区里水镇
+  customer.type: region
+  customer.name: 广东省佛山市南海区里水镇
 
 erxiao:
   type: school
