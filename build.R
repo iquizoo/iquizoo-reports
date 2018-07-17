@@ -50,7 +50,8 @@ if (!interactive()) {
 # set package options ----
 old_opts <- options(
   "yaml.eval.expr" = TRUE,
-  "knitr.kable.NA" = ""
+  "knitr.kable.NA" = "",
+  "reports.archytype" = "archetypes"
 )
 
 # check command line arguments ----
@@ -116,8 +117,46 @@ for (name_unit in name_units) {
     scores_region %>%
       filter(school == name_unit)
   )
+  # get metadata from `index.Rmd` and render `index.Rmd` to base
+  index_file <- file.path(
+    getOption("reports.archytype"),
+    get_tmpl_name("index", params$customer_id, params$report_type)
+  )
+  if (!file.exists(index_file)) {
+    # if the customer specific index template does not exist, use default
+    index_file <- file.path(
+      getOption("reports.archytype"), "index.Rmd"
+    )
+  }
+  report_metadata <- rmarkdown::yaml_front_matter(
+    index_file, encoding = "UTF-8"
+  )
+  file.copy(index_file, "index.Rmd")
+  # render parts of reports
+  report_parts <- config::get("report.parts", config = params$customer_id)
+  for (report_part in report_parts) {
+    report_part_tmpl_file <- file.path(
+      getOption("reports.archytype"),
+      get_tmpl_name(
+        report_part, params$customer_id, params$report_type
+      )
+    )
+    report_part_tmpl <- read_file(report_part_tmpl_file)
+    if (report_part != "body") {
+      report_part_md <- render_part_normal(report_part_tmpl)
+    } else {
+      heading <- report_metadata$bodyheading
+      ab_ids <- report_metadata$ability$id
+      report_part_md <- render_part_body(heading, report_part_tmpl, ab_ids)
+    }
+    write_lines(report_part_md, paste0(report_part, ".Rmd"))
+  }
   # report rendering
-  render_report(output_file = str_glue("{name_region}-{name_unit}.docx"))
+  bookdown::render_book(
+    "index.Rmd",
+    output_file = str_glue("{name_region}-{name_unit}.docx"),
+    clean_envir = FALSE
+  )
 }
 
 # restore options ----
