@@ -82,58 +82,6 @@ if (date_manual_test && is.null(params$test_date)) {
   stop("Fatal error! You must specify the test date in manual test date mode.")
 }
 
-# environmental settings ----
-customer_id <- params$customer_id
-# source user script, which will be placed in script path
-# TODO: write a package
-source(file.path("scripts", "utils.R"), encoding = "UTF-8")
-# import font if not found
-text_family <- config::get("text.family", config = customer_id)
-if (!text_family %in% fonts()) {
-  font_import(prompt = FALSE, pattern = "DroidSansFallback")
-}
-# get the content of all the configuration files
-# report intro: context template
-context_tmpl <- get_config(
-  "context", params$customer_id, type = params$report_type, ext = "Rmd"
-)
-# report body: body template
-body_tmpl <- get_config(
-  "body", params$customer_id, type = params$report_type, ext = "Rmd"
-)
-# report ending: suggestion template
-suggestion_tmpl <- get_config(
-  "suggestion", params$customer_id, type = params$report_type, ext = "Rmd"
-)
-# descriptions, or the content builder
-descriptions <- get_config(
-  "descriptions", params$customer_id, type = params$report_type
-)
-# ability information preparation
-ability_info <- as_tibble(descriptions$ability) %>%
-  mutate(ability = "general")
-component_info <- descriptions$components %>%
-  map(as_tibble) %>%
-  bind_rows(.id = "ability")
-# generate report sequence of abilities (names and nameids)
-ability_names_id <- character()
-for (ability_general in ability_info$nameid) {
-  ability_names_id <- c(
-    ability_names_id, ability_general,
-    component_info %>%
-      filter(ability == ability_general) %>%
-      pull(nameid)
-  )
-}
-# generate markdown for ability info
-ability_md <- rbind(ability_info, component_info) %>%
-  mutate(
-    md = render_title_content(
-      title = name, content = description,
-      hlevel = hlevel, style = style
-    )
-  )
-
 # dataset preparations ----
 # connect to database and download data
 iquizoo_db <- dbConnect(
