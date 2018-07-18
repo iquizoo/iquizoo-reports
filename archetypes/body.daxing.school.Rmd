@@ -1,147 +1,209 @@
-```{r <<ability_name_id>>-configs, include=FALSE}
-ability_name_id <- "<<ability_name_id>>"
-ability_name_cn <- ability_md %>%
-  filter(nameid == ability_name_id) %>%
-  pull(name)
-scores_this_ability <- scores_combined %>%
-  filter(abName == ability_name_cn)
-bp_stats <- boxplot.stats(scores_this_ability$score)
+```{r <<ab_id>>-configs, include=FALSE}
+ab_id <- "<<ab_id>>"
+ab_info <- as_tibble(rmarkdown::metadata$ability) %>% 
+  filter(id == ab_id)
+ab_name_cn <- ab_info$name
+scores_unit_this_ability <- scores_unit %>%
+  filter(ab_name_en == ab_id)
+scores_region_this_ability <- scores_region %>% 
+  filter(ab_name_en == ab_id)
+scores_combined_this_ability <- list(
+  region = scores_region_this_ability,
+  school = scores_unit_this_ability,
+  by_class = scores_unit_this_ability
+) %>% 
+  bind_rows(.id = "set") %>%
+  mutate(
+    group = case_when(
+      set == "region" ~ "本区",
+      set == "school" ~ "本校",
+      TRUE ~ class
+    ),
+    set = factor(set, c("region", "school", "by_class"))
+  )
 # descriptive statistics
-ability_summary <- scores_this_ability %>%
-  sum_tab()
-# `n_cls`, `best_cls[_med]`, `worst_cls[_med]`, `diff_msg[_mean/_med]` are required
-ability_summary_cls <- ability_summary %>%
-  filter(region == "各班")
-ability_summary_cls_sortmean <- ability_summary_cls %>%
-  arrange(desc(平均分))
-ability_summary_cls_sortmed <- ability_summary_cls %>%
-  arrange(desc(中位数))
-diff_msg <- scores_this_ability %>%
-  filter(region != "各班") %>%
-  group_by(region) %>%
-  summarise(score = list(score)) %>%
-  spread(region, score) %>%
-  mutate(
-    p_value = t.test(unlist(本校), unlist(本区))$p.value,
-    t_value = t.test(unlist(本校), unlist(本区))$statistic,
-    msg = case_when(
-      p_value > 0.05 ~ descriptions$body$histogram$note$equal,
-      p_value <= 0.05 & t_value > 0 ~ descriptions$body$histogram$note$large,
-      p_value <= 0.05 & t_value < 0 ~ descriptions$body$histogram$note$small
-    )
+ability_summary_combined <- scores_combined_this_ability %>% 
+  group_by(set, group) %>%
+  summarise(
+    n = n(),
+    avg = mean(score, na.rm = TRUE),
+    std = sd(score, na.rm = TRUE),
+    top = max(score, na.rm = TRUE),
+    med = median(score, na.rm = TRUE),
+    btm = min(score, na.rm = TRUE),
+    A = sum(level == "A", na.rm = TRUE),
+    B = sum(level == "B", na.rm = TRUE),
+    C = sum(level == "C", na.rm = TRUE),
+    D = sum(level == "D", na.rm = TRUE)
   ) %>%
-  pull(msg)
-n_cls <- nrow(ability_summary_cls)
-if (n_cls > 1) {
-  best_cls <- first(ability_summary_cls_sortmean$cls)
-  worst_cls <- last(ability_summary_cls_sortmed$cls)
-  best_cls_med <- first(ability_summary_cls_sortmed$cls)
-  worst_cls_med <- last(ability_summary_cls_sortmed$cls)
-  scores_this_ability_cls <- filter(scores_this_ability, region == "各班")
-  stats_mean <- broom::tidy(aov(score ~ cls, scores_this_ability_cls))
-  diff_msg_mean <- with(
-    descriptions$body$table$note,
-    if_else(stats_mean$p.value[1] < 0.05, sig, nsig)
-  )
-  stats_med <- broom::tidy(kruskal.test(with(scores_this_ability_cls, split(score, cls))))
-  diff_msg_med <- with(
-    descriptions$body$boxplot$note,
-    if_else(stats_med$p.value < 0.05, sig, nsig)
-  )
+  ungroup()
+n_cls <- n_distinct(scores_unit_this_ability$class)
+order_avg <- ability_summary_combined %>%
+  arrange(set, desc(avg))
+order_med <- ability_summary_combined %>%
+  arrange(set, desc(med))
+```
+
+```{r <<ab_id>>-description, results="asis", echo=FALSE}
+ab_info %>%
+  mutate(
+    md = render_heading_content(
+      heading = name, content = description,
+      hlevel = hlevel, style = style
+    )
+  ) %>% 
+  pull(md) %>% 
+  cat()
+```
+
+```{r <<ab_id>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区和本校学生{ab_name_cn}测评的分数分布对比")}
+cmp_school_region <- with(
+  scores_combined_this_ability,
+  t.test(score[set == "school"], score[set == "region"], 
+         alternative = "greater")
+)
+if (cmp_school_region$p.value > 0.05) {
+  diff_msg = "和全区总体学生差异不明显"
+} else {
+  if (cmp_school_region$statistic > 0) {
+    diff_msg = "比全区总体学生明显更好"
+  } else {
+    diff_msg = "比全区总体学生明显更差"
+  }
 }
-# `extra_tab` and `extra_bp` are required
-extra_tab <- with(
-  descriptions$body$table$note$extra,
-  ifelse(eval(parse(text = condition)), as.character(glue(content)), "")
-)
-extra_bp <- with(
-  descriptions$body$boxplot$note$extra,
-  ifelse(eval(parse(text = condition)), as.character(glue(content)), "")
-)
-```
-
-```{r <<ability_name_id>>-description, results="asis", echo=FALSE}
-ability_md %>%
-  filter(name == ability_name_cn) %>%
-  # see 'build.R' at root directory for how `md` (Markdown) is generated
-  pull(md) %>%
-  cat()
-```
-
-```{r <<ability_name_id>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$histogram$caption)}
-scores_this_ability %>%
-  filter(region != "各班") %>%
-  ggplot(aes(score, fill = region)) +
+scores_combined_this_ability %>%
+  filter(set != "by_class") %>% 
+  ggplot(aes(score, fill = set)) +
   geom_density(color = NA, alpha = 0.5) +
-  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  geom_vline(xintercept = mean(scores_unit$score), color = "red") +
   scale_fill_brewer(palette = "Paired") +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
   labs(x = "分数", y = "", fill = "") +
-  set_theme_dist(base_family = text_family)
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    axis.line.x = element_line(),
+    axis.ticks.x = element_line(),
+    panel.grid = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, unit = "lines")
+  )
 ```
 
-```{r <<ability_name_id>>-histogram-description, echo=FALSE, results="asis"}
-descriptions$body$histogram$description %>%
-  glue() %>%
-  cat()
+本校学生总体的{ab_name_cn}测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)。本校学生的整体表现`r diff_msg`。
+
+```{r <<ab_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
+ability_summary_combined %>%
+  select(-set) %>%
+  knitr::kable(
+    digits = 2,
+    col.names = c("", "人数", "平均数", "标准差", "最高分", "中位数", "最低分", LETTERS[1:4]),
+    caption = str_glue("本区、本校和各班学生{ab_name_cn}测评的整体表现详表")
+  )
+if (n_cls > 1) {
+  best_avg <- order_avg %>% 
+    filter(set == "by_class") %>%
+    pull(group) %>% 
+    first()
+  worst_avg <- order_avg %>% 
+    filter(set == "by_class") %>%
+    pull(group) %>% 
+    last()
+  diff_avg <- broom::tidy(aov(score ~ class, scores_unit_this_ability))
+  if (diff_avg$p.value[1] > 0.05) {
+    diff_msg_avg <- "但是各班级的表现差异不明显"
+  } else {
+    diff_msg_avg <- "并且各班级的表现差异明显"
+  }
+  extra_tab <- str_glue("从学生的平均水平来看，{best_avg}学生的整体表现最好，而{worst_avg}学生的整体表现最差，{diff_msg_avg}。")
+} else {
+  extra_tab <- ""
+}
 ```
 
-```{r <<ability_name_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
-ability_summary %>%
-  rename(` ` = cls) %>%
-  select(-region) %>%
-  knitr::kable(digits = 2, caption = glue(descriptions$body$table$caption))
-```
+本校共施测`r n_cls`个班级。表\@ref(tab:<<ab_id>>-tab)中展示了本区、本校和各班的学生整体表现情况。`r extra_tab`其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
 
-```{r <<ability_name_id>>-tab-description, echo=FALSE, results="asis"}
-descriptions$body$table$description %>%
-  glue() %>%
-  cat()
-```
-
-```{r <<ability_name_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$boxplot$caption)}
-scores_this_ability %>%
-  mutate(
-    cls = factor(
-      cls, levels = c("本区", "本校", ability_summary_cls_sortmed$cls)
-    )
-  ) %>%
-  ggplot(aes(cls, score, fill = region)) +
+```{r <<ab_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区、本校和各班学生{ab_name_cn}测评的得分情况对比")}
+scores_combined_this_ability %>%
+  mutate(group = factor(group, order_med$group)) %>% 
+  ggplot(aes(group, score, fill = set)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
   labs(x = "", y = "分数", fill = "") +
-  coord_flip(ylim = bp_stats$stats[c(1, 5)]) +
-  set_theme_panels(base_family = text_family)
+  coord_flip(ylim = boxplot.stats(scores_combined_this_ability$score)$stats[c(1, 5)]) +
+  theme_minimal(base_size = 10, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+if (n_cls > 1) {
+  best_med <- order_med %>% 
+    filter(set == "by_class") %>%
+    pull(group) %>% 
+    first()
+  worst_med <- order_med %>% 
+    filter(set == "by_class") %>%
+    pull(group) %>% 
+    last()
+  diff_med <- broom::tidy(kruskal.test(with(scores_unit_this_ability, split(score, class))))
+  if (diff_med$p.value > 0.05) {
+    diff_msg_med <- "但是各班级的表现差异不明显"
+  } else {
+    diff_msg_med <- "并且各班级的表现差异明显"
+  }
+  extra_bp <- str_glue("从中位数（即得分恰好在正中间的学生，参考表\\@ref(tab:{ab_id}-tab)查看具体数值）角度看，{best_med}的总体表现最好，{worst_med}的总体表现最差，{diff_msg_med}。在后期应该重点关注{worst_med}，对能力不足的学生进行干预和有计划的训练。")
+} else {
+  extra_bp <- ""
+}
 ```
 
-```{r <<ability_name_id>>-boxplot-description, echo=FALSE, results="asis"}
-descriptions$body$boxplot$description %>%
-  glue() %>%
-  cat()
-```
+本区、本校和各班的`r ab_name_cn`测评分数的分布区间如图\@ref(fig:<<ab_id>>-boxplot)。`r extra_bp`
 
-```{r <<ability_name_id>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=glue(descriptions$body$grading$caption)}
-ability_summary %>%
+```{r <<ab_id>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区、本校和各班{ab_name_cn}测评的各水平人数比例")}
+ability_summary_combined %>%
+  select(group, n, A:D) %>%
+  add_row(
+    group = "全国平均", n = 100,
+    A = 10, B = 20, C = 40, D = 30
+  ) %>%
   mutate(
-    cls = factor(
-      cls, levels = c("本区", "本校", ability_summary_cls_sortmed$cls)
+    group = factor(
+      group, levels = c(order_med$group, "全国平均")
     )
   ) %>%
-  gather(level, n, A:D) %>%
+  gather(level, count, A:D) %>%
   mutate(
-    prop = n / 实测人数 * 100,
+    prop = count / n * 100,
+    n_label = if_else(count == 0, NA_real_, count),
     prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
   ) %>%
-  ggplot(aes(cls, prop, fill = level, label = prop_label)) +
+  ggplot(aes(group, prop, fill = level, label = n_label)) +
   geom_col(position = "stack", width = 0.5) +
   geom_text(position = position_stack(vjust = 0.5), size = 3) +
   scale_fill_brewer(palette = "Blues") +
+  scale_y_continuous(breaks = c(0, 30, 70, 90, 100)) +
   labs(x = "", y = "比例（%）", fill = "") +
   coord_flip() +
-  set_theme_panels(base_family = text_family)
+  theme_minimal(base_size = 10, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
 ```
 
-```{r <<ability_name_id>>-grading-description, echo=FALSE, results="asis"}
-descriptions$body$grading$description %>%
-  glue() %>%
-  cat()
-```
+本校学生总体在`r ab_name_cn`测评中各个水平的人数比例如图\@ref(fig:<<ab_id>>-grading)。每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的班级对学生的`r ab_name_cn`进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
