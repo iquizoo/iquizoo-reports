@@ -1,0 +1,24 @@
+default:
+  # customer info
+  customer.type: school
+  customer.name: 客户名称
+  # report parts, you could ignore "index", which will be added automatically
+  report.parts: [context, body, suggestion]
+  # use Android Sans font, more info at
+  # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
+  text.family: Droid Sans Fallback
+  score.level:
+    breaks: !expr qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
+    labels: !expr LETTERS[4:1]
+
+daxing:
+  customer.type: region
+  customer.name: 北京市大兴区
+
+lishui:
+  customer.type: region
+  customer.name: 广东省佛山市南海区里水镇
+
+erxiao:
+  customer.type: school
+  customer.name: 北京市第二实验小学

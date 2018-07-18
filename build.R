@@ -6,30 +6,13 @@
 
 # load packages ----
 suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(extrafont))
-suppressPackageStartupMessages(library(yaml))
-suppressPackageStartupMessages(library(glue))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
-
-# options used in reports configurations ----
-options(
-  # knitr: do not display NA
-  knitr.kable.NA = "",
-  # general
-  report.encoding = "UTF-8",
-  # use Android Sans font, more info at
-  # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
-  report.text.family = "Droid Sans Fallback",
-  # include paths
-  report.include.path = c(
-    script = "scripts",
-    config = "config",
-    database = file.path("assets", "db"),
-    template = file.path("assets", "template")
-  )
-)
+suppressPackageStartupMessages(library(dbplyr))
+suppressPackageStartupMessages(library(DBI))
+suppressPackageStartupMessages(library(RSQLite))
+suppressPackageStartupMessages(library(iquizoor))
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
@@ -40,162 +23,164 @@ if (!interactive()) {
   #               help="Show this help message and exit")
   option_list <- list(
     make_option(
-      c("-t", "--type"),
-      help = "Specify the report type, could be 'one' (default), 'school' or 'district'."
-    ),
-    make_option(
-      c("-r", "--region"),
+      c("-c", "--customer-id"),
       help = paste(
-        "Specify the region identifier for reporting.",
-        "This signifies because it will be used to identify dataset and descriptions."
+        "Required. Specify the customer identifier for reporting.",
+        "This signifies because it will be used to identify datasets and descriptions.",
+        "The corresponding customer `type` and `name` should be found in the configuration file `config.yml`."
       )
     ),
     make_option(
-      c("-n", "--school-name"),
-      help = "The name of school, do not set it if all schools need reporting."
-    ),
-    make_option(
-      c("-d", "--date-manual"),
+      c("-t", "--report-type"),
       help = paste(
-        "Whether the dates in the report (report data and test date) are set manually?",
-        "Use \"report\", \"test\" or \"all\" to manually set one or two dates",
-        "Or do not set it to if all the dates should be set automatically.",
-        "When set, the corresponding report-date or test-date are required."
+        "Optional. Used when the customer(s) need different versions of reports.",
+        "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
+        "Change it to report different types of report, e.g., a `region` report for `school` customer."
       )
     ),
-    make_option(c("--report-date"), help = "The report date."),
-    make_option(c("--test-date"), help = "The test date.")
+    make_option(
+      c("-T", "--debug-test"), action = "store_true", default = FALSE,
+      help = "Optional. Used when in testing mode. When set, the program will choose one report unit randomly."
+    )
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
   params <- parse_args(OptionParser(option_list = option_list), convert_hyphens_to_underscores = TRUE)
 } else {
-  # read configurations from yaml config file if in interactive mode
-  params <- read_yaml(
-    file.path(getOption("report.include.path")["config"], "params.yml"),
-    fileEncoding = getOption("report.encoding")
-  )
+  # read configurations from yaml config file if in interactive mode (this is used for quick preview or debug)
+  params <- config::get(file = "params.yml")
 }
 
 # environmental settings ----
-# source user script, which will be placed in script path
-# TODO: NEEDS ENHANCEMENT
-source(
-  file.path(getOption("report.include.path")["script"], "utils.R"),
-  encoding = getOption("report.encoding")
+# package options
+old_opts <- options(
+  "yaml.eval.expr" = TRUE,
+  "knitr.kable.NA" = "",
+  "reports.archytype" = "archetypes"
 )
 # import font if not found
-text_family <- getOption("report.text.family")
+text_family <- config::get("text.family", config = params$customer_id)
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
-# get the content of all the configuration files
-# paramter map
-report_map <- get_config("report", "map")
-# report intro: context template
-context_tmpl <- get_config("context", params$region, params$type, ext = "Rmd")
-# report body: body template
-body_tmpl <- get_config("body", params$region, params$type, ext = "Rmd")
-# report ending: suggestion template
-suggestion_tmpl <- get_config("suggestion", params$region, params$type, ext = "Rmd")
-# descriptions, or the content builder
-descriptions <- get_config("descriptions", params$region, params$type)
-# set test region
-region <- report_map$region[[params$region]]
-# ability information preparation
-ability_info <- as_tibble(descriptions$ability) %>%
-  mutate(ability = "general")
-component_info <- descriptions$components %>%
-  map(as_tibble) %>%
-  bind_rows(.id = "ability")
-# generate report sequence of abilities (names and nameids)
-ability_names_id <- character()
-for (ability_general in ability_info$nameid) {
-  ability_names_id <- c(
-    ability_names_id, ability_general,
-    component_info %>%
-      filter(ability == ability_general) %>%
-      pull(nameid)
-  )
+
+# check command line arguments ----
+if (is.null(params$customer_id)) {
+  stop("Fatal error! You must specify the identifier of the customer.")
 }
-# generate markdown for ability info
-ability_md <- rbind(ability_info, component_info) %>%
+
+# dataset preparations ----
+# connect to database and download data
+iquizoo_db <- dbConnect(
+  SQLite(), dbname = file.path("assets", "db", "iquizoo.sqlite")
+)
+scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
+  collect()
+dbDisconnect(iquizoo_db)
+# filter out corresponding data based on the configurations
+customer_type <- config::get("customer.type", config = params$customer_id)
+customer_name <- config::get("customer.name", config = params$customer_id)
+# get the region name to extract data for report
+name_region <- scores_origin %>%
+  filter(str_detect(!!!syms(customer_type), customer_name)) %>%
+  pull(region) %>%
+  unique()
+if (length(name_region) > 1) {
+  warning(
+    "Multiple region names found, will try to use the first one.\n",
+    "This might cause unexpected results, so please have a careful check!"
+  )
+  name_region <- name_region[1]
+}
+# extract data for the whole region
+scores_region <- scores_origin %>%
+  filter(region == name_region) %>%
   mutate(
-    md = render_title_content(
-      title = name, content = description,
-      hlevel = hlevel, style = style
+    firstPartTime = as_datetime(firstPartTime),
+    # to avoid temporary variable names, calculate levels here
+    level = cut(
+      score,
+      breaks = config::get("score.level")$breaks,
+      labels = config::get("score.level")$labels
+    ),
+    # also remove outliers
+    score = ifelse(
+      score %in% boxplot.stats(score)$out,
+      NA, score
     )
   )
 
-# datasets preparations ----
-# load ability scores
-scores_origin <- read_excel(
-  file.path(
-    getOption("report.include.path")["database"],
-    paste0(params$region, ".xlsx")
-  )
+# build the three parts of the report ----
+if (is.null(params$report_type)) {
+  report_type <- config::get("customer.type", config = params$customer_id)
+} else {
+  report_type <- params$report_type
+}
+name_units <- switch(
+  report_type,
+  region = "全区报告",
+  unique(scores_region$school)
 )
-# count number of school, grade and users
-n_school <- n_distinct(scores_origin$school)
-n_grade <- n_distinct(scores_origin$grade)
-n_user <- n_distinct(scores_origin$userId)
-# reconfigure `school_name` based on the dataset
-if (params$type == "school") {
-  if (is.null(params$school_name)) {
-    school_names <- unique(scores_origin$school)
-  } else {
-    school_names <- params$school_name
+if (params$debug_test) {
+  name_units <- sample(name_units, 1)
+  warning(str_glue("Debugging. The chosen report unit is {name_units}."), immediate. = TRUE)
+}
+for (name_unit in name_units) {
+  # get the scores of current report unit
+  scores_unit <- switch(
+    report_type,
+    region = scores_region,
+    scores_region %>%
+      filter(school == name_unit)
+  )
+  # default index file name is also used as default template file name
+  default_index <- "index.Rmd"
+  # the customer specific index template
+  index_tmpl <- file.path(
+    getOption("reports.archytype"),
+    get_tmpl_name("index", params$customer_id, params$report_type)
+  )
+  if (!file.exists(index_tmpl)) {
+    # if the customer specific index template does not exist, use default
+    index_tmpl <- file.path(
+      getOption("reports.archytype"), default_index
+    )
   }
-  # validate shcool names
-  if (!all(school_names %in% scores_origin$school)) {
-    stop("School not found!")
+  # get metadata from index template
+  report_metadata <- rmarkdown::yaml_front_matter(
+    index_tmpl, encoding = "UTF-8"
+  )
+  # copy index template to base and rename it as the same as the default name
+  file.copy(index_tmpl, default_index)
+  # render main parts of reports
+  report_parts <- config::get("report.parts", config = params$customer_id)
+  for (report_part in report_parts) {
+    report_part_tmpl_file <- file.path(
+      getOption("reports.archytype"),
+      get_tmpl_name(
+        report_part, params$customer_id, params$report_type
+      )
+    )
+    report_part_tmpl <- read_file(report_part_tmpl_file)
+    if (report_part != "body") {
+      report_part_md <- render_part_normal(report_part_tmpl)
+    } else {
+      heading <- report_metadata$bodyheading
+      ab_ids <- report_metadata$ability$id
+      report_part_md <- render_part_body(heading, report_part_tmpl, ab_ids)
+    }
+    write_lines(report_part_md, paste0(report_part, ".Rmd"))
   }
+  rmd_files <- c(default_index, paste0(report_parts, ".Rmd"))
+  # report rendering
+  bookdown::render_book(
+    default_index,
+    output_file = str_glue("{name_region}-{name_unit}.docx"),
+    clean_envir = FALSE
+  )
+  # remove generated report parts files
+  unlink(rmd_files)
 }
 
-# build the three parts of the report ----
-switch(
-  params$type,
-  school = {
-    for (school_name in school_names) {
-      # data preparations ----
-      # filter out scores for current school
-      scores_school <- scores_origin %>%
-        filter(school == school_name)
-      # combine data from whole district, this school and each class
-      scores_combined <- list(
-        本区 = scores_origin,
-        本校 = scores_school,
-        各班 = scores_school
-      ) %>%
-        bind_rows(.id = "region") %>%
-        mutate(cls = if_else(region != "各班", region, cls)) %>%
-        mutate(region = factor(region, c("各班", "本校", "本区")))
-      # set dates
-      attach(set_date(params, test_date = median(scores_school$createTime)))
-      render_report(output_file = glue("{school_name}.docx"), clean_envir = FALSE)
-    }
-  },
-  district = {
-    # data preparations ----
-    # use schoolCovert not school
-    scores_origin <- scores_origin %>%
-      rename(schoolOvert = school, school = schoolCovert)
-    # combine data from whole district, each school
-    scores_combined <- list(
-      本区 = scores_origin,
-      各校 = scores_origin
-    ) %>%
-      bind_rows(.id = "region") %>%
-      mutate(school = if_else(region != "各校", region, school)) %>%
-      mutate(region = factor(region, c("本区", "各校")))
-    # set dates
-    attach(set_date(params, test_date = median(scores_origin$createTime)))
-    render_report(output_file = glue("{region}.docx"), clean_envir = FALSE)
-  },
-  one = {
-    # set dates
-    attach(set_date(params, test_date = median(scores_origin$createTime)))
-    render_report(output_file = glue("{region}统一.docx"), clean_envir = FALSE)
-  },
-  stop("Unsupported report type! Please specify as school/district only.")
-)
+# restore options ----
+options(old_opts)

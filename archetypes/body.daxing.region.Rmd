@@ -1,0 +1,179 @@
+```{r <<ab_id>>-configs, include=FALSE}
+ab_id <- "<<ab_id>>"
+ab_info <- as_tibble(rmarkdown::metadata$ability) %>% 
+  filter(id == ab_id)
+ab_name_cn <- ab_info$name
+scores_region_this_ability <- scores_region %>% 
+  filter(ab_name_en == ab_id)
+scores_combined_this_ability <- list(
+  region = scores_region_this_ability,
+  by_school = scores_region_this_ability
+) %>% 
+  bind_rows(.id = "set") %>%
+  mutate(
+    group = case_when(
+      set == "region" ~ "本区",
+      TRUE ~ school_cover
+    ),
+    set = factor(set, c("region", "by_school"))
+  )
+# descriptive statistics
+ability_summary_combined <- scores_combined_this_ability %>% 
+  group_by(set, group) %>%
+  summarise(
+    n = n(),
+    avg = mean(score, na.rm = TRUE),
+    std = sd(score, na.rm = TRUE),
+    top = max(score, na.rm = TRUE),
+    med = median(score, na.rm = TRUE),
+    btm = min(score, na.rm = TRUE),
+    A = sum(level == "A", na.rm = TRUE),
+    B = sum(level == "B", na.rm = TRUE),
+    C = sum(level == "C", na.rm = TRUE),
+    D = sum(level == "D", na.rm = TRUE)
+  ) %>%
+  ungroup()
+order_avg <- ability_summary_combined %>%
+  arrange(set, desc(avg))
+order_med <- ability_summary_combined %>%
+  arrange(set, desc(med))
+```
+
+```{r <<ab_id>>-description, results="asis", echo=FALSE}
+ab_info %>%
+  mutate(
+    md = render_heading_content(
+      heading = name, content = description,
+      hlevel = hlevel, style = style
+    )
+  ) %>% 
+  pull(md) %>% 
+  cat()
+```
+
+```{r <<ab_id>>-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区总体学生{ab_name_cn}测评的分数分布")}
+scores_region_this_ability %>%
+  ggplot(aes(score)) +
+  geom_density(color = NA, fill = "lightblue", alpha = 0.5) +
+  geom_vline(xintercept = mean(scores_unit$score), color = "red") +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  labs(x = "分数", y = "", fill = "") +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    axis.line.x = element_line(),
+    axis.ticks.x = element_line(),
+    panel.grid = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, unit = "lines")
+  )
+Q <- quantile(scores_region_this_ability$score, na.rm = TRUE)
+```
+
+本区学生总体的`r ab_name_cn`测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)。从图中可以看出，分数主要集中于`r Q["25%"]`-`r Q["75%"]`之间。
+
+```{r <<ab_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
+ability_summary_combined %>%
+  select(-set) %>%
+  knitr::kable(
+    digits = 2,
+    col.names = c("", "人数", "平均数", "标准差", "最高分", "中位数", "最低分", LETTERS[1:4]),
+    caption = str_glue("本区及各学校学生{ab_name_cn}测评的整体表现详表")
+  )
+best_avg <- order_avg %>% 
+  filter(set == "by_school") %>%
+  pull(group) %>% 
+  first()
+worst_avg <- order_avg %>% 
+  filter(set == "by_school") %>%
+  pull(group) %>% 
+  last()
+diff_avg <- broom::tidy(aov(score ~ school_cover, scores_region_this_ability))
+if (diff_avg$p.value[1] > 0.05) {
+  diff_msg_avg <- "但是各学校的表现差异不明显"
+} else {
+  diff_msg_avg <- "并且各学校的表现差异明显"
+}
+```
+
+本区共施测`r n_distinct(scores_region$school)`所学校，其中学校名称用编码代替。表\@ref(tab:<<ab_id>>-tab)中展示了本区及各学校的学生整体表现情况。从学生的平均水平来看，`r best_avg`的学生表现最好，而`r worst_avg`的学生表现最差，`r diff_msg_avg`。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+
+```{r <<ab_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区及各学校学生{ab_name_cn}测评的得分情况对比")}
+scores_combined_this_ability %>%
+  mutate(group = factor(group, order_med$group)) %>% 
+  ggplot(aes(group, score, fill = set)) +
+  geom_boxplot(outlier.color = NA, width = 0.5) +
+  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
+  labs(x = "", y = "分数", fill = "") +
+  coord_flip(ylim = boxplot.stats(scores_combined_this_ability$score)$stats[c(1, 5)]) +
+  theme_minimal(base_size = 10, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+best_med <- order_med %>% 
+  filter(set == "by_school") %>%
+  pull(group) %>% 
+  first()
+worst_med <- order_med %>% 
+  filter(set == "by_school") %>%
+  pull(group) %>% 
+  last()
+diff_med <- broom::tidy(kruskal.test(with(scores_region_this_ability, split(score, class))))
+if (diff_med$p.value > 0.05) {
+  diff_msg_med <- "但是各学校的表现差异不明显"
+} else {
+  diff_msg_med <- "并且各学校的表现差异明显"
+}
+```
+
+本区及各个学校的`r ab_name_cn`测评分数的分布区间如图\@ref(fig:<<ab_id>>-boxplot)，其中学校名称用编码代替。从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:<<ab_id>>-tab)查看具体数值）角度看，`r best_med`的表现最好，`r worst_med`的表现最差，`r diff_msg_med`。在后期应该重点关注`r worst_med`，在该校进行相关基础能力课程的推广，对该校能力不足的学生进行干预和有计划的训练。
+
+```{r <<ab_id>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区及各学校{ab_name_cn}测评的不同水平人数比例")}
+ability_summary_combined %>%
+  select(group, n, A:D) %>%
+  add_row(
+    group = "全国平均", n = 100,
+    A = 10, B = 20, C = 40, D = 30
+  ) %>%
+  mutate(
+    group = factor(
+      group, levels = c("全国平均", order_med$group)
+    )
+  ) %>%
+  gather(level, count, A:D) %>%
+  mutate(
+    prop = count / n * 100,
+    n_label = if_else(count == 0, NA_real_, count),
+    prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
+  ) %>%
+  ggplot(aes(group, prop, fill = level, label = n_label)) +
+  geom_col(position = "stack", width = 0.5) +
+  geom_text(position = position_stack(vjust = 0.5), size = 3) +
+  scale_fill_brewer(palette = "Blues") +
+  scale_y_continuous(breaks = c(0, 30, 70, 90, 100)) +
+  labs(x = "", y = "比例（%）", fill = "") +
+  coord_flip() +
+  theme_minimal(base_size = 10, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+```
+
+各个学校学生总体在`r ab_name_cn`测评中各个水平的人数比例如图\@ref(fig:<<ab_id>>-grading)所示。每个学校的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的学校，对该校学生的`r ab_name_cn`进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。

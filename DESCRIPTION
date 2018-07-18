@@ -1,4 +1,14 @@
 Package: Reports
 Title: Reports generation of iquizoo.com.
-Version: 0.0.1
-Imports: bookdown, tidyverse, readxl, extrafont, optparse
+Version: 0.2.0
+Imports:
+    bookdown,
+    tidyverse,
+    extrafont,
+    optparse,
+    DBI,
+    RSQLite,
+    config,
+    iquizoor
+Remotes:
+    iquizoo/iquizoor

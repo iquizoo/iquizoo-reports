@@ -13,15 +13,16 @@ stages:
 jobs:
   include:
     - stage: test
-      script: Rscript 'build.R' -r 'daxing' -t 'school' -n '北京市大兴区兴华中学'
+      script: Rscript build.R -c 'daxing' -t 'school' -T
     - stage: test
-      script: Rscript 'build.R' -r 'daxing' -t 'district'
+      script: Rscript build.R -c 'daxing' -t 'region' -T
     - stage: test
-      script: Rscript 'build.R' -r 'lishui' -t 'one'
+      script: Rscript build.R -c 'erxiao' -T
     - stage: deploy
       script:
-        - Rscript 'build.R' -r 'daxing' -t 'school'
-        - Rscript 'build.R' -r 'daxing' -t 'district'
+        - Rscript build.R -c 'daxing' -t 'school'
+        - Rscript build.R -c 'daxing' -t 'region'
+        - Rscript build.R -c 'erxiao'
         - zip -r reports.zip targets
       deploy:
         - provider: releases

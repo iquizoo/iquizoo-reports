@@ -1,6 +1,0 @@
----
-title: "`r descriptions$title`"
-subtitle: "`r descriptions$subtitle`"
-date: "`r glue('{report_date_string}')`"
-toc-title: "目录"
----
