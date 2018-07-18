@@ -15,13 +15,13 @@ jobs:
     - stage: test
       script: Rscript build.R -c 'daxing' -t 'school' -T
     - stage: test
-      script: Rscript build.R -c 'daxing' -t 'district' -T
+      script: Rscript build.R -c 'daxing' -t 'region' -T
     - stage: test
       script: Rscript build.R -c 'erxiao' -T
     - stage: deploy
       script:
         - Rscript build.R -c 'daxing' -t 'school'
-        - Rscript build.R -c 'daxing' -t 'district'
+        - Rscript build.R -c 'daxing' -t 'region'
         - Rscript build.R -c 'erxiao'
         - zip -r reports.zip targets
       deploy:
