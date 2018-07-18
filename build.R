@@ -166,8 +166,7 @@ for (name_unit in name_units) {
     clean_envir = FALSE
   )
   # remove generated report parts files
-  unlink("index.Rmd")
-  for (report_part in report_parts) unlink(paste0(report_part, ".Rmd"))
+  unlink(rmd_files)
 }
 
 # restore options ----
