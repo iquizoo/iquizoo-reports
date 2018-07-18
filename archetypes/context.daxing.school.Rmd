@@ -1,8 +1,12 @@
 # 报告说明
 
+```{r test-date-prep, include=FALSE}
+test_date <- format(median(scores_unit$firstPartTime), "%Y年%m月")
+```
+
 ## 项目背景介绍
 
-这份报告描述了本校七年级学生于<<test_date_string>>在<<region>>进行的大兴区初中教育质量综合评价中的表现。
+这份报告描述了本校七年级学生于`r test_date`在`r name_region`进行的大兴区初中教育质量综合评价中的表现。
 
 习近平总书记在中共共产党第十九次全国代表大会指出“建设教育强国是中华民族伟大复兴的基础工程”，“努力让每个孩子都能享有公平而有质量的教育”。在国务院最近发布的《关于深化教育体制机制改革的意见》中，也把培养学生的认知能力作为学生能力培养的首要任务。因此，探讨有利于学生学习能力全面综合发展的科学方法和手段，成为我国当前教育改革和实践的重要任务。
 
@@ -40,6 +44,6 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ## 学生参加测评的情况
 
-* 测评学校：`r school_name`
-* 测评时间：`r test_date_string`
-* 实测人数：`r n_distinct(scores_school$userId)`人
+* 测评学校：`r name_unit`
+* 测评时间：`r test_date`
+* 实测人数：`r n_distinct(scores_unit$userId)`人

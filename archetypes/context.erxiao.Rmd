@@ -42,6 +42,6 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ## 参测学生信息
 
-* 测评学校：`r school_name`
-* 测评时间：`r test_date_string`
-* 实测人数：`r n_distinct(scores_school$userId)`人
+* 测评学校：`r name_unit`
+* 测评时间：`r format(median(scores_unit$firstPartTime), "%Y年%m月")`
+* 实测人数：`r n_distinct(scores_unit$userId)`人

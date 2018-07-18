@@ -20,5 +20,5 @@ lishui:
   customer.name: 广东省佛山市南海区里水镇
 
 erxiao:
-  type: school
-  name: 北京市第二实验小学
+  customer.type: school
+  customer.name: 北京市第二实验小学

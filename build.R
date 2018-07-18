@@ -37,6 +37,10 @@ if (!interactive()) {
         "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
         "Change it to report different types of report, e.g., a `region` report for `school` customer."
       )
+    ),
+    make_option(
+      c("-T", "--debug-test"), action = "store_true", default = FALSE,
+      help = "Optional. Used when in testing mode. When set, the program will choose one report unit randomly."
     )
   )
   # get command line options, if help option encountered print help and exit,
@@ -47,12 +51,18 @@ if (!interactive()) {
   params <- config::get(file = "params.yml")
 }
 
-# set package options ----
+# environmental settings ----
+# package options
 old_opts <- options(
   "yaml.eval.expr" = TRUE,
   "knitr.kable.NA" = "",
   "reports.archytype" = "archetypes"
 )
+# import font if not found
+text_family <- config::get("text.family", config = params$customer_id)
+if (!text_family %in% fonts()) {
+  font_import(prompt = FALSE, pattern = "DroidSansFallback")
+}
 
 # check command line arguments ----
 if (is.null(params$customer_id)) {
@@ -68,8 +78,8 @@ scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
   collect()
 dbDisconnect(iquizoo_db)
 # filter out corresponding data based on the configurations
-customer_type <- config::get("type", config = params$customer_id)
-customer_name <- config::get("name", config = params$customer_id)
+customer_type <- config::get("customer.type", config = params$customer_id)
+customer_name <- config::get("customer.name", config = params$customer_id)
 # get the region name to extract data for report
 name_region <- scores_origin %>%
   filter(str_detect(!!!syms(customer_type), customer_name)) %>%
@@ -85,19 +95,24 @@ if (length(name_region) > 1) {
 # extract data for the whole region
 scores_region <- scores_origin %>%
   filter(region == name_region) %>%
-  # to avoid temporary variable names, calculate levels here
   mutate(
     firstPartTime = as_datetime(firstPartTime),
+    # to avoid temporary variable names, calculate levels here
     level = cut(
       score,
       breaks = config::get("score.level")$breaks,
       labels = config::get("score.level")$labels
+    ),
+    # also remove outliers
+    score = ifelse(
+      score %in% boxplot.stats(score)$out,
+      NA, score
     )
   )
 
 # build the three parts of the report ----
 if (is.null(params$report_type)) {
-  report_type <- config::get("type", config = params$customer_id)
+  report_type <- config::get("customer.type", config = params$customer_id)
 } else {
   report_type <- params$report_type
 }
@@ -106,29 +121,38 @@ name_units <- switch(
   region = "全区报告",
   unique(scores_region$school)
 )
+if (params$debug_test) {
+  name_units <- sample(name_units, 1)
+  warning(str_glue("Debugging. The chosen report unit is {name_units}."), immediate. = TRUE)
+}
 for (name_unit in name_units) {
+  # get the scores of current report unit
   scores_unit <- switch(
     report_type,
     region = scores_region,
     scores_region %>%
       filter(school == name_unit)
   )
-  # get metadata from `index.Rmd` and render `index.Rmd` to base
-  index_file <- file.path(
+  # default index file name is also used as default template file name
+  default_index <- "index.Rmd"
+  # the customer specific index template
+  index_tmpl <- file.path(
     getOption("reports.archytype"),
     get_tmpl_name("index", params$customer_id, params$report_type)
   )
-  if (!file.exists(index_file)) {
+  if (!file.exists(index_tmpl)) {
     # if the customer specific index template does not exist, use default
-    index_file <- file.path(
-      getOption("reports.archytype"), "index.Rmd"
+    index_tmpl <- file.path(
+      getOption("reports.archytype"), default_index
     )
   }
+  # get metadata from index template
   report_metadata <- rmarkdown::yaml_front_matter(
-    index_file, encoding = "UTF-8"
+    index_tmpl, encoding = "UTF-8"
   )
-  file.copy(index_file, "index.Rmd")
-  # render parts of reports
+  # copy index template to base and rename it as the same as the default name
+  file.copy(index_tmpl, default_index)
+  # render main parts of reports
   report_parts <- config::get("report.parts", config = params$customer_id)
   for (report_part in report_parts) {
     report_part_tmpl_file <- file.path(
@@ -147,15 +171,15 @@ for (name_unit in name_units) {
     }
     write_lines(report_part_md, paste0(report_part, ".Rmd"))
   }
+  rmd_files <- c(default_index, paste0(report_parts, ".Rmd"))
   # report rendering
   bookdown::render_book(
-    "index.Rmd",
+    default_index,
     output_file = str_glue("{name_region}-{name_unit}.docx"),
     clean_envir = FALSE
   )
-  # remove generated files
-  unlink("index.Rmd")
-  for (report_part in report_parts) unlink(paste0(report_part, ".Rmd"))
+  # remove generated report parts files
+  unlink(rmd_files)
 }
 
 # restore options ----
