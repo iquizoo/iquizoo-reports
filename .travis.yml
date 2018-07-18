@@ -13,11 +13,11 @@ stages:
 jobs:
   include:
     - stage: test
-      script: Rscript build.R -c 'daxing' -t 'school'
+      script: Rscript build.R -c 'daxing' -t 'school' -T
     - stage: test
-      script: Rscript build.R -c 'daxing' -t 'district'
+      script: Rscript build.R -c 'daxing' -t 'district' -T
     - stage: test
-      script: Rscript build.R -c 'erxiao'
+      script: Rscript build.R -c 'erxiao' -T
     - stage: deploy
       script:
         - Rscript build.R -c 'daxing' -t 'school'

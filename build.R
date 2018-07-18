@@ -37,6 +37,10 @@ if (!interactive()) {
         "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
         "Change it to report different types of report, e.g., a `region` report for `school` customer."
       )
+    ),
+    make_option(
+      c("-T", "--debug-test"), action = "store_true", default = FALSE,
+      help = "Optional. Used when in testing mode. When set, the program will choose one report unit randomly."
     )
   )
   # get command line options, if help option encountered print help and exit,
@@ -117,6 +121,10 @@ name_units <- switch(
   region = "全区报告",
   unique(scores_region$school)
 )
+if (params$debug_test) {
+  name_units <- sample(name_units, 1)
+  warning(str_glue("Debugging. The chosen report unit is {name_units}."), immediate. = TRUE)
+}
 for (name_unit in name_units) {
   # get the scores of current report unit
   scores_unit <- switch(
