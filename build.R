@@ -112,7 +112,7 @@ scores_region <- scores_origin %>%
 
 # build the three parts of the report ----
 if (is.null(params$report_type)) {
-  report_type <- config::get("type", config = params$customer_id)
+  report_type <- config::get("customer.type", config = params$customer_id)
 } else {
   report_type <- params$report_type
 }
