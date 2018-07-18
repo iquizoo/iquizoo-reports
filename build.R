@@ -91,13 +91,18 @@ if (length(name_region) > 1) {
 # extract data for the whole region
 scores_region <- scores_origin %>%
   filter(region == name_region) %>%
-  # to avoid temporary variable names, calculate levels here
   mutate(
     firstPartTime = as_datetime(firstPartTime),
+    # to avoid temporary variable names, calculate levels here
     level = cut(
       score,
       breaks = config::get("score.level")$breaks,
       labels = config::get("score.level")$labels
+    ),
+    # also remove outliers
+    score = ifelse(
+      score %in% boxplot.stats(score)$out,
+      NA, score
     )
   )
 
