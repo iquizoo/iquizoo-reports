@@ -113,31 +113,33 @@ name_units <- switch(
   unique(scores_region$school)
 )
 for (name_unit in name_units) {
+  # get the scores of current report unit
   scores_unit <- switch(
     report_type,
     region = scores_region,
     scores_region %>%
       filter(school == name_unit)
   )
-
-  # render all the report parts
+  # default index file name is also used as default template file name
   default_index <- "index.Rmd"
-  # get metadata from `index.Rmd` and render `index.Rmd` to base
-  index_file <- file.path(
+  # the customer specific index template
+  index_tmpl <- file.path(
     getOption("reports.archytype"),
     get_tmpl_name("index", params$customer_id, params$report_type)
   )
-  if (!file.exists(index_file)) {
+  if (!file.exists(index_tmpl)) {
     # if the customer specific index template does not exist, use default
-    index_file <- file.path(
+    index_tmpl <- file.path(
       getOption("reports.archytype"), default_index
     )
   }
+  # get metadata from index template
   report_metadata <- rmarkdown::yaml_front_matter(
-    index_file, encoding = "UTF-8"
+    index_tmpl, encoding = "UTF-8"
   )
-  file.copy(index_file, "index.Rmd")
-  # render parts of reports
+  # copy index template to base and rename it as the same as the default name
+  file.copy(index_tmpl, default_index)
+  # render main parts of reports
   report_parts <- config::get("report.parts", config = params$customer_id)
   for (report_part in report_parts) {
     report_part_tmpl_file <- file.path(
@@ -163,7 +165,7 @@ for (name_unit in name_units) {
     output_file = str_glue("{name_region}-{name_unit}.docx"),
     clean_envir = FALSE
   )
-  # remove generated files
+  # remove generated report parts files
   unlink("index.Rmd")
   for (report_part in report_parts) unlink(paste0(report_part, ".Rmd"))
 }
