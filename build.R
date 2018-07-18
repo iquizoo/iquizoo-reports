@@ -74,8 +74,8 @@ scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
   collect()
 dbDisconnect(iquizoo_db)
 # filter out corresponding data based on the configurations
-customer_type <- config::get("type", config = params$customer_id)
-customer_name <- config::get("name", config = params$customer_id)
+customer_type <- config::get("customer.type", config = params$customer_id)
+customer_name <- config::get("customer.name", config = params$customer_id)
 # get the region name to extract data for report
 name_region <- scores_origin %>%
   filter(str_detect(!!!syms(customer_type), customer_name)) %>%
