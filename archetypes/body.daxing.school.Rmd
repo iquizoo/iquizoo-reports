@@ -175,7 +175,7 @@ ability_summary_combined %>%
   ) %>%
   mutate(
     group = factor(
-      group, levels = c(order_med$group, "全国平均")
+      group, levels = c("全国平均", order_med$group)
     )
   ) %>%
   gather(level, count, A:D) %>%
