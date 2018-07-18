@@ -17,7 +17,6 @@ scores_combined_this_ability <- list(
       class
     )
   )
-# bp_stats <- boxplot.stats(scores_unit_this_ability$score)
 # descriptive statistics
 ability_summary_combined <- scores_combined_this_ability %>% 
   group_by(set, group) %>%
