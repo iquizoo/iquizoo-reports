@@ -15,7 +15,7 @@ db_filename <- "iquizoo.sqlite"
 # remove database file beforehand
 unlink(db_filename, force = TRUE)
 # open connection
-iquizoo_db <- dbConnect(SQLite(), dbname = "iquizoo.sqlite")
+iquizoo_db <- dbConnect(SQLite(), dbname = db_filename)
 # initializing database tables
 sql_files <- list.files("sql", "\\.sql", full.names = TRUE)
 walk(sql_files, ~dbExecute(iquizoo_db, read_file(.x)))
