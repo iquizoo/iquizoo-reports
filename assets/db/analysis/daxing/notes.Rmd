@@ -1,0 +1,169 @@
+---
+title: "Notes on correlation analysis"
+output:
+  html_notebook:
+    theme: readable
+    toc: yes
+    toc_float: yes
+---
+
+# Introduction
+
+Here we do some correlation analysis between cognitive score measure results and achievement scores.
+
+```{r load-data, echo=FALSE, warning=FALSE, message=FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(haven))
+suppressPackageStartupMessages(library(extrafont))
+# be aware of what 'prepare.R' does, here do it directly
+# load ability scores and information
+ability_scores <- read_excel("daxing.xlsx", sheet = "ability_scores")
+users <- read_excel("daxing.xlsx", sheet = "users")
+abilities <- read_excel("daxing.xlsx", sheet = "abilities")
+# add achievement score users' id ('STU_CODE') as foreign key
+stu_code_map <- read_excel("achievement/users_info.xls") %>% 
+  mutate(userId = parse_double(userId))
+users_code <- users %>% 
+  left_join(stu_code_map, by = "userId", suffix = c("", ".drop")) %>% 
+  select(-ends_with(".drop"))
+# load achievement scores
+chinese_origin <- read_sav("achievement/chinese.sav", encoding = "cp936") %>% 
+  select(-contains("LEVEL"))
+chinese_var_labels <- chinese_origin %>% 
+  map_df(~attr(.x, "label")) %>% 
+  gather(varId, varLabel)
+math_origin <- read_sav("achievement/math.sav", encoding = "cp936") %>% 
+  select(-contains("LEVEL"))
+math_var_labels <- math_origin %>% 
+  map_df(~attr(.x, "label")) %>% 
+  gather(varId, varLabel)
+english_origin <- read_sav("achievement/english.sav", encoding = "cp936") %>% 
+  select(-contains("LEVEL"))
+english_var_labels <- english_origin %>% 
+  map_df(~attr(.x, "label")) %>% 
+  gather(varId, varLabel)
+```
+
+## Chinese correlations
+
+We begin by do correlational analysis between Chinese achievement and all the ability scores.
+
+```{r chinese, echo=FALSE, warning=FALSE, message=FALSE, fig.asp=0.5}
+chinese_origin %>%
+  gather(varId, score_subj, -STU_CODE) %>% 
+  left_join(users_code) %>% 
+  left_join(ability_scores) %>% 
+  filter(!is.na(score_subj), !is.na(score)) %>% 
+  group_by(varId, abId) %>% 
+  summarise(
+    r = cor.test(score_subj, score)$estimate,
+    p = cor.test(score_subj, score)$p.value
+  ) %>% 
+  mutate(
+    abName = factor(
+      abId, 
+      levels = abilities$abId, 
+      labels = abilities$abName
+    )
+  ) %>% 
+  mutate(
+    varLabel = factor(
+      varId, 
+      levels = chinese_var_labels$varId,
+      labels = chinese_var_labels$varLabel
+    )
+  ) %>% 
+  ggplot(aes(abName, varLabel, fill = r)) +
+  geom_tile(color = "black") +
+  geom_text(aes(label = round(r, 2))) +
+  scale_fill_gradient2() +
+  labs(x = "基础能力得分", y = "语文得分") +
+  theme_minimal(base_size = 12, base_family = "SimHei") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  coord_fixed()
+```
+
+The low correlations originating from **Reaction** ("反应力") and **Geometry** ("空间几何") signal the measure might have errored in the testing phase, especially ***Reaction***, which is measured by the **buggy** item **StopWatch** ("超级秒表").
+
+## Math correlations
+
+Then we explore correlations between ability scores and math scores.
+
+```{r math, echo=FALSE, warning=FALSE, message=FALSE, fig.asp=0.7}
+math_origin %>%
+  gather(varId, score_subj, -stu_code) %>% 
+  left_join(users_code, by = c("stu_code" = "STU_CODE")) %>% 
+  left_join(ability_scores) %>% 
+  filter(!is.na(score_subj), !is.na(score)) %>% 
+  group_by(varId, abId) %>% 
+  summarise(
+    r = cor.test(score_subj, score)$estimate,
+    p = cor.test(score_subj, score)$p.value
+  ) %>% 
+  mutate(
+    abName = factor(
+      abId, 
+      levels = abilities$abId, 
+      labels = abilities$abName
+    )
+  ) %>% 
+  mutate(
+    varLabel = factor(
+      varId, 
+      levels = math_var_labels$varId,
+      labels = math_var_labels$varLabel
+    )
+  ) %>% 
+  ggplot(aes(abName, varLabel, fill = r)) +
+  geom_tile(color = "black") +
+  geom_text(aes(label = round(r, 2))) +
+  scale_fill_gradient2() +
+  labs(x = "基础能力得分", y = "数学得分") +
+  theme_minimal(base_size = 10, base_family = "SimHei") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  coord_fixed()
+```
+
+**Reaction** again appears to have some issues.
+
+## English correlations
+
+At last, English scores and ability scores.
+
+```{r english, echo=FALSE, warning=FALSE, message=FALSE, fig.asp=0.5}
+english_origin %>%
+  gather(varId, score_subj, -STU_CODE) %>% 
+  left_join(users_code) %>% 
+  left_join(ability_scores) %>% 
+  filter(!is.na(score_subj), !is.na(score)) %>% 
+  group_by(varId, abId) %>% 
+  summarise(
+    r = cor.test(score_subj, score)$estimate,
+    p = cor.test(score_subj, score)$p.value
+  ) %>% 
+  mutate(
+    abName = factor(
+      abId, 
+      levels = abilities$abId, 
+      labels = abilities$abName
+    )
+  ) %>% 
+  mutate(
+    varLabel = factor(
+      varId, 
+      levels = english_var_labels$varId,
+      labels = english_var_labels$varLabel
+    )
+  ) %>% 
+  ggplot(aes(abName, varLabel, fill = r)) +
+  geom_tile(color = "black") +
+  geom_text(aes(label = round(r, 2))) +
+  scale_fill_gradient2() +
+  labs(x = "基础能力得分", y = "英语得分") +
+  theme_minimal(base_size = 12, base_family = "SimHei") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  coord_fixed()
+```
+
+**Reaction** again appears to have some issues.
