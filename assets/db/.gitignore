@@ -45,9 +45,6 @@ rsconnect/
 
 # End of https://www.gitignore.io/api/r
 
-# R notebook preview files
-*.nb.html
-
-# SQLite database files
-*.sqlite
-*.db
+# raw dataset/exercise config path
+datasets
+_info
