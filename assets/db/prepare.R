@@ -18,6 +18,8 @@ library(glue)
 library(DBI)
 library(RSQLite)
 
+# configurations ----
+oldwd <- setwd(file.path("assets", "db"))
 base_configs <- config::get()
 base_datasets <- base_configs$datasets
 
@@ -309,3 +311,4 @@ for (base_dataset in base_datasets) {
 
 # ensure database is disconnected after processing
 dbDisconnect(iquizoo_db)
+setwd(oldwd)

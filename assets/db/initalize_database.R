@@ -10,6 +10,7 @@ library(DBI)
 library(RSQLite)
 
 # database preparations ----
+oldwd <- setwd(file.path("assets", "db"))
 # configurations
 db_filename <- "iquizoo.sqlite"
 # remove database file beforehand
@@ -43,3 +44,4 @@ exercise_ability <- exercises_joined %>%
 db_insert_into(iquizoo_db, "exercises", exercises, overwrite = TRUE)
 db_insert_into(iquizoo_db, "exercise_ability", exercise_ability, overwrite = TRUE)
 dbDisconnect(iquizoo_db)
+setwd(oldwd)
