@@ -95,7 +95,7 @@ if (diff_avg$p.value[1] > 0.05) {
 }
 ```
 
-本区共施测`r n_distinct(scores_region$school)`所学校，其中学校名称用编码代替。表\@ref(tab:<<ab_id>>-tab)中展示了本区及各学校的学生整体表现情况。从学生的平均水平来看，`r best_avg`的学生表现最好，而`r worst_avg`的学生表现最差，`r diff_msg_avg`。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+本区共施测`r n_distinct(scores_region$school)`所学校，其中学校名称用编码代替。表\@ref(tab:<<ab_id>>-tab)中展示了本区及各学校的学生整体表现情况。从学生的平均水平来看，`r best_avg`的学生表现最好，而`r worst_avg`的学生表现最差，`r diff_msg_avg`。按照学生总体表现划分ABCD四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。
 
 ```{r <<ab_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区及各学校学生{ab_name_cn}测评的得分情况对比")}
 scores_combined_this_ability %>%
@@ -176,4 +176,4 @@ ability_summary_combined %>%
   )
 ```
 
-各个学校学生总体在`r ab_name_cn`测评中各个水平的人数比例如图\@ref(fig:<<ab_id>>-grading)所示。每个学校的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的学校，对该校学生的`r ab_name_cn`进行有计划的训练和干预。其中，**水平A**：优秀；**水平B**：良好；**水平C**：中等；**水平D**：较差。
+各个学校学生总体在`r ab_name_cn`测评中各个水平的人数比例如图\@ref(fig:<<ab_id>>-grading)所示。每个学校的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的学校，对该校学生的`r ab_name_cn`进行有计划的训练和干预。按照学生总体表现划分ABCD四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。
