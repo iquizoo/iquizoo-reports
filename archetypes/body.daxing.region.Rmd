@@ -1,14 +1,14 @@
 ```{r <<ab_id>>-configs, include=FALSE}
 ab_id <- "<<ab_id>>"
-ab_info <- as_tibble(rmarkdown::metadata$ability) %>% 
+ab_info <- as_tibble(rmarkdown::metadata$ability) %>%
   filter(id == ab_id)
 ab_name_cn <- ab_info$name
-scores_region_this_ability <- scores_region %>% 
+scores_region_this_ability <- scores_region %>%
   filter(ab_name_en == ab_id)
 scores_combined_this_ability <- list(
   region = scores_region_this_ability,
   by_school = scores_region_this_ability
-) %>% 
+) %>%
   bind_rows(.id = "set") %>%
   mutate(
     group = case_when(
@@ -18,7 +18,7 @@ scores_combined_this_ability <- list(
     set = factor(set, c("region", "by_school"))
   )
 # descriptive statistics
-ability_summary_combined <- scores_combined_this_ability %>% 
+ability_summary_combined <- scores_combined_this_ability %>%
   group_by(set, group) %>%
   summarise(
     n = n(),
@@ -46,8 +46,8 @@ ab_info %>%
       heading = name, content = description,
       hlevel = hlevel, style = style
     )
-  ) %>% 
-  pull(md) %>% 
+  ) %>%
+  pull(md) %>%
   cat()
 ```
 
@@ -79,13 +79,13 @@ ability_summary_combined %>%
     col.names = c("", "人数", "平均数", "标准差", "最高分", "中位数", "最低分", LETTERS[1:4]),
     caption = str_glue("本区及各学校学生{ab_name_cn}测评的整体表现详表")
   )
-best_avg <- order_avg %>% 
+best_avg <- order_avg %>%
   filter(set == "by_school") %>%
-  pull(group) %>% 
+  pull(group) %>%
   first()
-worst_avg <- order_avg %>% 
+worst_avg <- order_avg %>%
   filter(set == "by_school") %>%
-  pull(group) %>% 
+  pull(group) %>%
   last()
 diff_avg <- broom::tidy(aov(score ~ school_cover, scores_region_this_ability))
 if (diff_avg$p.value[1] > 0.05) {
@@ -95,11 +95,11 @@ if (diff_avg$p.value[1] > 0.05) {
 }
 ```
 
-本区共施测`r n_distinct(scores_region$school)`所学校，其中学校名称用编码代替。表\@ref(tab:<<ab_id>>-tab)中展示了本区及各学校的学生整体表现情况。从学生的平均水平来看，`r best_avg`的学生表现最好，而`r worst_avg`的学生表现最差，`r diff_msg_avg`。按照学生总体表现划分ABCD四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。
+本区共施测`r n_distinct(scores_region$school)`所学校，其中学校名称用编码代替。表\@ref(tab:<<ab_id>>-tab)中展示了本区及各学校的学生整体表现情况。从学生的平均水平来看，`r best_avg`的学生表现最好，而`r worst_avg`的学生表现最差，`r diff_msg_avg`。按照学生总体表现划分ABCD四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。
 
 ```{r <<ab_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区及各学校学生{ab_name_cn}测评的得分情况对比")}
 scores_combined_this_ability %>%
-  mutate(group = factor(group, order_med$group)) %>% 
+  mutate(group = factor(group, order_med$group)) %>%
   ggplot(aes(group, score, fill = set)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
@@ -118,13 +118,13 @@ scores_combined_this_ability %>%
     panel.grid = element_blank(),
     panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
   )
-best_med <- order_med %>% 
+best_med <- order_med %>%
   filter(set == "by_school") %>%
-  pull(group) %>% 
+  pull(group) %>%
   first()
-worst_med <- order_med %>% 
+worst_med <- order_med %>%
   filter(set == "by_school") %>%
-  pull(group) %>% 
+  pull(group) %>%
   last()
 diff_med <- broom::tidy(kruskal.test(with(scores_region_this_ability, split(score, class))))
 if (diff_med$p.value > 0.05) {
