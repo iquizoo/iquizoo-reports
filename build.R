@@ -98,10 +98,12 @@ scores_region <- scores_origin %>%
   mutate(
     firstPartTime = as_datetime(firstPartTime),
     # to avoid temporary variable names, calculate levels here
-    level = cut(
-      score,
-      breaks = config::get("score.level")$breaks,
-      labels = config::get("score.level")$labels
+    level = fct_rev(
+      cut(
+        score,
+        breaks = config::get("score.level")$breaks,
+        labels = config::get("score.level")$labels
+      )
     ),
     # also remove outliers
     score = ifelse(
