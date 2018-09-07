@@ -77,9 +77,9 @@ if (cmp_school_region$p.value > 0.05) {
 }
 scores_combined_this_ability %>%
   filter(set != "by_class") %>%
-  ggplot(aes(score, fill = set)) +
+  ggplot(aes(score, fill = group)) +
   geom_density(color = NA, alpha = 0.5) +
-  geom_vline(xintercept = mean(scores_unit$score, na.rm = TRUE), color = "red") +
+  geom_vline(xintercept = mean(scores_unit_this_ability$score, na.rm = TRUE), color = "red") +
   scale_fill_brewer(palette = "Paired") +
   scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
   labs(x = "分数", y = "", fill = "") +
@@ -93,7 +93,7 @@ scores_combined_this_ability %>%
   )
 ```
 
-本校学生总体的`r ab_name_cn`测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)。本校学生的整体表现`r diff_msg`。
+本校学生总体的`r ab_name_cn`测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)，其中红色竖线表示本校学生的平均得分。本校学生的整体表现`r diff_msg`。
 
 ```{r <<ab_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
 descr_stats_combined %>%

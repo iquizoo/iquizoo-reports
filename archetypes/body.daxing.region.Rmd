@@ -58,7 +58,7 @@ ab_info %>%
 scores_region_this_ability %>%
   ggplot(aes(score)) +
   geom_density(color = NA, fill = "lightblue", alpha = 0.5) +
-  geom_vline(xintercept = mean(scores_unit$score, na.rm = TRUE), color = "red") +
+  geom_vline(xintercept = mean(scores_region_this_ability$score, na.rm = TRUE), color = "red") +
   scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
   labs(x = "分数", y = "", fill = "") +
   theme_minimal(base_size = 18, base_family = text_family) +
@@ -72,7 +72,7 @@ scores_region_this_ability %>%
 Q <- quantile(scores_region_this_ability$score, na.rm = TRUE)
 ```
 
-本区学生总体的`r ab_name_cn`测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)。从图中可以看出，分数主要集中于`r round(Q["25%"])`-`r round(Q["75%"])`之间。
+本区学生总体的`r ab_name_cn`测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)，其中红色竖线表示本区学生的平均得分。从图中可以看出，分数主要集中于`r round(Q["25%"])`-`r round(Q["75%"])`之间。
 
 ```{r <<ab_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
 descr_stats_combined %>%
