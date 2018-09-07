@@ -22,7 +22,7 @@ scores_combined_this_ability <- list(
     set = factor(set, c("region", "school", "by_class"))
   )
 # descriptive statistics
-ability_summary_combined <- scores_combined_this_ability %>%
+descr_stats_combined <- scores_combined_this_ability %>%
   group_by(set, group) %>%
   summarise(
     n = n(),
@@ -30,17 +30,21 @@ ability_summary_combined <- scores_combined_this_ability %>%
     std = sd(score, na.rm = TRUE),
     top = max(score, na.rm = TRUE),
     med = median(score, na.rm = TRUE),
-    btm = min(score, na.rm = TRUE),
-    A = sum(level == "A", na.rm = TRUE),
-    B = sum(level == "B", na.rm = TRUE),
-    C = sum(level == "C", na.rm = TRUE),
-    D = sum(level == "D", na.rm = TRUE)
+    btm = min(score, na.rm = TRUE)
   ) %>%
   ungroup()
+level_stats_combined <- scores_combined_this_ability %>% 
+  add_count(group) %>% 
+  rename(n_total = n) %>% 
+  group_by(set, group, n_total, level) %>% 
+  summarise(n_level = n()) %>% 
+  ungroup() %>% 
+  mutate(prop_level = n_level / n_total)
+
 n_cls <- n_distinct(scores_unit_this_ability$class)
-order_avg <- ability_summary_combined %>%
+order_avg <- descr_stats_combined %>%
   arrange(set, desc(avg))
-order_med <- ability_summary_combined %>%
+order_med <- descr_stats_combined %>%
   arrange(set, desc(med))
 ```
 
@@ -75,7 +79,7 @@ scores_combined_this_ability %>%
   filter(set != "by_class") %>%
   ggplot(aes(score, fill = set)) +
   geom_density(color = NA, alpha = 0.5) +
-  geom_vline(xintercept = mean(scores_unit$score), color = "red") +
+  geom_vline(xintercept = mean(scores_unit$score, na.rm = TRUE), color = "red") +
   scale_fill_brewer(palette = "Paired") +
   scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
   labs(x = "分数", y = "", fill = "") +
@@ -89,10 +93,14 @@ scores_combined_this_ability %>%
   )
 ```
 
-本校学生总体的{ab_name_cn}测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)。本校学生的整体表现`r diff_msg`。
+本校学生总体的`r ab_name_cn`测评的得分分布见图\@ref(fig:<<ab_id>>-histogram)。本校学生的整体表现`r diff_msg`。
 
 ```{r <<ab_id>>-tab, echo=FALSE, warning=FALSE, message=FALSE}
-ability_summary_combined %>%
+descr_stats_combined %>%
+  left_join(level_stats_combined) %>% 
+  select(-n_total, -n_level) %>% 
+  mutate(prop_level = paste0(round(100 * prop_level), "%")) %>% 
+  spread(level, prop_level, fill = "0%") %>% 
   select(-set) %>%
   knitr::kable(
     digits = 2,
@@ -167,29 +175,28 @@ if (n_cls > 1) {
 本区、本校和各班的`r ab_name_cn`测评分数的分布区间如图\@ref(fig:<<ab_id>>-boxplot)。`r extra_bp`
 
 ```{r <<ab_id>>-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本区、本校和各班{ab_name_cn}测评的各水平人数比例")}
-ability_summary_combined %>%
-  select(group, n, A:D) %>%
-  add_row(
-    group = "全国平均", n = 100,
-    A = 10, B = 20, C = 40, D = 30
-  ) %>%
-  mutate(
-    group = factor(
-      group, levels = c("全国平均", order_med$group)
+descr_stats_combined %>%
+  left_join(level_stats_combined) %>% 
+  select(group, n, level, n_level, prop_level) %>% 
+  rbind(
+    tibble(
+      group = "全国平均",
+      n = 100,
+      level = factor(LETTERS[1:4]),
+      n_level = c(10, 20, 40, 30),
+      prop_level = c(0.1, 0.2, 0.4, 0.3)
     )
-  ) %>%
-  gather(level, count, A:D) %>%
-  mutate(
-    prop = count / n * 100,
-    n_label = if_else(count == 0, NA_real_, count),
-    prop_label = if_else(round(prop) == 0, NA_real_, round(prop))
-  ) %>%
-  ggplot(aes(group, prop, fill = level, label = n_label)) +
+  ) %>% 
+  mutate(group = fct_relevel(group, "全国平均")) %>% 
+  ggplot(aes(group, prop_level, fill = level, label = n_level)) +
   geom_col(position = "stack", width = 0.5) +
   geom_text(position = position_stack(vjust = 0.5), size = 3) +
   scale_fill_brewer(palette = "Blues") +
   scale_y_continuous(breaks = c(0, 30, 70, 90, 100)) +
-  labs(x = "", y = "比例（%）", fill = "") +
+  labs(
+    x = "", y = "比例（%）", fill = "",
+    caption = "注：颜色柱上标注的是相应水平的人数"
+  ) +
   coord_flip() +
   theme_minimal(base_size = 10, base_family = text_family) +
   theme(
