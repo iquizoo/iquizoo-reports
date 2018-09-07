@@ -1,6 +1,8 @@
 ```{r <<ab_id>>-configs, include=FALSE}
 ab_id <- "<<ab_id>>"
-ab_info <- as_tibble(rmarkdown::metadata$ability) %>%
+ab_info <- as_tibble(
+  config::get("ability", config = params$customer_id)
+) %>%
   filter(id == ab_id)
 ab_name_cn <- ab_info$name
 scores_unit_this_ability <- scores_unit %>%

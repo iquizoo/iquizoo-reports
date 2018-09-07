@@ -148,10 +148,6 @@ for (name_unit in name_units) {
       getOption("reports.archytype"), default_index
     )
   }
-  # get metadata from index template
-  report_metadata <- rmarkdown::yaml_front_matter(
-    index_tmpl, encoding = "UTF-8"
-  )
   # copy index template to base and rename it as the same as the default name
   file.copy(index_tmpl, default_index)
   # render main parts of reports
@@ -167,8 +163,8 @@ for (name_unit in name_units) {
     if (report_part != "body") {
       report_part_md <- render_part_normal(report_part_tmpl)
     } else {
-      heading <- report_metadata$bodyheading
-      ab_ids <- report_metadata$ability$id
+      heading <- config::get("bodyheading", config = params$customer_id)
+      ab_ids <- config::get("ability", config = params$customer_id)$id
       report_part_md <- render_part_body(heading, report_part_tmpl, ab_ids)
     }
     write_lines(report_part_md, paste0(report_part, ".Rmd"))
