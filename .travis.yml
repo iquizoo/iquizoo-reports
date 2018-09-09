@@ -6,41 +6,38 @@ before_install:
 - sudo mv ./assets/fonts/DroidSansFallback.ttf /usr/share/fonts
 - sudo fc-cache -f -v
 stages:
-  - name: test
-    if: tag IS blank
-  - name: deploy
-    if: tag IS present
+- name: test
+  if: NOT (branch = master) AND NOT (branch =~ ^release.*)
+- name: deploy
+  if: branch = master OR branch =~ ^release.*
 jobs:
   include:
-    - stage: test
-      script: Rscript build.R -c 'daxing' -t 'school' -T
-    - stage: test
-      script: Rscript build.R -c 'daxing' -t 'region' -T
-    - stage: test
-      script: Rscript build.R -c 'erxiao' -T
-    - stage: deploy
-      script:
-        - Rscript build.R -c 'daxing' -t 'school'
-        - Rscript build.R -c 'daxing' -t 'region'
-        - Rscript build.R -c 'erxiao'
-        - zip -r reports.zip targets
-      deploy:
-        - provider: releases
-          prerelease: true
-          api_key:
-            secure: yBmExfUFJh6xfT9YT0i/DxmXV2Fv/dxi+jvZCz2LdNNm3saIT0VfxPTxR2jr4WIKtQa8EbkmGOnvip+Yu/QPhvYIKGrKbSfQePtFqqQZVHPe8psUncPI1deardWAn0dEriZsDWdn+MNMk52EBlOvDUo21c1yeKEyogIX0seh/EJzbPlyT2rEYo6m9pdPbI29o47XH5m5wH3JxmA2pCiCZZ3vMiJnZGkTr2Wl4caDcaBqKrtk/8rTrmwx3D6c6zVZ/OkUGrP7Ih9JfG4Da+wVZytoBO1ZDvoT3GHTNl1/LQlVfxGpIy+a8fxtIaVWCKCX/8OQ/+Can/M3QteC5AA2m6d0qdmCfJv/fgwJ9R/DwJn8aUh8aD+5AOIF4NXqTrfW6Y/iMRtpRxDfQR+Odv0MxmARxUa0PozUku1J0gxdgQLBM9bxjwzhWlRefTw7UxsZB6ppehShBFThD9zLplljzjUPr1bynIAl06gfxaImbccvINak8wVgCB4nY0yDXVyHu71LPGH7Ix1iwo3B/Yv+vjgZ3PQaXeVB9e8Phf7yrDRZOYfpPmgewKRH790Nz33nMIRqNR/8fvnPrSHc/lxSoGQNoHYRhSUX7ayzREhZ5ljsExv27q3i2SH6KjCY3Hofb6dZeOk2p/y+3tOSbxYy/4vEH0/O3uVL38r+iG+Eapo=
-          file: reports.zip
-          skip_cleanup: true
-          on:
-            all_branches: true
-            condition: ${TRAVIS_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$
-            tags: true
-        - provider: releases
-          api_key:
-            secure: yBmExfUFJh6xfT9YT0i/DxmXV2Fv/dxi+jvZCz2LdNNm3saIT0VfxPTxR2jr4WIKtQa8EbkmGOnvip+Yu/QPhvYIKGrKbSfQePtFqqQZVHPe8psUncPI1deardWAn0dEriZsDWdn+MNMk52EBlOvDUo21c1yeKEyogIX0seh/EJzbPlyT2rEYo6m9pdPbI29o47XH5m5wH3JxmA2pCiCZZ3vMiJnZGkTr2Wl4caDcaBqKrtk/8rTrmwx3D6c6zVZ/OkUGrP7Ih9JfG4Da+wVZytoBO1ZDvoT3GHTNl1/LQlVfxGpIy+a8fxtIaVWCKCX/8OQ/+Can/M3QteC5AA2m6d0qdmCfJv/fgwJ9R/DwJn8aUh8aD+5AOIF4NXqTrfW6Y/iMRtpRxDfQR+Odv0MxmARxUa0PozUku1J0gxdgQLBM9bxjwzhWlRefTw7UxsZB6ppehShBFThD9zLplljzjUPr1bynIAl06gfxaImbccvINak8wVgCB4nY0yDXVyHu71LPGH7Ix1iwo3B/Yv+vjgZ3PQaXeVB9e8Phf7yrDRZOYfpPmgewKRH790Nz33nMIRqNR/8fvnPrSHc/lxSoGQNoHYRhSUX7ayzREhZ5ljsExv27q3i2SH6KjCY3Hofb6dZeOk2p/y+3tOSbxYy/4vEH0/O3uVL38r+iG+Eapo=
-          file: reports.zip
-          skip_cleanup: true
-          on:
-            branch: master
-            condition: ${TRAVIS_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]$
-            tags: true
+  - stage: test
+    script: Rscript build.R -c 'daxing' -t 'school' -T
+  - stage: test
+    script: Rscript build.R -c 'daxing' -t 'region' -T
+  - stage: test
+    script: Rscript build.R -c 'erxiao' -T
+  - stage: deploy
+    script:
+    - Rscript build.R -c 'daxing' -t 'school'
+    - Rscript build.R -c 'daxing' -t 'region'
+    - zip -r reports.zip targets
+    deploy:
+    - provider: releases
+      prerelease: true
+      api_key:
+        secure: LTCQbn6NQeusTNVj18o4yeEAnI7ucLDNAV6Qrlq3tHt1/v7Y3uXatieTcsz06uekk4iTm8GFp1BzVk0bKut38GfNCBxQOKxAbBjpeIH8vPEg+8UoVJmHsE9qp582pFtxyft7IKRedMrzznx6zXdpIQDVnZOOnHoqCObqSdxeW91+N0kik3sPTriSAySJJRYUSyRnk5OyMbql6VKhHybJboSv3glZ/2LljOT/Y/f1NZcu+Lywdx0xex6uASW3S1MIZWYSiINtEU4/8Yr2jw+bMmzM6x9WrieHtYOUKB9Xfdj6zXqI4jRuNIHBL6KeN0H6HALSCe18V5D4Q5Zz+lCC2bcHkURgvvBivMl09xH67HwJ4H2tJeDAFTxW/ThYmZm948uR3+V+Y22gw6uXIUO9PO7j1UsbEcjqHfdyVgJeyoUNw3fFEGkIhg8ITYhImcrZBCsJjFTj2mhVisqnYQMi/dwqVWRrc2vS01+VQ+9EZOrIkvhvi3xh6q6/XDI6d1Oyo+r1qRfYI8/5Tm6NnGh/AjwteFgHm8BgQcGm28ugeuRnNz7Dv/xUIbm/Edl4jKM1JC6Dkx9jrhilZw9ZmCoNutoRamDAk4UpobSXA6PvOVI4pNUdaQrQTxDCHcXCgrT55ZOvyJt+ceCpK3iWTrCt1NT85fa7XlVVBa/+ZbkNi8E=
+      file: reports.zip
+      skip_cleanup: true
+      on:
+        all_branches: true
+        condition: "${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} =~ ^release\\/.*$"
+    - provider: releases
+      api_key:
+        secure: LTCQbn6NQeusTNVj18o4yeEAnI7ucLDNAV6Qrlq3tHt1/v7Y3uXatieTcsz06uekk4iTm8GFp1BzVk0bKut38GfNCBxQOKxAbBjpeIH8vPEg+8UoVJmHsE9qp582pFtxyft7IKRedMrzznx6zXdpIQDVnZOOnHoqCObqSdxeW91+N0kik3sPTriSAySJJRYUSyRnk5OyMbql6VKhHybJboSv3glZ/2LljOT/Y/f1NZcu+Lywdx0xex6uASW3S1MIZWYSiINtEU4/8Yr2jw+bMmzM6x9WrieHtYOUKB9Xfdj6zXqI4jRuNIHBL6KeN0H6HALSCe18V5D4Q5Zz+lCC2bcHkURgvvBivMl09xH67HwJ4H2tJeDAFTxW/ThYmZm948uR3+V+Y22gw6uXIUO9PO7j1UsbEcjqHfdyVgJeyoUNw3fFEGkIhg8ITYhImcrZBCsJjFTj2mhVisqnYQMi/dwqVWRrc2vS01+VQ+9EZOrIkvhvi3xh6q6/XDI6d1Oyo+r1qRfYI8/5Tm6NnGh/AjwteFgHm8BgQcGm28ugeuRnNz7Dv/xUIbm/Edl4jKM1JC6Dkx9jrhilZw9ZmCoNutoRamDAk4UpobSXA6PvOVI4pNUdaQrQTxDCHcXCgrT55ZOvyJt+ceCpK3iWTrCt1NT85fa7XlVVBa/+ZbkNi8E=
+      file: reports.zip
+      skip_cleanup: true
+      on:
+        branch: master
+        tags: true
