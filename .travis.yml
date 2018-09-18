@@ -9,7 +9,7 @@ stages:
 - name: test
   if: NOT (branch = master) AND NOT (branch =~ ^release.*)
 - name: deploy
-  if: branch = master OR branch =~ ^release.*
+  if: tag IS present OR branch = master OR branch =~ ^release.*
 jobs:
   include:
   - stage: test
