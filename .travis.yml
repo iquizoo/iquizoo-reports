@@ -39,5 +39,4 @@ jobs:
       file: reports.zip
       skip_cleanup: true
       on:
-        branch: master
         tags: true
