@@ -1,5 +1,5 @@
 CREATE VIEW IF NOT EXISTS report_ability_scores AS
-SELECT users.userId, users.school, users.grade, users.class,
+SELECT users.userId, users.name, users.sex, users.school, users.grade, users.class,
        first_part_time.createTime AS firstPartTime,
        school_details.province || coalesce (school_details.prefecture, "") || school_details.county AS region,
        school_covers.cover AS school_cover,
