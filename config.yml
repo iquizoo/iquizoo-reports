@@ -2,7 +2,10 @@ default:
   # customer info
   customer.type: school
   customer.name: 客户名称
-  # report parts, you could ignore "index", which will be added automatically
+  # project identifiers for the customer, used to extract data
+  project.id: 0
+  # report parts configurations
+  # you could ignore "index", which will be added automatically
   report.parts: [context, body, suggestion]
   # use Android Sans font, more info at
   # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
@@ -10,6 +13,10 @@ default:
   score.level:
     breaks: !expr qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100
     labels: !expr LETTERS[4:1]
+  database:
+    host: rdsr46zx53ze0ebceo1n.mysql.rds.aliyuncs.com
+    user: readonly
+    password: AZYonlyread2018
 
 daxing:
   customer.type: region
@@ -61,6 +68,7 @@ daxing:
 lishui:
   customer.type: region
   customer.name: 广东省佛山市南海区里水镇
+  project.id: [415, 416]
 
 erxiao:
   customer.type: school

@@ -11,7 +11,7 @@ suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(dbplyr))
 suppressPackageStartupMessages(library(DBI))
-suppressPackageStartupMessages(library(RSQLite))
+suppressPackageStartupMessages(library(RMySQL))
 suppressPackageStartupMessages(library(iquizoor))
 
 # get the configuration parameters used in report generation ----
@@ -56,7 +56,8 @@ if (!interactive()) {
 old_opts <- options(
   "yaml.eval.expr" = TRUE,
   "knitr.kable.NA" = "",
-  "reports.archytype" = "archetypes"
+  "reports.archytype" = "archetypes",
+  "reports.mysql.querydir" = "assets/sql"
 )
 # import font if not found
 text_family <- config::get("text.family", config = params$customer_id)
@@ -64,53 +65,63 @@ if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
 
-# check command line arguments ----
+# check command line arguments and extract customer info ----
 if (is.null(params$customer_id)) {
   stop("Fatal error! You must specify the identifier of the customer.")
 }
+customer_type <- config::get("customer.type", config = params$customer_id)
+customer_name <- config::get("customer.name", config = params$customer_id)
+project_ids <- config::get("project.id", config = params$customer_id) %>%
+  paste(collapse = ",")
 
 # dataset preparations ----
 # connect to database and download data
+db_config <- config::get("database", config = params$customer_id)
 iquizoo_db <- dbConnect(
-  SQLite(), dbname = file.path("assets", "db", "iquizoo.sqlite")
+  MySQL(),
+  host = db_config$host,
+  user = db_config$user,
+  password = db_config$password,
+  dbname = "eval_core"
 )
-scores_origin <- tbl(iquizoo_db, "report_ability_scores") %>%
-  collect()
+dbExecute(iquizoo_db, "SET character_set_results = gbk;")
+users <- dbGetQuery(
+  iquizoo_db,
+  getOption("reports.mysql.querydir") %>%
+    file.path("users.sql") %>%
+    read_file() %>%
+    str_glue()
+) %>%
+  spread(prop_key, prop_value)
+scores <- dbGetQuery(
+  iquizoo_db,
+  getOption("reports.mysql.querydir") %>%
+    file.path("scores.sql") %>%
+    read_file() %>%
+    str_glue()
+)
+abilities <- dbReadTable(iquizoo_db, "ability")
 dbDisconnect(iquizoo_db)
-# filter out corresponding data based on the configurations
-customer_type <- config::get("customer.type", config = params$customer_id)
-customer_name <- config::get("customer.name", config = params$customer_id)
-# get the region name to extract data for report
-name_region <- scores_origin %>%
-  filter(str_detect(!!!syms(customer_type), customer_name)) %>%
-  pull(region) %>%
-  unique()
-if (length(name_region) > 1) {
-  warning(
-    "Multiple region names found, will try to use the first one.\n",
-    "This might cause unexpected results, so please have a careful check!"
-  )
-  name_region <- name_region[1]
-}
-# extract data for the whole region
-scores_region <- scores_origin %>%
-  filter(region == name_region) %>%
-  mutate(
-    firstPartTime = as_datetime(firstPartTime),
-    # to avoid temporary variable names, calculate levels here
-    level = fct_rev(
-      cut(
-        score,
-        breaks = config::get("score.level")$breaks,
-        labels = config::get("score.level")$labels
-      )
-    ),
-    # also remove outliers
-    score = ifelse(
-      score %in% boxplot.stats(score)$out,
-      NA, score
-    )
-  )
+# combine score results and user information to form report dataset
+dataset <- users %>%
+  left_join(scores) %>%
+  # complete cases of ability ids
+  complete(
+    abId,
+    nesting(!!!syms(c(names(users), "examId", "createDate", "bci_score")))
+  ) %>%
+  filter(!is.na(abId)) %>%
+  left_join(select(abilities, id, code), by = c("abId" = "id")) %>%
+  select(-abId) %>%
+  spread(code, score) %>%
+  # user name with alpha/number is invalid
+  filter(!str_detect(name, "(\\d|[a-zA-Z])+|无效|未用")) %>%
+  # remove invalid duplicate users (keep the newest)
+  group_by(userId) %>%
+  mutate(occurrence = row_number(desc(createDate))) %>%
+  filter(is.na(occurrence) | occurrence == 1) %>%
+  select(-occurrence) %>%
+  ungroup()
 
 # build the three parts of the report ----
 if (is.null(params$report_type)) {
