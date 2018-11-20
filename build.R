@@ -124,6 +124,7 @@ dataset <- users %>%
   ungroup()
 
 # build the three parts of the report ----
+# if `report_type` not set, set it the same as `customer.type`
 if (is.null(params$report_type)) {
   report_type <- config::get("customer.type", config = params$customer_id)
 } else {
@@ -132,20 +133,25 @@ if (is.null(params$report_type)) {
 name_units <- switch(
   report_type,
   region = "全区报告",
-  unique(scores_region$school)
+  unique(users$school)
 )
 if (params$debug_test) {
   name_units <- sample(name_units, 1)
-  warning(str_glue("Debugging. The chosen report unit is {name_units}."), immediate. = TRUE)
+  warning(
+    str_glue("Debugging. The chosen report unit is {name_units}."),
+    immediate. = TRUE
+  )
 }
 for (name_unit in name_units) {
-  # get the scores of current report unit
-  scores_unit <- switch(
+  # get the dataset for current report unit
+  dataset_unit <- switch(
     report_type,
-    region = scores_region,
-    scores_region %>%
+    region = dataset,
+    dataset %>%
       filter(school == name_unit)
   )
+
+  ## "index.Rmd" rendering
   # default index file name is also used as default template file name
   default_index <- "index.Rmd"
   # the customer specific index template
@@ -161,27 +167,21 @@ for (name_unit in name_units) {
   }
   # copy index template to base and rename it as the same as the default name
   file.copy(index_tmpl, default_index)
-  # render main parts of reports
+
+  ## remaining ".Rmd" rendering
+  # get the name of remaining parts
   report_parts <- config::get("report.parts", config = params$customer_id)
   for (report_part in report_parts) {
     report_part_tmpl_file <- file.path(
       getOption("reports.archytype"),
-      get_tmpl_name(
-        report_part, params$customer_id, params$report_type
-      )
+      get_tmpl_name(report_part, params$customer_id, params$report_type)
     )
-    report_part_tmpl <- read_file(report_part_tmpl_file)
-    if (report_part != "body") {
-      report_part_md <- render_part_normal(report_part_tmpl)
-    } else {
-      heading <- config::get("bodyheading", config = params$customer_id)
-      ab_ids <- config::get("ability", config = params$customer_id)$id
-      report_part_md <- render_part_body(heading, report_part_tmpl, ab_ids)
-    }
+    report_part_md <- render_part_normal(read_file(report_part_tmpl_file))
     write_lines(report_part_md, paste0(report_part, ".Rmd"))
   }
   rmd_files <- c(default_index, paste0(report_parts, ".Rmd"))
-  # report rendering
+
+  ## report rendering
   bookdown::render_book(
     default_index,
     output_file = str_glue("{name_region}-{name_unit}.docx"),
