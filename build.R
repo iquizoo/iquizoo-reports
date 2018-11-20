@@ -108,10 +108,12 @@ dbDisconnect(iquizoo_db)
 # combine score results and user information to form report dataset
 dataset <- users %>%
   left_join(scores) %>%
+  # underscore is not allowed for cross-references in chunk label
+  rename(bci = bci_score) %>%
   # complete cases of ability ids
   complete(
     abId,
-    nesting(!!!syms(c(names(users), "examId", "createDate", "bci_score")))
+    nesting(!!!syms(c(names(users), "examId", "createDate", "bci")))
   ) %>%
   filter(!is.na(abId)) %>%
   left_join(select(abilities, id, code), by = c("abId" = "id")) %>%
