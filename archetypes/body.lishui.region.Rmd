@@ -1,0 +1,21 @@
+# 报告正文
+
+```{r get-render-content, include=FALSE}
+n_abilities <- nrow(report_abilities)
+text_to_render <- character(length = n_abilities)
+for (i_row in 1:n_abilities) {
+  ab_code <- report_abilities[[i_row, "code"]]
+  ab_name <- report_abilities[[i_row, "name"]]
+  ab_hlevel <- report_abilities[[i_row, "hlevel"]]
+  ab_hstyle <- report_abilities[[i_row, "hstyle"]]
+  ab_def <- report_abilities[[i_row, "def"]]
+  text_to_render[i_row] <- knitr::knit_expand(
+    text = readLines(
+      file.path(getOption("reports.archytype"), "ability-report-child.Rmd"),
+      encoding = "UTF-8"
+    )
+  )
+}
+```
+
+`r knitr::knit(text = text_to_render)`
