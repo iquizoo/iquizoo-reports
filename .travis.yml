@@ -13,15 +13,10 @@ stages:
 jobs:
   include:
   - stage: test
-    script: Rscript build.R -c 'daxing' -t 'school' -T
-  - stage: test
-    script: Rscript build.R -c 'daxing' -t 'region' -T
-  - stage: test
-    script: Rscript build.R -c 'erxiao' -T
+    script: Rscript build.R -c 'lishui' -t 'region' -T
   - stage: deploy
     script:
-    - Rscript build.R -c 'daxing' -t 'school'
-    - Rscript build.R -c 'daxing' -t 'region'
+    - Rscript build.R -c 'lishui' -t 'region'
     - zip -r reports.zip targets
     deploy:
     - provider: releases
