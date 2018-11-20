@@ -132,7 +132,7 @@ if (is.null(params$report_type)) {
 }
 name_units <- switch(
   report_type,
-  region = "全区报告",
+  region = "全体报告",
   unique(users$school)
 )
 if (params$debug_test) {
@@ -184,7 +184,7 @@ for (name_unit in name_units) {
   ## report rendering
   bookdown::render_book(
     default_index,
-    output_file = str_glue("{name_region}-{name_unit}.docx"),
+    output_file = str_glue("{customer_name}-{name_unit}.docx"),
     clean_envir = FALSE
   )
   # remove generated report parts files
