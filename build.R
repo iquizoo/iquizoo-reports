@@ -26,22 +26,23 @@ if (!interactive()) {
       c("-c", "--customer-id"),
       help = paste(
         "Required. Specify the customer identifier for reporting.",
-        "This signifies because it will be used to identify datasets and descriptions.",
-        "The corresponding customer `type` and `name` should be found in the configuration file `config.yml`."
+        "This signifies because it will be used to identify datasets and descriptions."
       )
     ),
     make_option(
-      c("-t", "--report-type"),
+      c("-u", "--report-unit"), default = "default",
       help = paste(
-        "Optional. Used when the customer(s) need different versions of reports.",
-        "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
-        "Change it to report different types of report, e.g., a `region` report for `school` customer."
+        "Optional. Specify the report unit, i.e., one of the properties of users.",
+        "Default value is set as 'default'."
       )
     ),
     make_option(
       c("-T", "--debug-test"), action = "store_true", default = FALSE,
-      help = "Optional. Used when in testing mode. When set, the program will choose one report unit randomly."
+      help = paste(
+        "Optional. Used when in testing mode.",
+        "When set, the program will choose one report unit randomly."
     )
+  )
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
