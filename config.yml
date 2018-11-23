@@ -1,12 +1,13 @@
 default:
   # customer info
-  customer.type: school
   customer.name: 客户名称
   ## project identifiers for the customer, used to extract data
   customer.projectid: 0
-  # report parts configurations
-  # you could ignore "index", which will be added automatically
-  report.parts: [context, body, suggestion]
+  # report configurations
+  report.title:
+    default: 大脑学习能力测评
+  report.subtitle:
+    default: 集体报告
   # use Android Sans font, more info at
   # https://www.freechinesefont.com/simplified-traditional-droid-sans-fallback/
   text.family: Droid Sans Fallback
@@ -19,9 +20,7 @@ default:
     password: AZYonlyread2018
 
 daxing:
-  customer.type: region
   customer.name: 北京市大兴区
-  bodyheading: 报告正文
   report.ability:
     code:
     - blai
@@ -66,9 +65,13 @@ daxing:
     - 数学计算是指根据法则快速准确进行计算，并且能理解计算的算理，会通法、懂规律，能根据题目的条件探求解题的途径，寻求简洁、合理算法的能力。大脑的顶叶顶内沟区域与数学计算能力显著相关，数学计算是逻辑思维与计算技能的结合，是数学能力中的一项核心技能。
 
 lishui:
-  customer.type: region
   customer.name: 广东省佛山市南海区里水镇
   customer.projectid: [415, 416]
+  report.title:
+    default: 大脑学习能力测评
+  report.subtitle:
+    default: 集体报告
+    school: 学校集体报告
   report.ability:
     code:
     - bci
@@ -95,7 +98,6 @@ lishui:
     - 反应力是对各种信息、要求和指令等做出快速反应的能力。速度是衡量反应力最重要的指标，它体现了大脑各个系统的协调、整合发展的水平，与整个神经网络的效率有密切关系。反应力可以从反应速度、言语速度和思维速度三个维度来测量。本次施测下每个维度都有对应的施测题目，学生分数越高，代表反应力越强。
 
 erxiao:
-  customer.type: school
   customer.name: 北京市第二实验小学
   report.ability:
     code:

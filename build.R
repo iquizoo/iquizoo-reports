@@ -51,6 +51,11 @@ if (!interactive()) {
   params <- config::get(file = "params.yml")
 }
 
+# command line arguments checking ----
+if (is.null(params$customer_id)) {
+  stop("Fatal error! You must specify the identifier of the customer.")
+}
+
 # environmental settings ----
 # package options
 old_opts <- options(
@@ -59,21 +64,35 @@ old_opts <- options(
   "reports.archytype" = "archetypes",
   "reports.mysql.querydir" = "assets/sql"
 )
+# set default configuration as what the command line argument specifies
+Sys.setenv(R_CONFIG_ACTIVE = params$customer_id)
 # import font if not found
-text_family <- config::get("text.family", config = params$customer_id)
+text_family <- config::get("text.family")
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
-
-# check command line arguments and extract customer info ----
-if (is.null(params$customer_id)) {
-  stop("Fatal error! You must specify the identifier of the customer.")
+# common variables used in reporting
+customer_name <- config::get("customer.name")
+title_config <- config::get("report.title")
+if (hasName(title_config, params$report_unit)) {
+  title <- title_config[[params$report_unit]]
+} else {
+  title <- title_config[["default"]]
+  warning(
+    str_glue("Will use default title ('{title}') for report unit '{params$report_unit}'."),
+    immediate. = TRUE
+  )
 }
-customer_type <- config::get("customer.type", config = params$customer_id)
-customer_name <- config::get("customer.name", config = params$customer_id)
-score_levels <- config::get("score.level", config = params$customer_id)
-report_abilities <- config::get("report.ability", config = params$customer_id) %>%
-  as_tibble()
+subtitle_config <- config::get("report.subtitle")
+if (hasName(subtitle_config, params$report_unit)) {
+  subtitle <- subtitle_config[[params$report_unit]]
+} else {
+  subtitle <- subtitle_config[["default"]]
+  warning(
+    str_glue("Will use default subtitle ('{subtitle}') for report type '{params$report_unit}'."),
+    immediate. = TRUE
+  )
+}
 
 # dataset preparations ----
 # connect to database and download data
