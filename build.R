@@ -71,8 +71,6 @@ if (is.null(params$customer_id)) {
 }
 customer_type <- config::get("customer.type", config = params$customer_id)
 customer_name <- config::get("customer.name", config = params$customer_id)
-project_ids <- config::get("project.id", config = params$customer_id) %>%
-  paste(collapse = ",")
 score_levels <- config::get("score.level", config = params$customer_id)
 report_abilities <- config::get("report.ability", config = params$customer_id) %>%
   as_tibble()
@@ -80,6 +78,8 @@ report_abilities <- config::get("report.ability", config = params$customer_id) %
 # dataset preparations ----
 # connect to database and download data
 db_config <- config::get("database", config = params$customer_id)
+customer_projectids <- config::get("customer.projectid", config = params$customer_id) %>%
+  paste(collapse = ",")
 iquizoo_db <- dbConnect(
   MySQL(),
   host = db_config$host,

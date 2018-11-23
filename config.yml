@@ -2,8 +2,8 @@ default:
   # customer info
   customer.type: school
   customer.name: 客户名称
-  # project identifiers for the customer, used to extract data
-  project.id: 0
+  ## project identifiers for the customer, used to extract data
+  customer.projectid: 0
   # report parts configurations
   # you could ignore "index", which will be added automatically
   report.parts: [context, body, suggestion]
@@ -68,7 +68,7 @@ daxing:
 lishui:
   customer.type: region
   customer.name: 广东省佛山市南海区里水镇
-  project.id: [415, 416]
+  customer.projectid: [415, 416]
   report.ability:
     code:
     - bci

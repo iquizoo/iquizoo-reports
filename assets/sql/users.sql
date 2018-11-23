@@ -13,4 +13,4 @@ FROM
 	INNER JOIN userownproperty ON userownproperty.userId = subprojectownuser.userId
 	INNER JOIN userproperty ON userproperty.id = userownproperty.propertyId
 WHERE
-	project.id IN ( {project_ids} );
+	project.id IN ( {customer_projectids} );
