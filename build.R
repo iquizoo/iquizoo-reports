@@ -155,13 +155,15 @@ name_units <- switch(
   default = "全体报告",
   unique(pull(dataset, params$report_unit))
 )
-# choose one report unit randomly when debugging
+# customize settings for debug and deploy
+output_dir <- "targets"
 if (params$debug_test) {
   name_units <- sample(name_units, 1)
   warning(
     str_glue("Debugging. The chosen report unit is {name_units}."),
     immediate. = TRUE
   )
+  output_dir <- "test"
 }
 # rendering report for each unit
 for (name_unit in name_units) {
@@ -169,6 +171,7 @@ for (name_unit in name_units) {
   bookdown::render_book(
     "index.Rmd",
     output_file = str_glue("{customer_name}-{name_unit}.docx"),
+    output_dir = output_dir,
     clean_envir = FALSE
   )
 }
