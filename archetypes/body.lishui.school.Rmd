@@ -129,7 +129,7 @@ stats_descr %>%
   )
 n_grade <- n_distinct(dataset$grade)
 diff_msg_avg <- ""
-if (n_grade > 1 && !all(is.na(dataset_unit$grade))) {
+if (n_grade > 1 && !any(is.na(dataset_unit$grade))) {
   dinfer_avg <- broom::tidy(aov({{ab_code}} ~ grade, dataset_unit))
   if (dinfer_avg$p.value[1] > 0.05) {
     dinfer_msg_avg <- "但是各年级的表现差异不明显"
@@ -187,7 +187,7 @@ list(
     panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
   )
 diff_msg_med <- ""
-if (n_grade > 1 && !all(is.na(dataset_unit$grade))) {
+if (n_grade > 1 && !any(is.na(dataset_unit$grade))) {
   dinfer_med <- broom::tidy(kruskal.test(with(dataset_unit, split({{ab_code}}, grade))))
   if (dinfer_med$p.value > 0.05) {
     dinfer_msg_med <- "但是各年级的表现差异不明显"
