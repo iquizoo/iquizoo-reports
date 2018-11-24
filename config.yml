@@ -73,13 +73,7 @@ lishui:
     default: 集体报告
     school: 学校集体报告
   report.ability:
-    code:
-    - bci
-    - Att
-    - Mem
-    - SC
-    - Rsn
-    - RT
+    code: [bci, Att, Mem, SC, Rsn, RT]
     name:
     - 大脑学习能力
     - 注意力
