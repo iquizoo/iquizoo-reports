@@ -1,7 +1,5 @@
-# 报告说明
-
 ```{r test-date-prep, include=FALSE}
-test_date <- format.Date(range(dataset_unit$createDate, finite = TRUE), "%Y年%m月")
+test_date <- format.Date(range(dataset$createDate, finite = TRUE), "%Y年%m月")
 if (any(duplicated(test_date))) test_date <- test_date[1]
 if (length(test_date) == 1) {
   test_date_inline <- test_date
@@ -12,7 +10,7 @@ if (length(test_date) == 1) {
 
 ## 项目背景介绍
 
-这份报告描述了于`r test_date`在`r customer_name`进行的大脑学习能力测评中学生的表现。
+这份报告描述了于`r test_date_inline`在`r customer_name`进行的大脑学习能力测评中贵校学生的表现。
 
 习近平总书记在中共共产党第十九次全国代表大会指出“建设教育强国是中华民族伟大复兴的基础工程”，“努力让每个孩子都能享有公平而有质量的教育”。在国务院最近发布的《关于深化教育体制机制改革的意见》中，也把培养学生的认知能力作为学生能力培养的首要任务。因此，探讨有利于学生学习能力全面综合发展的科学方法和手段，成为我国当前教育改革和实践的重要任务。
 
@@ -47,26 +45,26 @@ knitr::include_graphics("assets/image/model.jpg")
 ## 学生参加测评的情况
 
 ```{r participation-summary-table, echo=FALSE, warning=FALSE, message=FALSE}
-participation <- dataset_unit %>% 
-  group_by(school) %>% 
+participation <- dataset %>%
+  group_by(grade) %>% 
   summarise(
     assessed = sum(!is.na(createDate)),
     missing = n() - assessed,
     completion = paste0(round(assessed / n() * 100), "%")
   )
 knitr::kable(
-  participation, 
-  caption = str_glue("{customer_name}{test_date}测评完成情况表"),
-  col.names = c("学校名称", "已测", "未测", "完成率")
+  participation,
+  caption = str_glue("{name_unit}{test_date_inline}测评完成情况表"),
+  col.names = c("年级", "已测", "未测", "完成率")
 )
 ```
 
-```{r participation-summary-plot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("{customer_name}{test_date}测评完成情况")}
-participation %>% 
-  gather("type", "count", assessed, missing) %>% 
-  mutate(type = recode(type, assessed = "已测", missing = "未测")) %>% 
-  mutate(count = if_else(count == 0, NA_integer_, count)) %>% 
-  ggplot(aes(school, count, fill = type)) +
+```{r participation-summary-plot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("{name_unit}{test_date_inline}测评完成情况")}
+participation %>%
+  gather("type", "count", assessed, missing) %>%
+  mutate(type = recode(type, assessed = "已测", missing = "未测")) %>%
+  mutate(count = if_else(count == 0, NA_integer_, count)) %>%
+  ggplot(aes(grade, count, fill = type)) +
   geom_bar(stat = "identity") +
   # text labels are disabled by default
   # geom_text(
@@ -75,6 +73,6 @@ participation %>%
   # ) +
   ggthemes::theme_hc(base_size = 12, base_family = text_family) +
   scale_fill_manual(values = rev(ggthemes::hc_pal()(2))) +
-  labs(x = "", y = "", fill = "") +
-  theme(axis.text.x = element_text(angle = 60, vjust = 0.5))
+  labs(x = "年级", y = "人数", fill = "") +
+  theme()
 ```
