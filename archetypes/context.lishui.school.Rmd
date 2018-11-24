@@ -46,6 +46,7 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ```{r participation-summary-table, echo=FALSE, warning=FALSE, message=FALSE}
 participation <- dataset %>%
+  filter(school == name_unit) %>% 
   group_by(grade) %>% 
   summarise(
     assessed = sum(!is.na(createDate)),
