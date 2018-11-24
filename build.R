@@ -41,8 +41,8 @@ if (!interactive()) {
       help = paste(
         "Optional. Used when in testing mode.",
         "When set, the program will choose one report unit randomly."
+      )
     )
-  )
   )
   # get command line options, if help option encountered print help and exit,
   # otherwise if options not found on command line then set defaults,
@@ -149,17 +149,13 @@ dataset <- users %>%
   ungroup()
 
 # build the three parts of the report ----
-# if `report_type` not set, set it the same as `customer.type`
-if (is.null(params$report_type)) {
-  report_type <- config::get("customer.type", config = params$customer_id)
-} else {
-  report_type <- params$report_type
-}
+# there might be many reports based on the report unit
 name_units <- switch(
-  report_type,
-  region = "全体报告",
-  unique(users$school)
+  params$report_unit,
+  default = "全体报告",
+  unique(pull(dataset, params$report_unit))
 )
+# choose one report unit randomly when debugging
 if (params$debug_test) {
   name_units <- sample(name_units, 1)
   warning(
@@ -167,53 +163,14 @@ if (params$debug_test) {
     immediate. = TRUE
   )
 }
+# rendering report for each unit
 for (name_unit in name_units) {
-  # get the dataset for current report unit
-  dataset_unit <- switch(
-    report_type,
-    region = dataset,
-    dataset %>%
-      filter(school == name_unit)
-  )
-
-  ## "index.Rmd" rendering
-  # default index file name is also used as default template file name
-  default_index <- "index.Rmd"
-  # the customer specific index template
-  index_tmpl <- file.path(
-    getOption("reports.archytype"),
-    get_tmpl_name("index", params$customer_id, params$report_type)
-  )
-  if (!file.exists(index_tmpl)) {
-    # if the customer specific index template does not exist, use default
-    index_tmpl <- file.path(
-      getOption("reports.archytype"), default_index
-    )
-  }
-  # copy index template to base and rename it as the same as the default name
-  file.copy(index_tmpl, default_index)
-
-  ## remaining ".Rmd" rendering
-  # get the name of remaining parts
-  report_parts <- config::get("report.parts", config = params$customer_id)
-  for (report_part in report_parts) {
-    report_part_tmpl_file <- file.path(
-      getOption("reports.archytype"),
-      get_tmpl_name(report_part, params$customer_id, params$report_type)
-    )
-    report_part_md <- render_part_normal(read_file(report_part_tmpl_file))
-    write_lines(report_part_md, paste0(report_part, ".Rmd"))
-  }
-  rmd_files <- c(default_index, paste0(report_parts, ".Rmd"))
-
-  ## report rendering
+  # report rendering
   bookdown::render_book(
-    default_index,
+    "index.Rmd",
     output_file = str_glue("{customer_name}-{name_unit}.docx"),
     clean_envir = FALSE
   )
-  # remove generated report parts files
-  unlink(rmd_files)
 }
 
 # restore options ----
