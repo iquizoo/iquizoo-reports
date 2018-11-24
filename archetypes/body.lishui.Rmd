@@ -157,7 +157,7 @@ stats_descr %>%
       prop_level = c(0.1, 0.2, 0.4, 0.3)
     )
   ) %>%
-  mutate(group = fct_relevel(group, "全国平均")) %>%
+  mutate(group = fct_relevel(group, "全国平均", after = Inf)) %>%
   ggplot(aes(group, prop_level, fill = level, label = n_level)) +
   geom_col(position = "stack", width = 0.5) +
   geom_text(position = position_stack(vjust = 0.5), size = 4) +
