@@ -107,7 +107,18 @@ iquizoo_db <- dbConnect(
   password = db_config$password,
   dbname = "eval_core"
 )
-dbExecute(iquizoo_db, "SET character_set_results = gbk;")
+# set results encoding to match system locales
+if (l10n_info()$`UTF-8`) {
+  charset_results <- "utf8"
+} else if (l10n_info()$`Latin-1`) {
+  charset_results <- "latin1"
+} else if (has_name(l10n_info(), "codepage")) {
+  if (l10n_info()$codepage == 936)
+    charset_results <- "gbk"
+  else
+    charset_results <- str_glue("cp{l10n_info()$codepage}")
+}
+dbExecute(iquizoo_db, str_glue("SET character_set_results = {charset_results};"))
 users <- dbGetQuery(
   iquizoo_db,
   getOption("reports.mysql.querydir") %>%
