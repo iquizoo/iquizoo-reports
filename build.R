@@ -26,21 +26,22 @@ if (!interactive()) {
       c("-c", "--customer-id"),
       help = paste(
         "Required. Specify the customer identifier for reporting.",
-        "This signifies because it will be used to identify datasets and descriptions.",
-        "The corresponding customer `type` and `name` should be found in the configuration file `config.yml`."
+        "This signifies because it will be used to identify datasets and descriptions."
       )
     ),
     make_option(
-      c("-t", "--report-type"),
+      c("-u", "--report-unit"), default = "default",
       help = paste(
-        "Optional. Used when the customer(s) need different versions of reports.",
-        "Default value is not set, i.e. `NULL`, and the report type will be the same as customer type.",
-        "Change it to report different types of report, e.g., a `region` report for `school` customer."
+        "Optional. Specify the report unit, i.e., one of the properties of users.",
+        "Default value is set as 'default'."
       )
     ),
     make_option(
       c("-T", "--debug-test"), action = "store_true", default = FALSE,
-      help = "Optional. Used when in testing mode. When set, the program will choose one report unit randomly."
+      help = paste(
+        "Optional. Used when in testing mode.",
+        "When set, the program will choose one report unit randomly."
+      )
     )
   )
   # get command line options, if help option encountered print help and exit,
@@ -51,6 +52,11 @@ if (!interactive()) {
   params <- config::get(file = "params.yml")
 }
 
+# command line arguments checking ----
+if (is.null(params$customer_id)) {
+  stop("Fatal error! You must specify the identifier of the customer.")
+}
+
 # environmental settings ----
 # package options
 old_opts <- options(
@@ -59,24 +65,41 @@ old_opts <- options(
   "reports.archytype" = "archetypes",
   "reports.mysql.querydir" = "assets/sql"
 )
+# set default configuration as what the command line argument specifies
+Sys.setenv(R_CONFIG_ACTIVE = params$customer_id)
 # import font if not found
-text_family <- config::get("text.family", config = params$customer_id)
+text_family <- config::get("text.family")
 if (!text_family %in% fonts()) {
   font_import(prompt = FALSE, pattern = "DroidSansFallback")
 }
-
-# check command line arguments and extract customer info ----
-if (is.null(params$customer_id)) {
-  stop("Fatal error! You must specify the identifier of the customer.")
+# common variables used in reporting
+customer_name <- config::get("customer.name")
+title_config <- config::get("report.title")
+if (hasName(title_config, params$report_unit)) {
+  title <- title_config[[params$report_unit]]
+} else {
+  title <- title_config[["default"]]
+  warning(
+    str_glue("Will use default title ('{title}') for report unit '{params$report_unit}'."),
+    immediate. = TRUE
+  )
 }
-customer_type <- config::get("customer.type", config = params$customer_id)
-customer_name <- config::get("customer.name", config = params$customer_id)
-project_ids <- config::get("project.id", config = params$customer_id) %>%
-  paste(collapse = ",")
+subtitle_config <- config::get("report.subtitle")
+if (hasName(subtitle_config, params$report_unit)) {
+  subtitle <- subtitle_config[[params$report_unit]]
+} else {
+  subtitle <- subtitle_config[["default"]]
+  warning(
+    str_glue("Will use default subtitle ('{subtitle}') for report type '{params$report_unit}'."),
+    immediate. = TRUE
+  )
+}
 
 # dataset preparations ----
 # connect to database and download data
 db_config <- config::get("database", config = params$customer_id)
+customer_projectids <- config::get("customer.projectid", config = params$customer_id) %>%
+  paste(collapse = ",")
 iquizoo_db <- dbConnect(
   MySQL(),
   host = db_config$host,
@@ -84,7 +107,18 @@ iquizoo_db <- dbConnect(
   password = db_config$password,
   dbname = "eval_core"
 )
-dbExecute(iquizoo_db, "SET character_set_results = gbk;")
+# set results encoding to match system locales
+if (l10n_info()$`UTF-8`) {
+  charset_results <- "utf8"
+} else if (l10n_info()$`Latin-1`) {
+  charset_results <- "latin1"
+} else if (has_name(l10n_info(), "codepage")) {
+  if (l10n_info()$codepage == 936)
+    charset_results <- "gbk"
+  else
+    charset_results <- str_glue("cp{l10n_info()$codepage}")
+}
+dbExecute(iquizoo_db, str_glue("SET character_set_results = {charset_results};"))
 users <- dbGetQuery(
   iquizoo_db,
   getOption("reports.mysql.querydir") %>%
@@ -108,7 +142,7 @@ dataset <- users %>%
   # complete cases of ability ids
   complete(
     abId,
-    nesting(!!!syms(c(names(users), "examId", "createDate", "bci_score")))
+    nesting(!!!syms(c(names(users), "examId", "createDate", "bci")))
   ) %>%
   filter(!is.na(abId)) %>%
   left_join(select(abilities, id, code), by = c("abId" = "id")) %>%
@@ -124,71 +158,31 @@ dataset <- users %>%
   ungroup()
 
 # build the three parts of the report ----
-# if `report_type` not set, set it the same as `customer.type`
-if (is.null(params$report_type)) {
-  report_type <- config::get("customer.type", config = params$customer_id)
-} else {
-  report_type <- params$report_type
-}
+# there might be many reports based on the report unit
 name_units <- switch(
-  report_type,
-  region = "全区报告",
-  unique(users$school)
+  params$report_unit,
+  default = "全体报告",
+  unique(pull(dataset, params$report_unit))
 )
+# customize settings for debug and deploy
+output_dir <- "targets"
 if (params$debug_test) {
   name_units <- sample(name_units, 1)
   warning(
     str_glue("Debugging. The chosen report unit is {name_units}."),
     immediate. = TRUE
   )
+  output_dir <- "test"
 }
+# rendering report for each unit
 for (name_unit in name_units) {
-  # get the dataset for current report unit
-  dataset_unit <- switch(
-    report_type,
-    region = dataset,
-    dataset %>%
-      filter(school == name_unit)
-  )
-
-  ## "index.Rmd" rendering
-  # default index file name is also used as default template file name
-  default_index <- "index.Rmd"
-  # the customer specific index template
-  index_tmpl <- file.path(
-    getOption("reports.archytype"),
-    get_tmpl_name("index", params$customer_id, params$report_type)
-  )
-  if (!file.exists(index_tmpl)) {
-    # if the customer specific index template does not exist, use default
-    index_tmpl <- file.path(
-      getOption("reports.archytype"), default_index
-    )
-  }
-  # copy index template to base and rename it as the same as the default name
-  file.copy(index_tmpl, default_index)
-
-  ## remaining ".Rmd" rendering
-  # get the name of remaining parts
-  report_parts <- config::get("report.parts", config = params$customer_id)
-  for (report_part in report_parts) {
-    report_part_tmpl_file <- file.path(
-      getOption("reports.archytype"),
-      get_tmpl_name(report_part, params$customer_id, params$report_type)
-    )
-    report_part_md <- render_part_normal(read_file(report_part_tmpl_file))
-    write_lines(report_part_md, paste0(report_part, ".Rmd"))
-  }
-  rmd_files <- c(default_index, paste0(report_parts, ".Rmd"))
-
-  ## report rendering
+  # report rendering
   bookdown::render_book(
-    default_index,
-    output_file = str_glue("{name_region}-{name_unit}.docx"),
+    "index.Rmd",
+    output_file = str_glue("{customer_name}-{name_unit}.docx"),
+    output_dir = output_dir,
     clean_envir = FALSE
   )
-  # remove generated report parts files
-  unlink(rmd_files)
 }
 
 # restore options ----

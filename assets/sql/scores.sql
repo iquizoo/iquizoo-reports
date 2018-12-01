@@ -6,7 +6,7 @@ SELECT DISTINCTROW
 	examresult.examId,
 	examresult.userId,
 	examresult.createDate,
-	examresult.bci_score,
+	examresult.bci_score AS bci,
 	examresultdetail.abId,
 	examresultdetail.score
 FROM
@@ -15,4 +15,4 @@ FROM
 	INNER JOIN examresult ON examresult.subProjectId = subproject.id
 	INNER JOIN examresultdetail ON examresultdetail.resultId = examresult.id
 WHERE
-	project.id IN ( {project_ids} );
+	project.id IN ( {customer_projectids} );

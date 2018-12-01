@@ -1,0 +1,17 @@
+# 报告说明
+
+```{r get-context-content, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+context_child_file <- file.path(
+  getOption("reports.archytype"),
+  with(
+    params,
+    switch(
+      report_unit,
+      default = str_glue("context.{customer_id}.Rmd"),
+      str_glue("context.{customer_id}.{report_unit}.Rmd")
+    )
+  )
+)
+context_to_knit <- knitr::knit_expand(text = readLines(context_child_file, encoding = "UTF-8"))
+cat(knitr::knit(text = context_to_knit, quiet = TRUE))
+```
