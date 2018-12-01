@@ -6,7 +6,7 @@ SELECT DISTINCTROW
 	examresult.examId,
 	examresult.userId,
 	examresult.createDate,
-	examresult.bci_score,
+	examresult.bci_score AS bci,
 	examresultdetail.abId,
 	examresultdetail.score
 FROM

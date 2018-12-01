@@ -128,8 +128,6 @@ dbDisconnect(iquizoo_db)
 # combine score results and user information to form report dataset
 dataset <- users %>%
   left_join(scores) %>%
-  # underscore is not allowed for cross-references in chunk label
-  rename(bci = bci_score) %>%
   # complete cases of ability ids
   complete(
     abId,
