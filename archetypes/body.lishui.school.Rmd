@@ -1,0 +1,256 @@
+```{r {{ab_code}}-description, echo=FALSE, results='asis'}
+render_heading_content(
+  heading = "{{ab_name}}", hlevel = "{{ab_hlevel}}", style = "{{ab_hstyle}}", content = "{{ab_def}}"
+) %>%
+  cat()
+```
+
+```{r {{ab_code}}-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("{{name_unit}}总体学生{{ab_name}}测评的分数分布")}
+dataset_unit <- dataset %>% 
+  filter(school == name_unit)
+dataset_hist <- list(
+  全体 = dataset,
+  本校 = dataset_unit
+) %>% 
+  bind_rows(.id = "group")
+ggplot(dataset_hist, aes({{ab_code}}, fill = group)) +
+  geom_density(color = NA, alpha = 0.5) +
+  geom_vline(xintercept = mean(dataset${{ab_code}}, na.rm = TRUE), color = "red") +
+  scale_fill_brewer(palette = "Paired") +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  labs(x = "分数", y = "", fill = "") +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    axis.line.x = element_line(),
+    axis.ticks.x = element_line(),
+    panel.grid = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, unit = "lines")
+  )
+bpstats <- boxplot.stats(dataset_unit${{ab_code}})$stats
+n_outliers_low <- sum(dataset_unit${{ab_code}} < bpstats[1], na.rm = TRUE)
+n_outliers_high <- sum(dataset_unit${{ab_code}} > bpstats[5], na.rm = TRUE)
+stat_cmp <- broom::tidy(t.test({{ab_code}} ~ group, dataset_hist))
+if (stat_cmp$p.value > 0.05) {
+  diff_msg = "和本次测评全体学生差异不明显"
+} else {
+  if (stat_cmp$statistic > 0) {
+    diff_msg = "比本次测评全体学生明显更好"
+  } else {
+    diff_msg = "比本次测评全体学生明显更差"
+  }
+}
+```
+
+本校学生总体的{{ab_name}}测评的得分分布见图\@ref(fig:{{ab_code}}-histogram)，其中红色竖线表示本校学生的平均得分。本校学生的整体表现`r diff_msg`。同时，有`r n_outliers_low`个人的得分异常低，而有`r n_outliers_high`个人的得分异常高，后面的报告中将不包括这些人。
+
+```{r {{ab_code}}-tab, echo=FALSE, warning=FALSE, message=FALSE}
+# get the level of each participant
+dataset_with_level <- dataset %>%
+  filter({{ab_code}} >= bpstats[1] & {{ab_code}} <= bpstats[5]) %>%
+  mutate(
+    level = cut({{ab_code}}, breaks = score_levels$breaks, labels = score_levels$labels) %>%
+      fct_rev()
+  )
+dataset_unit_with_level <- dataset_with_level %>% 
+  filter(school == name_unit)
+# summary statistics of whole and each grade
+stats_descr_region <- dataset_with_level %>%
+  summarise(
+    cnt = sum(!is.na({{ab_code}})),
+    avg = mean({{ab_code}}, na.rm = TRUE),
+    std = sd({{ab_code}}, na.rm = TRUE),
+    top = max({{ab_code}}, na.rm = TRUE),
+    med = median({{ab_code}}, na.rm = TRUE),
+    btm = min({{ab_code}}, na.rm = TRUE)
+  ) %>%
+  add_column(group = "全体", .before = 1)
+stats_descr_school <- dataset_unit_with_level %>%
+  summarise(
+    cnt = sum(!is.na({{ab_code}})),
+    avg = mean({{ab_code}}, na.rm = TRUE),
+    std = sd({{ab_code}}, na.rm = TRUE),
+    top = max({{ab_code}}, na.rm = TRUE),
+    med = median({{ab_code}}, na.rm = TRUE),
+    btm = min({{ab_code}}, na.rm = TRUE)
+  ) %>%
+  add_column(group = "本校", .before = 1)
+stats_descr_grade <- dataset_unit_with_level %>%
+  rename(group = grade) %>% 
+  group_by(group) %>% 
+  summarise(
+    cnt = sum(!is.na({{ab_code}})),
+    avg = mean({{ab_code}}, na.rm = TRUE),
+    std = sd({{ab_code}}, na.rm = TRUE),
+    top = max({{ab_code}}, na.rm = TRUE),
+    med = median({{ab_code}}, na.rm = TRUE),
+    btm = min({{ab_code}}, na.rm = TRUE)
+  ) %>%
+  ungroup()
+stats_descr <- bind_rows(stats_descr_grade, stats_descr_school, stats_descr_region)
+# summary statistics of levels for whole and each school
+stats_level_region <- dataset_with_level %>%
+  mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+  group_by(level, cnt) %>%
+  summarise(n_level = sum(!is.na(level))) %>%
+  ungroup() %>%
+  mutate(prop_level = n_level / cnt) %>%
+  filter(!is.na(level)) %>%
+  add_column(group = "全体", .before = 1)
+stats_level_school <- dataset_unit_with_level %>%
+  mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+  group_by(level, cnt) %>%
+  summarise(n_level = sum(!is.na(level))) %>%
+  ungroup() %>%
+  mutate(prop_level = n_level / cnt) %>%
+  filter(!is.na(level)) %>%
+  add_column(group = "本校", .before = 1)
+stats_level_grade <- dataset_unit_with_level %>%
+  rename(group = grade) %>%
+  group_by(group) %>%
+  mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+  group_by(group, level, cnt) %>%
+  summarise(n_level = sum(!is.na(level))) %>%
+  ungroup() %>%
+  mutate(prop_level = n_level / cnt) %>%
+  filter(!is.na(level))
+stats_level <- bind_rows(stats_level_grade, stats_level_school, stats_level_region) %>%
+  complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
+# output as a table
+stats_descr %>%
+  left_join(stats_level) %>%
+  select(-n_level) %>%
+  mutate(prop_level = paste0(round(100 * prop_level), "%")) %>%
+  spread(level, prop_level, fill = "0%") %>%
+  knitr::kable(
+    digits = 2,
+    col.names = c("年级", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分", LETTERS[1:4]),
+    caption = str_glue("本次测评全体、本校及各年级学生{{ab_name}}测评的整体表现详表")
+  )
+n_grade <- n_distinct(dataset$grade)
+diff_msg_avg <- ""
+if (n_grade > 1 && !any(is.na(dataset_unit$grade))) {
+  dinfer_avg <- broom::tidy(aov({{ab_code}} ~ grade, dataset_unit))
+  if (dinfer_avg$p.value[1] > 0.05) {
+    dinfer_msg_avg <- "但是各年级的表现差异不明显"
+  } else {
+    dinfer_msg_avg <- "并且各年级的表现差异明显"
+  }
+  diff_msg_avg <- with(
+    stats_descr_grade,
+    str_glue(
+      "从学生的平均水平来看，",
+      "{group[avg == max(avg)]}年级学生的整体表现最好，",
+      "而{group[avg == min(avg)]}年级学生的整体表现最差，",
+      "{dinfer_msg_avg}。"
+    )
+  )
+}
+```
+
+表\@ref(tab:{{ab_code}}-tab)中展示了本次测评全体、本校和各年级的学生整体表现情况。`r diff_msg_avg`。按照学生总体表现划分ABCD四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。
+
+```{r {{ab_code}}-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本次测评全体、本校及各年级学生{{ab_name}}测评得分情况对比"), fig.width=8, fig.asp=1.2}
+order_med <- stats_descr_grade %>%
+  mutate(rnk = row_number(med)) %>%
+  arrange(rnk)
+list(
+  region = dataset,
+  school = dataset_unit,
+  by_grade = dataset_unit
+) %>%
+  bind_rows(.id = "set") %>%
+  mutate(
+    group = case_when(
+      set == "region" ~ "全体",
+      set == "school" ~ "本校",
+      TRUE ~ grade
+    )
+  ) %>%
+  mutate(group = factor(group, c(order_med$group, "本校", "全体"))) %>%
+  ggplot(aes(group, {{ab_code}}, fill = set)) +
+  geom_boxplot(outlier.color = NA, width = 0.5) +
+  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
+  labs(x = "年级", y = "分数", fill = "") +
+  coord_flip(ylim = boxplot.stats(dataset${{ab_code}})$stats[c(1, 5)]) +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+diff_msg_med <- ""
+if (n_grade > 1 && !any(is.na(dataset_unit$grade))) {
+  dinfer_med <- broom::tidy(kruskal.test(with(dataset_unit, split({{ab_code}}, grade))))
+  if (dinfer_med$p.value > 0.05) {
+    dinfer_msg_med <- "但是各年级的表现差异不明显"
+  } else {
+    dinfer_msg_med <- "并且各年级的表现差异明显"
+  }
+  diff_msg_med <- with(
+    stats_descr_grade,
+    str_glue(
+      "从学生的平均水平来看，",
+      "{group[med == max(med)]}年级学生的整体表现最好，",
+      "而{group[med == min(med)]}年级学生的整体表现最差，",
+      "{dinfer_msg_med}。"
+    )
+  )
+}
+```
+
+本次测评全体、本校及各年级学生的{{ab_name}}测评分数的分布区间如图\@ref(fig:{{ab_code}}-boxplot)。`r diff_msg_med`
+
+```{r {{ab_code}}-grading, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本次测评全体、本校及各年级学生{{ab_name}}测评的不同水平人数比例"), fig.width=8, fig.asp=1.2}
+stats_descr %>%
+  left_join(stats_level) %>%
+  select(group, cnt, level, n_level, prop_level) %>%
+  rbind(
+    tibble(
+      group = "全国平均",
+      cnt = 100,
+      level = factor(LETTERS[1:4]),
+      n_level = c(10, 20, 40, 30),
+      prop_level = c(0.1, 0.2, 0.4, 0.3)
+    )
+  ) %>%
+  mutate(
+    group = fct_relevel(group, "全国平均", after = Inf),
+    n_level = case_when(
+      n_level == 0 ~ NA_real_,
+      TRUE ~ n_level
+    )
+  ) %>%
+  ggplot(aes(group, prop_level, fill = level, label = n_level)) +
+  geom_col(position = "stack", width = 0.5) +
+  geom_text(position = position_stack(vjust = 0.5), size = 4) +
+  scale_fill_brewer(palette = "Blues") +
+  scale_y_continuous(breaks = c(0, 0.3, 0.7, 0.9, 1)) +
+  labs(
+    x = "", y = "比例（%）", fill = "",
+    caption = "注：颜色柱上标注的是相应水平的人数"
+  ) +
+  coord_flip() +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+```
+
+本校学生总体在{{ab_name}}测评中各个水平的人数比例如图\@ref(fig:{{ab_code}}-grading)。每个班级的学生从等级优秀到不足的占比情况存在差异，应该重点关注在等级D中占比较大的年级对学生的{{ab_name}}进行有计划的训练和干预。按照学生总体表现划分ABCD四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。
