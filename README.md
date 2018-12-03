@@ -1,6 +1,6 @@
 # Iquizoo report management
 
-[![Build Status](https://travis-ci.com/iquizoo/reports.svg?branch=master)](https://travis-ci.com/iquizoo/reports)
+[![Build Status](https://travis-ci.org/iquizoo/reports.svg?branch=master)](https://travis-ci.org/iquizoo/reports)
 
 Here stores files to create iquizoo reports.
 
