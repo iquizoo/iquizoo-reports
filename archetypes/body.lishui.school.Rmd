@@ -27,9 +27,9 @@ ggplot(dataset_hist, aes({{ab_code}}, fill = group)) +
     panel.grid = element_blank(),
     plot.margin = margin(1, 1, 1, 1, unit = "lines")
   )
-bpstats <- boxplot.stats(dataset_unit${{ab_code}})$stats
-n_outliers_low <- sum(dataset_unit${{ab_code}} < bpstats[1], na.rm = TRUE)
-n_outliers_high <- sum(dataset_unit${{ab_code}} > bpstats[5], na.rm = TRUE)
+bpstats <- boxplot.stats(dataset${{ab_code}})$stats
+n_outliers_low <- sum(dataset${{ab_code}} < bpstats[1], na.rm = TRUE)
+n_outliers_high <- sum(dataset${{ab_code}} > bpstats[5], na.rm = TRUE)
 stat_cmp <- broom::tidy(t.test({{ab_code}} ~ group, dataset_hist))
 if (stat_cmp$p.value > 0.05) {
   diff_msg = "和本次测评全体学生差异不明显"
