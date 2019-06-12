@@ -1,6 +1,6 @@
 # 报告正文
 
-```{r get-body-content, echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+```{r get-body-content, results='asis'}
 body_child_file <- file.path(
   getOption("reports.archytype"),
   with(
