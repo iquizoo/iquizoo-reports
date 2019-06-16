@@ -1,6 +1,6 @@
 # 报告说明
 
-```{r get-context-content, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+```{r get-context-content, results='asis'}
 context_child_file <- file.path(
   getOption("reports.archytype"),
   with(

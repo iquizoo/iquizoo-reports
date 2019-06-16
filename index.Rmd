@@ -4,3 +4,7 @@ subtitle: "`r subtitle`"
 date: "`r format(Sys.time(), '%Y年%m月%e日')`"
 toc-title: "目录"
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
