@@ -1,12 +1,16 @@
-# 报告说明
-
 ```{r test-date-prep, include=FALSE}
-test_date <- format(median(scores_unit$firstPartTime), "%Y年%m月")
+test_date <- format.Date(range(dataset$createDate, finite = TRUE), "%Y年%m月")
+if (any(duplicated(test_date))) test_date <- test_date[1]
+if (length(test_date) == 1) {
+  test_date_inline <- test_date
+} else {
+  test_date_inline <- paste(test_date, collapse = "到")
+}
 ```
 
 ## 项目背景介绍
 
-为积极落实2017年国务院办公厅印发的《关于深化教育体制机制改革的意见》，以及《北京市大兴区和北京经济技术开发区“十三五”时期教育改革和发展规划（2016-2020）》，北京师范大学与北京市大兴区教师进修学校合作，于2018-2020年连续三年联合开展“大兴区初中教育质量综合评价”纵向追踪项目，为大兴区推动基础教育质量评价改革、建立和完善综合评价指标体系、全面提升教育质量提供专业支持与服务。这份报告描述了本校七年级学生于`r test_date`在`r name_region`进行的大兴区初中教育质量综合评价中的表现。
+为积极落实2017年国务院办公厅印发的《关于深化教育体制机制改革的意见》，以及《北京市大兴区和北京经济技术开发区“十三五”时期教育改革和发展规划（2016-2020）》，北京师范大学与北京市大兴区教师进修学校合作，于2018-2020年连续三年联合开展“大兴区初中教育质量综合评价”纵向追踪项目，为大兴区推动基础教育质量评价改革、建立和完善综合评价指标体系、全面提升教育质量提供专业支持与服务。这份报告描述了本校七年级学生于`r test_date_inline`在`r customer_name`进行的大兴区初中教育质量综合评价中的表现。
 
 习近平总书记在中共共产党第十九次全国代表大会指出“建设教育强国是中华民族伟大复兴的基础工程”，“努力让每个孩子都能享有公平而有质量的教育”。在国务院最近发布的《关于深化教育体制机制改革的意见》中，也把培养学生的认知能力作为学生能力培养的首要任务。因此，探讨有利于学生学习能力全面综合发展的科学方法和手段，成为我国当前教育改革和实践的重要任务。
 
@@ -44,6 +48,36 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ## 学生参加测评的情况
 
-* 测评学校：`r name_unit`
-* 测评时间：`r test_date`
-* 实测人数：`r n_distinct(scores_unit$userId)`人
+```{r participation-summary-table}
+participation <- dataset %>%
+  filter(school == name_unit) %>% 
+  group_by(cls) %>% 
+  summarise(
+    assessed = sum(!is.na(createDate)),
+    missing = n() - assessed,
+    completion = paste0(round(assessed / n() * 100), "%")
+  )
+knitr::kable(
+  participation,
+  caption = str_glue("{name_unit}{test_date_inline}测评完成情况表"),
+  col.names = c("班级", "已测", "未测", "完成率")
+)
+```
+
+```{r participation-summary-plot, fig.cap=str_glue("{name_unit}{test_date_inline}测评完成情况")}
+participation %>%
+  gather("type", "count", assessed, missing) %>%
+  mutate(type = recode(type, assessed = "已测", missing = "未测")) %>%
+  mutate(count = if_else(count == 0, NA_integer_, count)) %>%
+  ggplot(aes(cls, count, fill = type)) +
+  geom_bar(stat = "identity") +
+  # text labels are disabled by default
+  # geom_text(
+  #   aes(label = count), color = "white",
+  #   position = position_stack(vjust = 0.5)
+  # ) +
+  ggthemes::theme_hc(base_size = 12, base_family = text_family) +
+  scale_fill_manual(values = rev(ggthemes::hc_pal()(2))) +
+  labs(x = "班级", y = "人数", fill = "") +
+  theme()
+```
