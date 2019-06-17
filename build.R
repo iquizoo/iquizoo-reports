@@ -11,8 +11,8 @@ suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(dbplyr))
 suppressPackageStartupMessages(library(DBI))
-suppressPackageStartupMessages(library(RMySQL))
 suppressPackageStartupMessages(library(iquizoor))
+suppressPackageStartupMessages(library(dataprocr))
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
@@ -97,65 +97,100 @@ if (hasName(subtitle_config, params$report_unit)) {
 
 # dataset preparations ----
 # connect to database and download data
-db_config <- config::get("database", config = params$customer_id)
-customer_projectids <- config::get("customer.projectid", config = params$customer_id) %>%
-  paste(collapse = ",")
-iquizoo_db <- dbConnect(
-  MySQL(),
-  host = db_config$host,
-  user = db_config$user,
-  password = db_config$password,
-  dbname = "eval_core"
+customer_projectids <- config::get("customer.projectid", config = params$customer_id)
+customer_projectids <- paste0("\"", customer_projectids, "\"", collapse = ",")
+iquizoo_report_db <- dbConnect(
+  odbc::odbc(), "iquizoo-v3",
+  database = "iquizoo_report_db"
 )
-# set results encoding to match system locales
-if (l10n_info()$`UTF-8`) {
-  charset_results <- "utf8"
-} else if (l10n_info()$`Latin-1`) {
-  charset_results <- "latin1"
-} else if (has_name(l10n_info(), "codepage")) {
-  if (l10n_info()$codepage == 936)
-    charset_results <- "gbk"
-  else
-    charset_results <- str_glue("cp{l10n_info()$codepage}")
-}
-dbExecute(iquizoo_db, str_glue("SET character_set_results = {charset_results};"))
-users <- dbGetQuery(
-  iquizoo_db,
-  getOption("reports.mysql.querydir") %>%
-    file.path("users.sql") %>%
-    read_file() %>%
-    str_glue()
-) %>%
-  spread(prop_key, prop_value)
-scores <- dbGetQuery(
-  iquizoo_db,
+iquizoo_user_db <- dbConnect(
+  odbc::odbc(), "iquizoo-v3",
+  database = "iquizoo_user_db"
+)
+game_data <- dbGetQuery(
+  iquizoo_report_db,
   getOption("reports.mysql.querydir") %>%
     file.path("scores.sql") %>%
     read_file() %>%
     str_glue()
 )
-abilities <- dbReadTable(iquizoo_db, "ability")
-dbDisconnect(iquizoo_db)
-# combine score results and user information to form report dataset
-dataset <- users %>%
-  left_join(scores) %>%
-  # complete cases of ability ids
-  complete(
-    abId,
-    nesting(!!!syms(c(names(users), "examId", "createDate", "bci")))
+users <- dbGetQuery(
+  iquizoo_user_db,
+  getOption("reports.mysql.querydir") %>%
+    file.path("users.sql") %>%
+    read_file() %>%
+    str_glue()
+)
+dbDisconnect(iquizoo_report_db)
+dbDisconnect(iquizoo_user_db)
+# calculate scores
+data_configs <- jsonlite::read_json("config.json", simplifyVector = TRUE)
+norms <- read_tsv("assets/extra/norms.tsv") %>%
+  filter(n > 10, gender == "全部") %>%
+  select(-n, -gender) %>%
+  group_by(game_name) %>%
+  nest() %>%
+  mutate(
+    data = map(
+      data,
+      ~ .x %>%
+        arrange(age) %>%
+        bind_rows(.x[nrow(.x), ]) %>%
+        mutate(age = replace(age, n(), 15))
+    )
   ) %>%
-  filter(!is.na(abId)) %>%
-  left_join(select(abilities, id, code), by = c("abId" = "id")) %>%
-  select(-abId) %>%
-  spread(code, score) %>%
-  # user name with alpha/number is invalid
-  filter(!str_detect(name, "(\\d|[a-zA-Z])+|无效|未用")) %>%
-  # remove invalid duplicate users (keep the newest)
-  group_by(userId) %>%
-  mutate(occurrence = row_number(desc(createDate))) %>%
-  filter(is.na(occurrence) | occurrence == 1) %>%
-  select(-occurrence) %>%
+  unnest(data)
+user_prop_used <- c("user_id", "user_name", "gender", "school", "grade", "class")
+subability_scores <- users %>%
+  left_join(game_data, by = "user_id") %>%
+  filter(!str_detect(user_name, "测试")) %>%
+  left_join(data_configs, by = "game_name") %>%
+  mutate(
+    game_data = map(
+      game_data,
+      ~ if (is.na(.x) || .x == "") {
+        NULL
+      } else {
+        jsonlite::fromJSON(.x)
+      }
+    ),
+    score = map2_dbl(
+      game_data, fun,
+      ~ if (is.null(.x)) {
+        NA_real_
+      } else {
+        get(.y)(.x)
+      }
+    ),
+    age = round((dob %--% part_time) / dyears(1))
+  ) %>%
+  left_join(norms, by = c("game_name", "age")) %>%
+  mutate(std_score = (score - avg) / std * 15 + 100) %>%
+  complete(ability, nesting(!!!syms(c(names(users))))) %>%
+  filter(!is.na(ability)) %>%
+  group_by(!!!syms(user_prop_used)) %>%
+  mutate(part_time = min(part_time)) %>%
+  complete(ability, nesting(!!!syms(names(users)))) %>%
+  filter(!is.na(ability)) %>%
+  group_by(!!!syms(c(user_prop_used, "part_time", "ability"))) %>%
+  summarise(
+    score = mean(std_score, na.rm = TRUE)
+  ) %>%
+  group_by(ability) %>%
+  mutate(
+    score = if_else(
+      score %in% boxplot.stats(score)$out,
+      NA_real_, score
+    )
+  ) %>%
   ungroup()
+total_scores <- subability_scores %>%
+  group_by(!!!syms(c(user_prop_used, "part_time"))) %>%
+  summarise(score = mean(score, na.rm = TRUE)) %>%
+  add_column(ability = "blai") %>%
+  ungroup()
+dataset <- bind_rows(subability_scores, total_scores) %>%
+  spread(ability, score)
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit

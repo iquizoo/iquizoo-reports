@@ -1,16 +1,16 @@
-SELECT DISTINCTROW
-	project.id AS project_id,
-	project.`name` AS project_name,
-	subproject.id AS subproject_id,
-	subproject.`name` AS subproject_name,
-	userownproperty.userId,
-	userproperty.`key` AS prop_key,
-	userownproperty.propertyValue AS prop_value
+-- !preview conn=iquizoo_user_db
+
+SELECT
+  user_profile.Id AS user_id,
+  user_profile.RealName AS user_name,
+  user_profile.Gender AS gender,
+  user_profile.Birthday AS dob,
+  base_organization.Name AS school,
+  base_grade_class.GradeName AS grade,
+  base_grade_class.ClassName AS class
 FROM
-	project
-	INNER JOIN subproject ON subproject.projectId = project.id
-	INNER JOIN subprojectownuser ON subprojectownuser.sbId = subproject.id
-	INNER JOIN userownproperty ON userownproperty.userId = subprojectownuser.userId
-	INNER JOIN userproperty ON userproperty.id = userownproperty.propertyId
+  user_profile
+  INNER JOIN base_organization ON base_organization.Id = user_profile.OrgId
+  INNER JOIN base_grade_class ON base_grade_class.Id = user_profile.ClassId
 WHERE
-	project.id IN ( {customer_projectids} );
+  base_organization.Id IN ( {customer_projectids} );

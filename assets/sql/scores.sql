@@ -1,18 +1,14 @@
-SELECT DISTINCTROW
-	project.id AS project_id,
-	project.`name` AS project_name,
-	subproject.id AS subproject_id,
-	subproject.`name` AS subproject_name,
-	examresult.examId,
-	examresult.userId,
-	examresult.createDate,
-	examresult.bci_score AS bci,
-	examresultdetail.abId,
-	examresultdetail.score
+-- !preview conn=iquizoo_report_db
+
+SELECT
+  course_result_orginal.UserId AS user_id,
+  iquizoo_content_db.evaluation_games.Name AS game_name,
+  course_result_orginal.CreateTime AS part_time,
+  course_result_orginal.OrginalData AS game_data,
+  course_result_orginal.TimeConsuming AS game_duration
 FROM
-	project
-	INNER JOIN subproject ON subproject.projectId = project.id
-	INNER JOIN examresult ON examresult.subProjectId = subproject.id
-	INNER JOIN examresultdetail ON examresultdetail.resultId = examresult.id
+  course_result_orginal
+  INNER JOIN iquizoo_content_db.evaluation_games ON
+             iquizoo_content_db.evaluation_games.Id = course_result_orginal.ContentId
 WHERE
-	project.id IN ( {customer_projectids} );
+  course_result_orginal.OrganizationId IN ( {customer_projectids} );
