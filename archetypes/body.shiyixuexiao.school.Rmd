@@ -124,7 +124,7 @@ stats_level %>%
   )
 ```
 
-按照学生总体表现超越同龄人的比例划分11个等级，划分方式如图\@ref(fig:bci-grading)。表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数比例。
+按照学生总体表现超越同龄人的比例划分11个等级，划分方式如图\@ref(fig:blai-grading)。表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数比例。
 
 ```{r {{ab_code}}-grading, include="{{ab_code}}"=="blai", fig.width=12, fig.height=1, dev='Cairo_png', fig.cap="评分等级划分"}
 lvls <- c("S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D")
