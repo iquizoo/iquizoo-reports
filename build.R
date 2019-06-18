@@ -174,7 +174,7 @@ subability_scores <- users %>%
   filter(!is.na(ability)) %>%
   group_by(!!!syms(c(user_prop_used, "part_time", "ability"))) %>%
   summarise(
-    score = mean(std_score, na.rm = TRUE)
+    score = round(mean(std_score, na.rm = TRUE))
   ) %>%
   group_by(ability) %>%
   mutate(
@@ -186,7 +186,7 @@ subability_scores <- users %>%
   ungroup()
 total_scores <- subability_scores %>%
   group_by(!!!syms(c(user_prop_used, "part_time"))) %>%
-  summarise(score = mean(score, na.rm = TRUE)) %>%
+  summarise(score = round(mean(score, na.rm = TRUE))) %>%
   add_column(ability = "blai") %>%
   ungroup()
 dataset <- bind_rows(subability_scores, total_scores) %>%

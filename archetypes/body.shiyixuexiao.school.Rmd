@@ -63,7 +63,7 @@ stats_descr <- bind_rows(stats_descr_class, stats_descr_school)
 # output descriptive statistics as a table
 stats_descr %>% 
   knitr::kable(
-    digits = 2,
+    digits = 1,
     col.names = c("导师", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
     caption = str_glue("本次测评全体、本校及各班级学生{{ab_name}}测评的整体表现详表")
   )
@@ -118,7 +118,7 @@ stats_level %>%
   mutate(prop_level = paste0(round(100 * prop_level), "%")) %>%
   spread(level, prop_level, fill = "0%") %>% 
   knitr::kable(
-    digits = 2,
+    digits = 1,
     col.names = c("导师", "实测人数", rev(score_levels$labels)),
     caption = str_glue("本次测评全体、本校及各班级学生{{ab_name}}测评的等级比例详表")
   )
