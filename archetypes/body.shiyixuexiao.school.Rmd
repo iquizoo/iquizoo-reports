@@ -254,3 +254,15 @@ corr_stats <- cor.test(~ {{ab_code}} + Shuxue, dataset_with_math)
 ```
 
 图\@ref(fig:{{ab_code}}-correlation)展示了{{ab_name}}测评得分和数学成绩的关系。{{ab_name}}测评得分和数学成绩之间关联`r if_else(corr_stats$p.value < 0.05, "很明显", "不够明显")`，相关系数为`r round(corr_stats$estimate, 2)`。
+
+```{r {{ab_code}}-list-of-worst}
+dataset %>% 
+  arrange({{ab_code}}) %>% 
+  head(20) %>% 
+  select(class, user_name, gender, {{ab_code}}) %>% 
+  knitr::kable(
+    digits = 1,
+    col.names = c("导师", "学生姓名", "性别", "得分"),
+    caption = "{{ab_name}}测评得分最差20名学生名单"
+  )
+```
