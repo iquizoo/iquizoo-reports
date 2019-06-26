@@ -140,7 +140,9 @@ norms <- read_tsv("assets/extra/norms.tsv") %>%
     )
   ) %>%
   unnest(data)
-user_prop_used <- c("user_id", "user_name", "gender", "school", "grade", "class")
+user_prop_used <- c(
+  "user_id", "user_name", "gender", "school", "grade", "class"
+)
 subability_scores <- users %>%
   left_join(game_data, by = "user_id") %>%
   filter(!str_detect(user_name, "测试")) %>%
@@ -177,12 +179,7 @@ subability_scores <- users %>%
     score = round(mean(std_score, na.rm = TRUE))
   ) %>%
   group_by(ability) %>%
-  mutate(
-    score = if_else(
-      score %in% boxplot.stats(score)$out,
-      NA_real_, score
-    )
-  ) %>%
+  mutate(score = if_else(score < 50 | score > 150, NA_real_, score)) %>%
   ungroup()
 total_scores <- subability_scores %>%
   group_by(!!!syms(c(user_prop_used, "part_time"))) %>%
