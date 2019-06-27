@@ -250,6 +250,7 @@ dataset %>%
   arrange({{ab_code}}) %>%
   head(20) %>%
   select(class, user_name, gender, {{ab_code}}) %>%
+  arrange(class) %>% 
   knitr::kable(
     digits = 1,
     col.names = c("导师", "学生姓名", "性别", "得分"),
