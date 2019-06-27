@@ -23,11 +23,10 @@ bpstats <- boxplot.stats(dataset${{ab_code}})$stats
 n_outliers_low <- sum(dataset${{ab_code}} < bpstats[1], na.rm = TRUE)
 n_outliers_high <- sum(dataset${{ab_code}} > bpstats[5], na.rm = TRUE)
 # remove outliers
-dataset_normal <- dataset %>%
-  filter({{ab_code}} >= bpstats[1] & {{ab_code}} <= bpstats[5])
+dataset_normal <- dataset
 ```
 
-本校学生总体的{{ab_name}}测评的得分分布见图\@ref(fig:{{ab_code}}-histogram)，其中红色竖线表示本校学生的平均得分。其中，有`r n_outliers_low`个人的得分异常低，而有`r n_outliers_high`个人的得分异常高，后面的报告中将不包括这些人。
+本校学生总体的{{ab_name}}测评的得分分布见图\@ref(fig:{{ab_code}}-histogram)，其中红色竖线表示本校学生的平均得分。
 
 ```{r {{ab_code}}-describe}
 # get the level of each participant
@@ -170,6 +169,7 @@ list(
     panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
   )
 diff_msg_med <- ""
+n_class <- n_distinct(dataset_normal$class)
 if (n_class > 1 && !any(is.na(dataset_normal$class))) {
   dinfer_med <- broom::tidy(kruskal.test(with(dataset_normal, split({{ab_code}}, class))))
   if (dinfer_med$p.value > 0.05) {
