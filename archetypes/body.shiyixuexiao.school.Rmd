@@ -57,11 +57,11 @@ stats_descr_class <- dataset_with_level %>%
     med = median({{ab_code}}, na.rm = TRUE),
     btm = min({{ab_code}}, na.rm = TRUE)
   ) %>%
-  ungroup()
+  ungroup() %>% 
+  arrange(med)
 stats_descr <- bind_rows(stats_descr_class, stats_descr_school)
 # output descriptive statistics as a table
 stats_descr %>%
-  arrange(med) %>%
   knitr::kable(
     digits = 1,
     col.names = c("导师", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
@@ -91,7 +91,7 @@ stats_level_class <- dataset_with_level %>%
   mutate(prop_level = n_level / cnt) %>%
   filter(!is.na(level))
 stats_level <- bind_rows(stats_level_class, stats_level_school) %>%
-  mutate(group = factor(group, levels = unique(.$group))) %>%
+  mutate(group = factor(group, c(stats_descr_class$group, "本校"))) %>%
   complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 # output level statiscs as a table
 stats_level %>%
@@ -134,9 +134,6 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
 ```
 
 ```{r {{ab_code}}-boxplot-class, fig.cap=str_glue("本次测评全体、本校及各班级学生{{ab_name}}测评得分情况对比"), fig.width=12, fig.asp=1.2, dev='Cairo_png'}
-order_med <- stats_descr_class %>%
-  mutate(rnk = row_number(med)) %>%
-  arrange(rnk)
 list(
   school = dataset_normal,
   by_class = dataset_normal
@@ -148,7 +145,7 @@ list(
       TRUE ~ class
     )
   ) %>%
-  mutate(group = factor(group, c(order_med$group, "本校"))) %>%
+  mutate(group = factor(group, c(stats_descr_class$group, "本校"))) %>%
   ggplot(aes(group, {{ab_code}}, fill = set)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
