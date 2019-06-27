@@ -48,8 +48,8 @@ stats_descr_school <- dataset_with_level %>%
   ) %>%
   add_column(group = "本校", .before = 1)
 stats_descr_class <- dataset_with_level %>%
-  rename(group = class) %>% 
-  group_by(group) %>% 
+  rename(group = class) %>%
+  group_by(group) %>%
   summarise(
     cnt = sum(!is.na({{ab_code}})),
     avg = mean({{ab_code}}, na.rm = TRUE),
@@ -61,7 +61,7 @@ stats_descr_class <- dataset_with_level %>%
   ungroup()
 stats_descr <- bind_rows(stats_descr_class, stats_descr_school)
 # output descriptive statistics as a table
-stats_descr %>% 
+stats_descr %>%
   arrange(med) %>%
   knitr::kable(
     digits = 1,
@@ -92,13 +92,13 @@ stats_level_class <- dataset_with_level %>%
   mutate(prop_level = n_level / cnt) %>%
   filter(!is.na(level))
 stats_level <- bind_rows(stats_level_class, stats_level_school) %>%
-  mutate(group = factor(group, levels = unique(.$group))) %>% 
+  mutate(group = factor(group, levels = unique(.$group))) %>%
   complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 # output level statiscs as a table
-stats_level %>% 
+stats_level %>%
   select(-n_level) %>%
   mutate(prop_level = paste0(round(100 * prop_level), "%")) %>%
-  spread(level, prop_level, fill = "0%") %>% 
+  spread(level, prop_level, fill = "0%") %>%
   knitr::kable(
     digits = 1,
     col.names = c("导师", "实测人数", rev(score_levels$labels)),
@@ -106,7 +106,7 @@ stats_level %>%
   )
 ```
 
-按照学生总体表现超越同龄人的比例划分11个等级，划分方式如图\@ref(fig:blai-grading)。表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数比例。
+表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数比例。划分方式如图\@ref(fig:blai-grading)。
 
 ```{r {{ab_code}}-grading, include="{{ab_code}}"=="blai", fig.width=12, fig.height=1, dev='Cairo_png', fig.cap="评分等级划分"}
 lvls <- c("S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D")
@@ -120,7 +120,16 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
   geom_text(position = position_stack(vjust = 0.5), color = "white") +
   coord_flip() +
   scale_fill_grey(guide = FALSE) +
-  scale_y_continuous(breaks = c(0, cumsum(c(0.05, rep(0.1, 9), 0.05))), labels = sprintf("%.0f%%", c(0, cumsum(c(0.05, rep(0.1, 9), 0.05))) * 100)) +
+  scale_y_continuous(
+    breaks = c(0, cumsum(c(0.05, rep(0.1, 9), 0.05))),
+    labels = c(
+      expression(-infinity),
+      sprintf(
+      "%.0f", qnorm(c(seq(0.05, 0.95, by = 0.1))) * 15 + 100
+      ),
+      expression(infinity)
+    )
+  ) +
   labs(x = "", y = "") +
   theme_minimal() +
   theme(axis.text.y = element_blank(), panel.grid.minor = element_blank(), panel.grid.major.y = element_blank())
@@ -193,8 +202,8 @@ list(
       set == "school" ~ "本校",
       TRUE ~ gender
     )
-  ) %>% 
-  mutate(group = fct_rev(factor(group, unique(.$group)))) %>% 
+  ) %>%
+  mutate(group = fct_rev(factor(group, unique(.$group)))) %>%
   ggplot(aes(group, {{ab_code}}, fill = set)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel2", guide = FALSE) +
@@ -225,7 +234,7 @@ if (diff_gender$p.value > 0.05) {
 
 ```{r {{ab_code}}-correlation, fig.cap=str_glue("{{ab_name}}测评得分和数学成绩的关系"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
 mathscore <- readxl::read_excel("assets/extra/shiyixuexiao.xlsx")
-dataset_with_math <- dataset_normal %>% 
+dataset_with_math <- dataset_normal %>%
   inner_join(mathscore, by = c("user_name" = "Name"))
 ggplot(dataset_with_math, aes({{ab_code}}, Shuxue)) +
   geom_point() +
@@ -238,10 +247,10 @@ corr_stats <- cor.test(~ {{ab_code}} + Shuxue, dataset_with_math)
 图\@ref(fig:{{ab_code}}-correlation)展示了{{ab_name}}测评得分和数学成绩的关系。{{ab_name}}测评得分和数学成绩之间关联`r if_else(corr_stats$p.value < 0.05, "很明显", "不够明显")`，相关系数为`r round(corr_stats$estimate, 2)`。
 
 ```{r {{ab_code}}-list-of-worst}
-dataset %>% 
-  arrange({{ab_code}}) %>% 
-  head(20) %>% 
-  select(class, user_name, gender, {{ab_code}}) %>% 
+dataset %>%
+  arrange({{ab_code}}) %>%
+  head(20) %>%
+  select(class, user_name, gender, {{ab_code}}) %>%
   knitr::kable(
     digits = 1,
     col.names = c("导师", "学生姓名", "性别", "得分"),
