@@ -62,33 +62,15 @@ stats_descr_class <- dataset_with_level %>%
 stats_descr <- bind_rows(stats_descr_class, stats_descr_school)
 # output descriptive statistics as a table
 stats_descr %>% 
+  arrange(med) %>%
   knitr::kable(
     digits = 1,
     col.names = c("导师", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
     caption = str_glue("本次测评全体、本校及各班级学生{{ab_name}}测评的整体表现详表")
   )
-n_class <- n_distinct(dataset_normal$class)
-diff_msg_avg <- ""
-if (n_class > 1 && !any(is.na(dataset_normal$class))) {
-  dinfer_avg <- broom::tidy(aov({{ab_code}} ~ class, dataset_normal))
-  if (dinfer_avg$p.value[1] > 0.05) {
-    dinfer_msg_avg <- "但是各班级的表现差异不明显"
-  } else {
-    dinfer_msg_avg <- "并且各班级的表现差异明显"
-  }
-  diff_msg_avg <- with(
-    stats_descr_class,
-    str_glue(
-      "从学生的平均水平来看，",
-      "{group[avg == max(avg)]}班学生的整体表现最好，",
-      "而{group[avg == min(avg)]}班学生的整体表现最差，",
-      "{dinfer_msg_avg}。"
-    )
-  )
-}
 ```
 
-表\@ref(tab:{{ab_code}}-describe)中展示了本次测评所测各班级的学生整体表现情况。`r diff_msg_avg`。
+表\@ref(tab:{{ab_code}}-describe)中展示了本次测评所测各班级的学生整体表现情况。
 
 ```{r {{ab_code}}-levels}
 # summary statistics of levels for whole and each school
