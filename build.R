@@ -10,6 +10,7 @@ suppressPackageStartupMessages(library(extrafont))
 suppressPackageStartupMessages(library(lubridate))
 suppressPackageStartupMessages(library(optparse))
 suppressPackageStartupMessages(library(dbplyr))
+suppressPackageStartupMessages(library(ggthemes))
 suppressPackageStartupMessages(library(DBI))
 suppressPackageStartupMessages(library(iquizoor))
 suppressPackageStartupMessages(library(dataprocr))
@@ -143,7 +144,7 @@ norms <- read_tsv("assets/extra/norms.tsv") %>%
 user_prop_used <- c(
   "user_id", "user_name", "gender", "school", "grade", "class"
 )
-subability_scores <- users %>%
+scores_items_orig <- users %>%
   left_join(game_data, by = "user_id") %>%
   filter(!str_detect(user_name, "测试")) %>%
   left_join(data_configs, by = "game_name") %>%
@@ -166,8 +167,15 @@ subability_scores <- users %>%
     ),
     age = round((dob %--% part_time) / dyears(1))
   ) %>%
+  mutate(
+    score = if_else(
+      game_name == "超级秒表" & score < 0,
+      NA_real_, score
+    )
+  ) %>%
   left_join(norms, by = c("game_name", "age")) %>%
-  mutate(std_score = (score - avg) / std * 15 + 100) %>%
+  mutate(std_score = (score - avg) / std * 15 + 100)
+scores_subability <- scores_items_orig %>%
   complete(ability, nesting(!!!syms(c(names(users))))) %>%
   filter(!is.na(ability)) %>%
   group_by(!!!syms(user_prop_used)) %>%
@@ -181,12 +189,12 @@ subability_scores <- users %>%
   group_by(ability) %>%
   mutate(score = if_else(score < 50 | score > 150, NA_real_, score)) %>%
   ungroup()
-total_scores <- subability_scores %>%
+scores_total <- scores_subability %>%
   group_by(!!!syms(c(user_prop_used, "part_time"))) %>%
   summarise(score = round(mean(score, na.rm = TRUE))) %>%
   add_column(ability = "blai") %>%
   ungroup()
-dataset <- bind_rows(subability_scores, total_scores) %>%
+dataset <- bind_rows(scores_subability, scores_total) %>%
   spread(ability, score)
 
 # build the three parts of the report ----

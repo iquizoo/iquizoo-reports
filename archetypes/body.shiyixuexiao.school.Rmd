@@ -104,7 +104,7 @@ stats_level %>%
   )
 ```
 
-表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数比例。划分方式如图\@ref(fig:blai-grading)。
+表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数。划分方式如图\@ref(fig:blai-grading)。
 
 ```{r {{ab_code}}-grading, include="{{ab_code}}"=="blai", fig.width=12, fig.height=1, dev='Cairo_png', fig.cap="评分等级划分"}
 lvls <- c("S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D")
@@ -229,7 +229,6 @@ if (diff_gender$p.value > 0.05) {
 本校学生的{{ab_name}}测评分数的性别对比如图\@ref(fig:{{ab_code}}-boxplot-gender)。从中位数（即得分恰好在正中间的学生）角度看，`r if_else(with(dataset_normal, median({{ab_code}}[gender == "男"], na.rm = TRUE) > median({{ab_code}}[gender == "女"], na.rm = TRUE)), "男生的表现好于女生", "女生的表现好于男生")`，`r diff_msg_gender`。
 
 ```{r {{ab_code}}-correlation, fig.cap=str_glue("{{ab_name}}测评得分和数学成绩的关系"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
-mathscore <- readxl::read_excel("assets/extra/shiyixuexiao.xlsx")
 dataset_with_math <- dataset_normal %>%
   inner_join(mathscore, by = c("user_name" = "Name"))
 ggplot(dataset_with_math, aes({{ab_code}}, Shuxue)) +
