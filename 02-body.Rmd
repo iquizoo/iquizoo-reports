@@ -1,6 +1,6 @@
 # 报告正文
 
-```{r get-body-content, results='asis'}
+```{r setup-body-content}
 body_child_file <- file.path(
   getOption("reports.archytype"),
   with(
@@ -13,6 +13,28 @@ body_child_file <- file.path(
   )
 )
 score_levels <- config::get("score.level")
+```
+
+```{r setup-blai}
+ab_code <- "blai"
+ab_name <- "大脑学习能力"
+ab_hlevel <- 2
+ab_hstyle <- "标题2-编号"
+ab_def <- "大脑学习能力反映了注意力、记忆力、自控力、反应力和思维力这五个方面的综合水平，分数越高代表大脑学习能力的综合发展水平越高。"
+```
+
+```{r get-blai-content, results='asis'}
+text_to_render_blai <- knitr::knit_expand(
+  text = readLines(body_child_file, encoding = "UTF-8")
+)
+cat(knitr::knit(text = text_to_render_blai, quiet = TRUE))
+```
+
+::: {custom-style="标题2-编号-换页"}
+## 各能力单独报告
+:::
+
+```{r get-body-content, results='asis'}
 report_abilities <- config::get("report.ability") %>%
   as_tibble()
 n_abilities <- nrow(report_abilities)

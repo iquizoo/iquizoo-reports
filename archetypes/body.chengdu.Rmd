@@ -1,0 +1,300 @@
+```{r {{ab_code}}-description, results='asis'}
+render_heading_content(
+  heading = "{{ab_name}}", hlevel = "{{ab_hlevel}}", style = "{{ab_hstyle}}", content = "{{ab_def}}"
+) %>%
+  cat()
+```
+
+```{r {{ab_code}}-histogram, fig.cap=str_glue("总体学生{{ab_name}}测评的分数分布"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
+ggplot(dataset_normal, aes({{ab_code}})) +
+  geom_density(color = NA, fill = "lightblue", alpha = 0.5) +
+  geom_vline(xintercept = mean(dataset_normal${{ab_code}}, na.rm = TRUE), color = "red") +
+  scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+  labs(x = "分数", y = "", fill = "") +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    axis.line.x = element_line(),
+    axis.ticks.x = element_line(),
+    panel.grid = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, unit = "lines")
+  )
+```
+
+全部学生的{{ab_name}}测评的得分分布见图\@ref(fig:{{ab_code}}-histogram)，其中红色竖线表示本校学生的平均得分。
+
+```{r {{ab_code}}-describe-school}
+# get the level of each participant
+dataset_with_level <- dataset_normal %>%
+  mutate(
+    level = cut({{ab_code}}, breaks = score_levels$breaks, labels = score_levels$labels) %>%
+      fct_rev()
+  )
+if ("{{ab_code}}" == "RT") {
+  dataset_with_level <- dataset_with_level %>% 
+    semi_join(filter(config_school, is_normal), by = "school")
+}
+# summary statistics of whole and each school
+stats_descr_total <- dataset_with_level %>%
+  summarise(
+    cnt = sum(!is.na({{ab_code}})),
+    avg = mean({{ab_code}}, na.rm = TRUE),
+    std = sd({{ab_code}}, na.rm = TRUE),
+    top = max({{ab_code}}, na.rm = TRUE),
+    med = median({{ab_code}}, na.rm = TRUE),
+    btm = min({{ab_code}}, na.rm = TRUE)
+  ) %>%
+  add_column(group = "全体学校", .before = 1)
+stats_descr_school <- dataset_with_level %>%
+  rename(group = school) %>%
+  group_by(group) %>%
+  summarise(
+    cnt = sum(!is.na({{ab_code}})),
+    avg = mean({{ab_code}}, na.rm = TRUE),
+    std = sd({{ab_code}}, na.rm = TRUE),
+    top = max({{ab_code}}, na.rm = TRUE),
+    med = median({{ab_code}}, na.rm = TRUE),
+    btm = min({{ab_code}}, na.rm = TRUE)
+  ) %>%
+  ungroup() %>% 
+  arrange(med)
+stats_descr <- bind_rows(stats_descr_school, stats_descr_total)
+# output descriptive statistics as a table
+stats_descr %>%
+  knitr::kable(
+    digits = 1,
+    col.names = c("学校", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
+    caption = str_glue("本次测评全体及各学校学生{{ab_name}}测评的整体表现详表")
+  )
+```
+
+表\@ref(tab:{{ab_code}}-describe-school)中展示了各学校的学生整体表现的基本统计情况。
+
+```{r {{ab_code}}-levels-school}
+# summary statistics of levels for whole and each school
+stats_level_total <- dataset_with_level %>%
+  mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+  group_by(level, cnt) %>%
+  summarise(n_level = sum(!is.na(level))) %>%
+  ungroup() %>%
+  mutate(prop_level = n_level / cnt) %>%
+  filter(!is.na(level)) %>%
+  add_column(group = "全体学校", .before = 1)
+stats_level_school <- dataset_with_level %>%
+  rename(group = school) %>%
+  group_by(group) %>%
+  mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+  group_by(group, level, cnt) %>%
+  summarise(n_level = sum(!is.na(level))) %>%
+  ungroup() %>%
+  mutate(prop_level = n_level / cnt) %>%
+  filter(!is.na(level))
+stats_level <- bind_rows(stats_level_school, stats_level_total) %>%
+  mutate(group = factor(group, c(stats_descr_school$group, "全体学校"))) %>%
+  complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
+# output level statiscs as a table
+stats_level %>%
+  select(-prop_level) %>%
+  spread(level, n_level, fill = "0") %>%
+  knitr::kable(
+    digits = 1,
+    col.names = c("学校", "实测人数", rev(score_levels$labels)),
+    caption = str_glue("本次测评本校及各班级学生{{ab_name}}测评的等级比例详表")
+  )
+```
+
+表\@ref(tab:{{ab_code}}-levels-school)给出了所测各学校学生的各水平人数。划分方式如图\@ref(fig:blai-levels-rule)。
+
+```{r {{ab_code}}-levels-rule, include="{{ab_code}}"=="blai", fig.width=12, fig.height=1, dev='Cairo_png', fig.cap="评分等级划分"}
+lvls <- c("S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D")
+grading <- tibble(
+  label = factor(lvls, levels = lvls),
+  y = c(0.05, rep(0.1, 9), 0.05),
+  x = factor(1)
+)
+ggplot(grading, aes(x, y, fill = label, label = label)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(position = position_stack(vjust = 0.5), color = "white") +
+  coord_flip() +
+  scale_fill_grey(guide = FALSE) +
+  scale_y_continuous(
+    breaks = c(0, cumsum(c(0.05, rep(0.1, 9), 0.05))),
+    labels = c(
+      expression(-infinity),
+      sprintf(
+      "%.0f", qnorm(c(seq(0.05, 0.95, by = 0.1))) * 15 + 100
+      ),
+      expression(infinity)
+    )
+  ) +
+  labs(x = "", y = "") +
+  theme_minimal() +
+  theme(axis.text.y = element_blank(), panel.grid.minor = element_blank(), panel.grid.major.y = element_blank())
+```
+
+```{r {{ab_code}}-boxplot-school, fig.cap=str_glue("各学校学生{{ab_name}}测评得分情况对比"), fig.width=12, fig.asp=1.2, dev='Cairo_png'}
+list(
+  total = dataset_normal,
+  by_school = dataset_normal
+) %>%
+  bind_rows(.id = "set") %>%
+  mutate(
+    group = case_when(
+      set == "total" ~ "全体学校",
+      TRUE ~ school
+    )
+  ) %>%
+  mutate(group = factor(group, c(stats_descr_school$group, "全体学校"))) %>%
+  ggplot(aes(group, {{ab_code}}, fill = set)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
+  labs(x = "", y = "分数", fill = "") +
+  coord_flip(ylim = boxplot.stats(dataset_normal${{ab_code}})$stats[c(1, 5)]) +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+diff_msg_school <- ""
+n_school <- n_distinct(dataset_normal$school)
+if (n_school > 1 && !any(is.na(dataset_normal$school))) {
+  dinfer_med <- broom::tidy(kruskal.test(with(dataset_normal, split({{ab_code}}, school))))
+  if (dinfer_med$p.value > 0.05) {
+    dinfer_msg_med <- "但是各学校的表现差异不明显"
+  } else {
+    dinfer_msg_med <- "并且各学校的表现差异明显"
+  }
+  top_school <- with(stats_descr_school, group[med == max(med)])
+  if (length(top_school) > 1) {
+    top_school_head <- top_school %>% 
+      head(-1) %>% 
+      paste(collapse = "、")
+    top_school_tail <- str_glue("和{last(top_school)}")
+    top_school <- str_glue("{top_school_head}{top_school_tail}")
+  }
+  worst_school <- with(stats_descr_school, group[med == min(med)])
+  if (length(worst_school) > 1) {
+    worst_school_head <- worst_school %>% 
+      head(-1) %>% 
+      paste(collapse = "、")
+    worst_school_tail <- str_glue("和{last(worst_school)}")
+    worst_school <- str_glue("{worst_school_head}{worst_school_tail}")
+  }
+  diff_msg_school <- with(
+    stats_descr_school,
+    str_glue(
+      "从学生的中位数水平来看，",
+      "{top_school}的学生整体表现最好，",
+      "而{worst_school}的学生整体表现最差，",
+      "{dinfer_msg_med}。"
+    )
+  )
+}
+```
+
+各学校学生的{{ab_name}}测评分数的分布区间如图\@ref(fig:{{ab_code}}-boxplot-school)。`r diff_msg_school`
+
+```{r {{ab_code}}-boxplot-grade-prep, results='asis'}
+boxplot_grade_cap <- if_else(
+  "{{ab_code}}" == "blai",
+  str_glue("各年级学生{{ab_name}}测评得分情况对比[^miss_grade]"),
+  str_glue("各年级学生{{ab_name}}测评得分情况对比")
+)
+if ("{{ab_code}}" == "blai")
+  cat("\n\n[^miss_grade]: 1年级只有一名学生，因此图中去掉了1年级部分。\n\n")
+```
+
+```{r {{ab_code}}-boxplot-grade, fig.cap=boxplot_grade_cap, fig.width=12, fig.asp=0.5, dev='Cairo_png'}
+list(
+  total = dataset_normal,
+  by_gender = dataset_normal
+) %>%
+  bind_rows(.id = "set") %>%
+  mutate(
+    group = case_when(
+      set == "total" ~ "全部年级",
+      TRUE ~ grade
+    )
+  ) %>%
+  mutate(group = fct_rev(factor(group, unique(.$group)))) %>%
+  filter(grade != "1年级") %>% 
+  ggplot(aes(group, {{ab_code}}, fill = set)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  scale_fill_brewer(palette = "Pastel2", guide = FALSE) +
+  labs(x = "", y = "分数", fill = "") +
+  coord_flip(ylim = boxplot.stats(dataset_normal${{ab_code}})$stats[c(1, 5)]) +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+diff_grade <- broom::tidy(
+  kruskal.test({{ab_code}} ~ grade, filter(dataset_normal, grade != "1年级"))
+)
+if (diff_grade$p.value > 0.05) {
+  diff_msg_grade <- "但是差异不够明显"
+} else {
+  diff_msg_grade <- "并且差异比较明显"
+}
+```
+
+全体学生的{{ab_name}}测评分数的年级对比如图\@ref(fig:{{ab_code}}-boxplot-grade)。从中位数（即得分恰好在正中间的学生）角度看，`r if_else(with(dataset_normal, median({{ab_code}}[grade == "2年级"], na.rm = TRUE) > median({{ab_code}}[grade == "3年级"], na.rm = TRUE)), "2年级学生的表现好于3年级学生", "3年级学生的表现好于2年级学生")`，`r diff_msg_grade`。
+
+```{r {{ab_code}}-boxplot-control, fig.cap=str_glue("试点校和对照学校{{ab_name}}测评得分情况对比"), fig.width=12, fig.asp=0.5, dev='Cairo_png'}
+list(
+  total = dataset_normal,
+  by_type = dataset_normal
+) %>%
+  bind_rows(.id = "set") %>%
+  mutate(
+    group = case_when(
+      set == "total" ~ "全部学校",
+      TRUE ~ type
+    )
+  ) %>%
+  mutate(group = fct_rev(factor(group, unique(.$group)))) %>%
+  ggplot(aes(group, {{ab_code}}, fill = set)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5) +
+  scale_fill_brewer(palette = "Pastel2", guide = FALSE) +
+  labs(x = "", y = "分数", fill = "") +
+  coord_flip(ylim = boxplot.stats(dataset_normal${{ab_code}})$stats[c(1, 5)]) +
+  theme_minimal(base_size = 18, base_family = text_family) +
+  theme(
+    # x axis is at the bottom
+    axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
+    # disable facet panel labels
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    # ensure facet panels are concatenated
+    panel.spacing = unit(-0.5, "lines"),
+    # remain major x grid only
+    panel.grid = element_blank(),
+    panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
+  )
+diff_type <- broom::tidy(
+  kruskal.test({{ab_code}} ~ type, dataset_normal)
+)
+if (diff_type$p.value > 0.05) {
+  diff_msg_type <- "但是差异不够明显"
+} else {
+  diff_msg_type <- "并且差异比较明显"
+}
+```
+
+试点校和对照学校的{{ab_name}}测评分数对比如图\@ref(fig:{{ab_code}}-boxplot-control)。从中位数（即得分恰好在正中间的学生）角度看，`r if_else(with(dataset_normal, median({{ab_code}}[type == "试点校"], na.rm = TRUE) > median({{ab_code}}[type == "对照学校"], na.rm = TRUE)), "试点校学生的表现好于对照学校学生", "对照学校学生的表现好于试点校学生")`，`r diff_msg_type`。
