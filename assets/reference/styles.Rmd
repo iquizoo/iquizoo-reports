@@ -4,7 +4,7 @@ subtitle: "副标题"
 author: 匿名
 date: "2017年12月9日"
 toc-title: 目录
-output: 
+output:
   bookdown::word_document2:
     toc: true
     reference_docx: styles.docx
@@ -40,6 +40,10 @@ knitr::kable(head(cars), caption = "First few lines of dataset cars", digits = 2
 
 ::: {custom-style="标题2-编号"}
 ## 带编号的二级标题
+:::
+
+::: {custom-style="标题2-编号-换页"}
+## 带编号的二级标题2
 :::
 
 插图样例：
