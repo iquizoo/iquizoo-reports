@@ -5,14 +5,13 @@
 # This script is used to generate chapters for book building.
 
 # load packages ----
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(extrafont))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(optparse))
-suppressPackageStartupMessages(library(dbplyr))
-suppressPackageStartupMessages(library(DBI))
-suppressPackageStartupMessages(library(RMySQL))
-suppressPackageStartupMessages(library(iquizoor))
+library(tidyverse)
+library(ggthemes)
+library(extrafont)
+library(lubridate)
+library(optparse)
+library(iquizoor)
+library(dataprocr)
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
@@ -96,66 +95,53 @@ if (hasName(subtitle_config, params$report_unit)) {
 }
 
 # dataset preparations ----
-# connect to database and download data
-db_config <- config::get("database", config = params$customer_id)
-customer_projectids <- config::get("customer.projectid", config = params$customer_id) %>%
-  paste(collapse = ",")
-iquizoo_db <- dbConnect(
-  MySQL(),
-  host = db_config$host,
-  user = db_config$user,
-  password = db_config$password,
-  dbname = "eval_core"
-)
-# set results encoding to match system locales
-if (l10n_info()$`UTF-8`) {
-  charset_results <- "utf8"
-} else if (l10n_info()$`Latin-1`) {
-  charset_results <- "latin1"
-} else if (has_name(l10n_info(), "codepage")) {
-  if (l10n_info()$codepage == 936)
-    charset_results <- "gbk"
-  else
-    charset_results <- str_glue("cp{l10n_info()$codepage}")
-}
-dbExecute(iquizoo_db, str_glue("SET character_set_results = {charset_results};"))
-users <- dbGetQuery(
-  iquizoo_db,
-  getOption("reports.mysql.querydir") %>%
-    file.path("users.sql") %>%
-    read_file() %>%
-    str_glue()
-) %>%
-  spread(prop_key, prop_value)
-scores <- dbGetQuery(
-  iquizoo_db,
-  getOption("reports.mysql.querydir") %>%
-    file.path("scores.sql") %>%
-    read_file() %>%
-    str_glue()
-)
-abilities <- dbReadTable(iquizoo_db, "ability")
-dbDisconnect(iquizoo_db)
-# combine score results and user information to form report dataset
-dataset <- users %>%
-  left_join(scores) %>%
-  # complete cases of ability ids
-  complete(
-    abId,
-    nesting(!!!syms(c(names(users), "examId", "createDate", "bci")))
+# load dataset and configurations
+config_game <- jsonlite::read_json("config_game.json", simplifyVector = TRUE)
+config_school <- read_csv("assets/extra/config_school.csv")
+users <- read_csv("assets/extra/select_users.csv")
+raw_data <- read_csv("assets/extra/select_data.csv")
+# calculate game scores
+scores_item <- raw_data %>%
+  left_join(config_game, by = "game_name") %>%
+  mutate(game_data = map(game_data, jsonlite::fromJSON)) %>%
+  mutate(
+    score = pmap_dbl(
+      .,
+      function(game_data, fun, game_duration, ...) {
+        get(fun)(game_data, game_duration / 60 / 1000)
+      }
+    )
   ) %>%
-  filter(!is.na(abId)) %>%
-  left_join(select(abilities, id, code), by = c("abId" = "id")) %>%
-  select(-abId) %>%
-  spread(code, score) %>%
-  # user name with alpha/number is invalid
-  filter(!str_detect(name, "(\\d|[a-zA-Z])+|无效|未用")) %>%
-  # remove invalid duplicate users (keep the newest)
-  group_by(userId) %>%
-  mutate(occurrence = row_number(desc(createDate))) %>%
-  filter(is.na(occurrence) | occurrence == 1) %>%
-  select(-occurrence) %>%
-  ungroup()
+  left_join(users, by = "user_id") %>%
+  mutate(
+    assess_time = min(game_time),
+    age = round((dob %--% game_time) / dyears(1))
+  ) %>%
+  group_by(game_name, age, gender) %>%
+  mutate(std_score_orig = scale(score) * 15 + 100) %>%
+  ungroup() %>%
+  mutate(
+    std_score = case_when(
+      std_score_orig > 150 ~ 150,
+      std_score_orig < 50 ~ 50,
+      TRUE ~ std_score_orig
+    )
+  ) %>%
+  left_join(config_school, by = "school") %>%
+  filter(!(game_name == "超级秒表" & !is_normal))
+scores_subability <- scores_item %>%
+  group_by(user_id, assess_time, ability) %>%
+  summarise(score = mean(std_score, na.rm = TRUE))
+scores_total <- scores_subability %>%
+  group_by(user_id, assess_time) %>%
+  summarise(score = mean(score, na.rm = TRUE)) %>%
+  add_column(ability = "blai")
+scores <- bind_rows(scores_subability, scores_total) %>%
+  mutate(score = round(score)) %>%
+  spread(ability, score)
+dataset <- users %>%
+  inner_join(config_school, by = "school") %>%
+  left_join(scores, by = "user_id")
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
