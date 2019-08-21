@@ -70,3 +70,6 @@ vignettes/*.pdf
 # target diretories
 /targets
 /test
+
+# log file
+*.log

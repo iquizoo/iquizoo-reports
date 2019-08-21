@@ -23,9 +23,17 @@ for (i_row in 1:n_abilities) {
   ab_hlevel <- report_abilities[[i_row, "hlevel"]]
   ab_hstyle <- report_abilities[[i_row, "hstyle"]]
   ab_def <- report_abilities[[i_row, "def"]]
-  text_to_render[i_row] <- knitr::knit_expand(
-    text = readLines(body_child_file, encoding = "UTF-8")
-  )
+  if (all(is.na(dataset_unit[[ab_code]]))) {
+    text_to_render[i_row] <- knitr::knit_expand(
+      text = readLines("archetypes/body.null.Rmd", encoding = "UTF-8")
+    )
+  } else {
+    text_to_render[i_row] <- knitr::knit_expand(
+      text = readLines(body_child_file, encoding = "UTF-8")
+    )
+  }
 }
 cat(knitr::knit(text = text_to_render, quiet = TRUE))
 ```
+
+[^grading]: 按照学生总体表现划分A、B、C、D四个水平：其中，**水平A**为优秀，代表总体水平的90%及以上；**水平B**为良好，代表总体水平的70%至90%；**水平C**为中等，代表总体水平的30%至70%；**水平D**为较差，代表总体水平的0%至30%。下同。

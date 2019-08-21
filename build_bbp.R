@@ -14,6 +14,7 @@ library(ggthemes)
 library(DBI)
 library(iquizoor)
 library(dataprocr)
+library(log4r)
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
@@ -80,122 +81,81 @@ if (hasName(title_config, params$report_unit)) {
   title <- title_config[[params$report_unit]]
 } else {
   title <- title_config[["default"]]
-  warning(
-    str_glue("Will use default title ('{title}') for report unit '{params$report_unit}'."),
-    immediate. = TRUE
-  )
+  message(str_glue("Will use default title ('{title}') for report unit '{params$report_unit}'."))
 }
 subtitle_config <- config::get("report.subtitle")
 if (hasName(subtitle_config, params$report_unit)) {
   subtitle <- subtitle_config[[params$report_unit]]
 } else {
   subtitle <- subtitle_config[["default"]]
-  warning(
-    str_glue("Will use default subtitle ('{subtitle}') for report type '{params$report_unit}'."),
-    immediate. = TRUE
-  )
+  message(str_glue("Will use default subtitle ('{subtitle}') for report type '{params$report_unit}'."))
 }
 
 # dataset preparations ----
 # connect to database and download data
-customer_projectids <- config::get("customer.projectid", config = params$customer_id)
-customer_projectids <- paste0("\"", customer_projectids, "\"", collapse = ",")
-iquizoo_report_db <- dbConnect(
-  odbc::odbc(), "iquizoo-v3",
-  database = "iquizoo_report_db"
-)
-iquizoo_user_db <- dbConnect(
-  odbc::odbc(), "iquizoo-v3",
-  database = "iquizoo_user_db"
+iquizoo_db <- dbConnect(
+  odbc::odbc(), "iquizoo-old",
+  database = "eval_core"
 )
 game_data <- dbGetQuery(
-  iquizoo_report_db,
+  iquizoo_db,
   getOption("reports.mysql.querydir") %>%
-    file.path("scores.sql") %>%
-    read_file() %>%
-    str_glue()
+    file.path("scores_bbp.sql") %>%
+    read_file()
 )
 users <- dbGetQuery(
-  iquizoo_user_db,
+  iquizoo_db,
   getOption("reports.mysql.querydir") %>%
-    file.path("users.sql") %>%
-    read_file() %>%
-    str_glue()
-)
-dbDisconnect(iquizoo_report_db)
-dbDisconnect(iquizoo_user_db)
-# calculate scores
-data_configs <- jsonlite::read_json("config.json", simplifyVector = TRUE)
-norms <- read_tsv("assets/extra/norms.tsv") %>%
-  filter(n > 10, gender == "全部") %>%
-  select(-n, -gender) %>%
-  group_by(game_name) %>%
-  nest() %>%
+    file.path("users_bbp.sql") %>%
+    read_file()
+) %>%
+  spread(prop_key, prop_value) %>%
+  filter(!str_detect(desc, "备用")) %>%
+  select(user_id, name, gender, birthDay, school, grade, cls)
+ability <- dbReadTable(iquizoo_db, "ability") %>%
+  select(id, code, pid)
+dbDisconnect(iquizoo_db)
+# calculate ability scores
+scores_ability <- game_data %>%
+  left_join(ability, by = c("game_ability" = "id")) %>%
   mutate(
-    data = map(
-      data,
-      ~ .x %>%
-        arrange(age) %>%
-        bind_rows(.x[nrow(.x), ]) %>%
-        mutate(age = replace(age, n(), 15))
+    game_score = case_when(
+      game_score < 50 ~ 50,
+      game_score > 150 ~ 150,
+      TRUE ~ game_score
     )
   ) %>%
-  unnest(data)
-user_prop_used <- c(
-  "user_id", "user_name", "gender", "school", "grade", "class"
-)
-scores_items_orig <- users %>%
-  left_join(game_data, by = "user_id") %>%
-  filter(!str_detect(user_name, "测试")) %>%
-  left_join(data_configs, by = "game_name") %>%
+  group_by(user_id) %>%
+  mutate(assess_date = median(game_time)) %>%
+  group_by(user_id, assess_date, game_ability, pid) %>%
+  summarise(score = mean(game_score)) %>%
+  group_by(user_id, assess_date, pid) %>%
+  summarise(score = mean(score, na.rm = TRUE)) %>%
+  ungroup() %>%
+  left_join(ability, by = c("pid" = "id")) %>%
+  select(user_id, assess_date, code, score) %>%
+  group_by(code) %>%
+  mutate(score = scale(score) * 15 + 100) %>%
+  ungroup()
+scores_total <- scores_ability %>%
+  group_by(user_id, assess_date) %>%
+  summarise(score = mean(score, na.rm = TRUE)) %>%
+  ungroup() %>%
+  add_column(code = "bci")
+scores <- bind_rows(scores_ability, scores_total) %>%
+  mutate(score = round(score)) %>%
+  spread(code, score)
+dataset <- users %>%
+  left_join(scores, by = "user_id") %>%
   mutate(
-    game_data = map(
-      game_data,
-      ~ if (is.na(.x) || .x == "") {
-        NULL
-      } else {
-        jsonlite::fromJSON(.x)
-      }
-    ),
-    score = map2_dbl(
-      game_data, fun,
-      ~ if (is.null(.x)) {
-        NA_real_
-      } else {
-        get(.y)(.x)
-      }
-    ),
-    age = round((dob %--% part_time) / dyears(1))
-  ) %>%
-  mutate(
-    score = if_else(
-      game_name == "超级秒表" & score < 0,
-      NA_real_, score
+    grade = recode(
+      grade,
+      一 = "1", 二 = "2", 三 = "3",
+      四 = "4", 五 = "5", 六 = "6",
+      七 = "7", 八 = "8", 九 = "9"
     )
   ) %>%
-  left_join(norms, by = c("game_name", "age")) %>%
-  mutate(std_score = (score - avg) / std * 15 + 100)
-scores_subability <- scores_items_orig %>%
-  complete(ability, nesting(!!!syms(c(names(users))))) %>%
-  filter(!is.na(ability)) %>%
-  group_by(!!!syms(user_prop_used)) %>%
-  mutate(part_time = min(part_time)) %>%
-  complete(ability, nesting(!!!syms(names(users)))) %>%
-  filter(!is.na(ability)) %>%
-  group_by(!!!syms(c(user_prop_used, "part_time", "ability"))) %>%
-  summarise(
-    score = round(mean(std_score, na.rm = TRUE))
-  ) %>%
-  group_by(ability) %>%
-  mutate(score = if_else(score < 50 | score > 150, NA_real_, score)) %>%
-  ungroup()
-scores_total <- scores_subability %>%
-  group_by(!!!syms(c(user_prop_used, "part_time"))) %>%
-  summarise(score = round(mean(score, na.rm = TRUE))) %>%
-  add_column(ability = "blai") %>%
-  ungroup()
-dataset <- bind_rows(scores_subability, scores_total) %>%
-  spread(ability, score)
+  filter(!is.na(grade))
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
@@ -208,14 +168,18 @@ name_units <- switch(
 output_dir <- "targets"
 if (params$debug_test) {
   name_units <- sample(name_units, 1)
-  warning(
-    str_glue("Debugging. The chosen report unit is {name_units}."),
-    immediate. = TRUE
-  )
+  message(str_glue("Debugging. The chosen report unit is {name_units}."))
   output_dir <- "test"
 }
+logger <- logger(appenders = file_appender(file.path("logs", "info.log")))
 # rendering report for each unit
 for (name_unit in name_units) {
+  dataset_unit <- dataset_unit <- dataset %>%
+    filter(school == name_unit)
+  if (all(is.na(dataset_unit$assess_date))) {
+    info(logger, str_glue("未找到数据：{name_unit}"))
+    next
+  }
   # report rendering
   bookdown::render_book(
     "index.Rmd",
