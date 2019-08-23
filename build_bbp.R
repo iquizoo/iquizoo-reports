@@ -174,7 +174,7 @@ if (params$debug_test) {
 logger <- logger(appenders = file_appender(file.path("logs", "info.log")))
 # rendering report for each unit
 for (name_unit in name_units) {
-  dataset_unit <- dataset_unit <- dataset %>%
+  dataset_unit <- dataset %>%
     filter(school == name_unit)
   if (all(is.na(dataset_unit$assess_date))) {
     info(logger, str_glue("未找到数据：{name_unit}"))
