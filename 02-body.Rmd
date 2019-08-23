@@ -25,16 +25,10 @@ for (i_row in 1:n_abilities) {
   ab_def <- report_abilities[[i_row, "def"]]
   # the scores are all missing
   if (all(is.na(dataset_unit[[ab_code]]))) {
-    text_to_render[i_row] <- knitr::knit_expand(
-      text = readLines("archetypes/body.null.Rmd", encoding = "UTF-8")
-    )
     next
   }
   # the scores are abnormal for many duplications
   if (length(unique(dataset_unit[[ab_code]])) < length(dataset_unit[[ab_code]]) / 10) {
-    text_to_render[i_row] <- knitr::knit_expand(
-      text = readLines("archetypes/body.null.Rmd", encoding = "UTF-8")
-    )
     next
   }
   text_to_render[i_row] <- knitr::knit_expand(
