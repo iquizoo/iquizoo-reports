@@ -28,7 +28,7 @@ for (i_row in 1:n_abilities) {
     next
   }
   # the scores are abnormal for many duplications
-  if (length(unique(dataset_unit[[ab_code]])) < length(dataset_unit[[ab_code]]) / 10) {
+  if (length(unique(dataset_unit[[ab_code]])) < 5) {
     next
   }
   text_to_render[i_row] <- knitr::knit_expand(
