@@ -33,7 +33,7 @@ if (stat_cmp$p.value > 0.05) {
   diff_msg = "和本项目测评全体学生差异不明显"
 } else {
   if (stat_cmp$statistic > 0) {
-    diff_msg = "比本项目测评全体学生明显更差"
+    diff_msg = "和本项目测评全体学生相比有一定差距"
   } else {
     diff_msg = "比本项目测评全体学生明显更好"
   }
@@ -140,7 +140,10 @@ stats_descr %>%
     col.names = c(report_unit_name, "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分", LETTERS[1:4]),
     caption = str_glue("本次测评全体、本校及各{report_unit_name}学生{{ab_name}}测评的整体表现详表")
   )
-n_grps <- n_distinct(dataset_unit[[report_unit]])
+n_grps <- dataset_unit %>% 
+  filter(!is.na({{ab_code}})) %>%
+  pull(!!report_unit) %>%
+  n_distinct()
 diff_msg_avg <- ""
 if (n_grps > 1) {
   dinfer_avg <- broom::tidy(aov(as.formula(str_glue("{{ab_code}} ~ {report_unit}")), dataset_unit))
@@ -155,7 +158,7 @@ if (n_grps > 1) {
       str_glue(
         "从学生的平均水平来看，",
         "{group[which.max(avg)]}{report_unit_name_short}学生的整体表现最好，",
-        "而{group[which.min(avg)]}{report_unit_name_short}学生的整体表现最差，",
+        "而{group[which.min(avg)]}{report_unit_name_short}学生的整体表现相对较差，",
         "{dinfer_msg_avg}。"
       )
     )
@@ -263,7 +266,7 @@ if (n_grps > 1) {
       str_glue(
         "从学生的中位数水平来看，",
         "{group[which.max(med)]}{report_unit_name_short}学生的整体表现最好，",
-        "而{group[which.min(med)]}{report_unit_name_short}学生的整体表现最差，",
+        "而{group[which.min(med)]}{report_unit_name_short}学生的整体表现相对较差，",
         "{diff_msg_med}。"
       )
     )
