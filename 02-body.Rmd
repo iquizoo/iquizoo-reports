@@ -15,15 +15,12 @@ body_child_file <- file.path(
 score_levels <- config::get("score.level")
 ```
 
-```{r setup-blai}
+```{r get-blai-content, results='asis'}
 ab_code <- "blai"
 ab_name <- "大脑学习能力"
 ab_hlevel <- 2
 ab_hstyle <- "标题2-编号"
 ab_def <- "大脑学习能力反映了注意力、记忆力、自控力、反应力和思维力这五个方面的综合水平，分数越高代表大脑学习能力的综合发展水平越高。"
-```
-
-```{r get-blai-content, results='asis'}
 text_to_render_blai <- knitr::knit_expand(
   text = readLines(body_child_file, encoding = "UTF-8")
 )
