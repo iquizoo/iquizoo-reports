@@ -63,7 +63,7 @@
         "max_score": 1
     },
     {
-        "game_name": "魔法师中级",
+        "game_name": "魔术师中级",
         "sequential": true,
         "split_half": true,
         "fun": "count_correct",
@@ -72,7 +72,7 @@
         "max_score": 1
     },
     {
-        "game_name": "魔法师高级",
+        "game_name": "魔术师高级",
         "sequential": true,
         "split_half": true,
         "fun": "count_correct",
@@ -81,7 +81,7 @@
         "max_score": 1
     },
     {
-        "game_name": "魔法师终极",
+        "game_name": "魔术师终极",
         "sequential": true,
         "split_half": true,
         "fun": "count_correct",
