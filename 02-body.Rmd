@@ -42,6 +42,16 @@ for (i_row in 1:n_abilities) {
   ab_hlevel <- report_abilities[[i_row, "hlevel"]]
   ab_hstyle <- report_abilities[[i_row, "hstyle"]]
   ab_def <- report_abilities[[i_row, "def"]]
+  if (all(is.na(dataset_unit[[ab_code]]))) {
+    text_to_render[i_row] <- knitr::knit_expand(
+      text = readLines(
+        file.path(
+          getOption("reports.archytype"),
+          "body.null.Rmd"
+        ), encoding = "UTF-8")
+    )
+    next
+  }
   text_to_render[i_row] <- knitr::knit_expand(
     text = readLines(body_child_file, encoding = "UTF-8")
   )
