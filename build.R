@@ -141,7 +141,8 @@ scores <- bind_rows(scores_subability, scores_total) %>%
   spread(ability, score)
 dataset <- users %>%
   inner_join(config_school, by = "school") %>%
-  left_join(scores, by = "user_id")
+  left_join(scores, by = "user_id") %>%
+  unite(full_class, grade, class, sep = "", remove = FALSE)
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit

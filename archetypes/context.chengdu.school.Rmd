@@ -51,11 +51,8 @@ knitr::include_graphics("assets/image/model.jpg")
 ## 学生参加测评的情况
 
 ```{r participation-summary-table}
-if (n_distinct(dataset_unit$grade) > 1) {
-  report_unit <- "grade"
-  report_unit_name <- "年级"
-} else if (n_distinct(dataset_unit$class) > 1) {
-  report_unit <- "class"
+if (n_distinct(dataset_unit$full_class) > 1) {
+  report_unit <- "full_class"
   report_unit_name <- "班级"
 } else {
   report_unit <- "school"
