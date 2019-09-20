@@ -12,19 +12,15 @@ body_child_file <- file.path(
     )
   )
 )
-mathscore <- readxl::read_excel("assets/extra/shiyixuexiao.xlsx")
 score_levels <- config::get("score.level")
 ```
 
-```{r setup-blai}
+```{r get-blai-content, results='asis'}
 ab_code <- "blai"
 ab_name <- "大脑学习能力"
 ab_hlevel <- 2
 ab_hstyle <- "标题2-编号"
 ab_def <- "大脑学习能力反映了注意力、记忆力、自控力、反应力和思维力这五个方面的综合水平，分数越高代表大脑学习能力的综合发展水平越高。"
-```
-
-```{r get-blai-content, results='asis'}
 text_to_render_blai <- knitr::knit_expand(
   text = readLines(body_child_file, encoding = "UTF-8")
 )
@@ -54,83 +50,41 @@ cat(knitr::knit(text = text_to_render, quiet = TRUE))
 ```
 
 ::: {custom-style="标题2-编号-换页"}
-## 综合分析
+## 综合报告
 :::
 
-下面我们基于学生在每个测评题目中的表现，进一步探索认知测评结果和学生的学业成绩（数学）之间的关系。
+下面对拥有五大能力测评的完整数据的学生（计`r sum(complete.cases(dataset))`名）分为六大类别，并在表\@ref(tab:student-classification)中给出各班每种类别学生数目。六大类别如下：
 
-```{r setup-comprehensive}
-scores_items <- scores_items_orig %>%
-  select(user_name, game_name, std_score) %>%
-  filter(!is.na(game_name)) %>%
-  spread(game_name, std_score) %>%
-  inner_join(mathscore, by = c("user_name" = "Name")) %>%
-  rename(数学 = Shuxue)
-scores_items <- scores_items[complete.cases(scores_items), ]
-```
+* **杰出型**: 基础学习能力发展非常突出，整体发展水平显著高于全国常模平均数。
+* **优秀型**：基础学习能力发展优秀，整体发展水平均高于全国常模平均数。
+* **平衡型**：基础学习能力发展均衡，整体发展水基本处于同龄人平均水平。
+* **有待改进型**：基础学习能力相对不足，略低于同龄人水平。
+* **亟待提升型**：基础学习能力发展上相对迟缓，整体发展水平目前还落后于同龄人水平，各项学习能力提高空间较大。
+* **不均衡型**：基础学习能力发展不均衡，部分能力的发展上超过了同龄人水平，另一部分能力的发展上存在滞后。
 
-```{r cluster-by-games, fig.cap="按学生认知测评成绩分类", fig.width=8, fig.asp=0.618}
-cluster_results <- kmeans(select(scores_items, -starts_with("user"), -数学), 2)
-scores_items_with_groups <- scores_items %>%
-  add_column(
-    group = factor(
-      cluster_results$cluster,
-      levels = 1:2,
-      labels = c("高分组", "低分组")
-    )
-  ) %>%
-  gather(test, score, -user_name, -group) %>%
+```{r student-classification}
+dataset_complete <- dataset[complete.cases(dataset), ]
+dataset_complete %>% 
+  pivot_longer(one_of(report_abilities$code), names_to = "ability", values_to = "score") %>% 
+  mutate(level = fct_rev(cut(score, qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100, LETTERS[4:1]))) %>% 
+  group_by(!!!syms(user_prop_used), level) %>% 
+  summarise(n = n()) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = "level", values_from = "n", values_fill = list(n = 0)) %>% 
   mutate(
-    type = if_else(test == "数学", "学业成绩（数学）", "测评成绩"),
-    test = factor(test) %>%
-      fct_relevel("数学", after = Inf)
-  )
-ggplot(scores_items_with_groups, aes(group, score, fill = test)) +
-  stat_summary(geom = "bar", position = "dodge") +
-  facet_wrap(~ type, scales = "free_y", ncol = 1) +
-  scale_fill_gdocs() +
-  labs(x = "", y = "", fill = "") +
-  theme_gdocs(base_family = "SimHei", base_size = 18)
-group_stats_math <- scores_items_with_groups %>%
-  filter(test == "数学") %>%
-  group_by(group) %>%
-  summarise(avg = mean(score)) %>%
-  spread(group, avg)
+    type = case_when(
+      A >= 3 & C == 0 & D == 0 ~ "杰出型",
+      A + B >= 4 & C <= 1 & D == 0 ~ "优秀型",
+      A + B == 3 & D == 0 ~ "平衡型",
+      A <= 2 & D <= 1 ~ "有待改进型",
+      D >= 2 ~ "亟待提升型",
+      TRUE ~ "不均衡型"
+    ) %>% 
+      factor(c("杰出型", "优秀型", "平衡型", "有待改进型", "亟待提升型", "不均衡型"))
+  ) %>% 
+  group_by(class, type) %>% 
+  summarise(n = n()) %>% 
+  spread(type, n, fill = 0) %>% 
+  rename(导师 = class) %>% 
+  knitr::kable(caption = "各班级中各类型学生人数")
 ```
-
-图\@ref(fig:cluster-by-games)中展示根据学生的认知测评成绩分组结果。根据学生的表现，可以明显地分出高低分两组。高低学习能力两组在数学成绩上也存在明显差异，高分组比低分组平均高`r round(group_stats_math$高分组 - group_stats_math$低分组)`分。
-
-```{r classify-by-math, fig.cap="按学生数学成绩分类", fig.width=8, fig.asp=0.618}
-scores_items %>%
-  mutate(
-    group = case_when(
-      row_number(数学) <= 50 ~ "数学低分组",
-      row_number(desc(数学)) <= 50 ~ "数学高分组",
-      TRUE ~ "数学中等组"
-    ) %>%
-      factor(levels = c("数学高分组", "数学中等组", "数学低分组"))
-  ) %>%
-  select(-数学) %>%
-  gather(test, score, -user_name, -group) %>%
-  filter(group != "数学中等组") %>%
-  ggplot(aes(group, score, fill = test)) +
-  stat_summary(geom = "bar", position = "dodge") +
-  scale_fill_gdocs() +
-  theme_gdocs(base_family = "SimHei", base_size = 15) +
-  labs(x = "", y = "", fill = "")
-```
-
-选择数学成绩表现最好和最差的50名学生，分为数学高分组和低分组，图\@ref(fig:classify-by-math)中可以看出来数学成绩更好的学生在学习能力上的总体得分也更好。
-
-```{r multiple-linear-regression, fig.cap="根据认知测评成绩预测数学成绩", fig.width=8, fig.asp=0.618, dev='Cairo_png'}
-mdl <- lm(数学 ~ ., select(scores_items, -starts_with("user")))
-scores_items %>%
-  add_column(fit = fitted.values(mdl)) %>%
-  ggplot(aes(数学, fit)) +
-  geom_point() +
-  coord_fixed() +
-  theme_classic(base_family = "SimHei", base_size = 15) +
-  labs(x = "实际数学成绩", y = "预测数学成绩")
-```
-
-采用多重线性回归模型，根据学生在所有的学习能力测评题目中的得分预测学生的数学成绩。图\@ref(fig:multiple-linear-regression)中展示了预测成绩和实际成绩的关系，可以看出很明显的预测精度（`r str_glue("$R^2={round(summary(mdl)$r.squared, 2)}$")`）。

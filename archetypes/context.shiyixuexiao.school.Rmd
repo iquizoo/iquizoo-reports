@@ -1,5 +1,5 @@
 ```{r test-date-prep, include=FALSE}
-test_date <- format.Date(range(dataset$part_time, finite = TRUE), "%Y年%m月")
+test_date <- format.Date(range(dataset$assess_time, finite = TRUE), "%Y年%m月")
 if (any(duplicated(test_date))) test_date <- test_date[1]
 if (length(test_date) == 1) {
   test_date_inline <- test_date
@@ -53,7 +53,7 @@ participation <- dataset %>%
   filter(school == name_unit) %>% 
   group_by(class) %>% 
   summarise(
-    assessed = sum(!is.na(part_time)),
+    assessed = sum(!is.na(assess_time)),
     missing = n() - assessed,
     completion = paste0(round(assessed / n() * 100), "%")
   )
@@ -67,7 +67,7 @@ knitr::kable(
 ```{r participation-summary-plot, fig.cap=str_glue("{name_unit}{test_date_inline}测评完成情况")}
 participation %>%
   gather("type", "count", assessed, missing) %>%
-  mutate(type = recode(type, assessed = "已测", missing = "未测")) %>%
+  mutate(type = recode_factor(type, missing = "未测", assessed = "已测")) %>%
   mutate(count = if_else(count == 0, NA_integer_, count)) %>%
   ggplot(aes(class, count, fill = type)) +
   geom_bar(stat = "identity") +
@@ -76,8 +76,8 @@ participation %>%
   #   aes(label = count), color = "white",
   #   position = position_stack(vjust = 0.5)
   # ) +
-  ggthemes::theme_hc(base_size = 12, base_family = text_family) +
-  scale_fill_manual(values = rev(ggthemes::hc_pal()(2))) +
+  theme_hc(base_size = 12, base_family = text_family) +
+  scale_fill_manual(values = rev(hc_pal()(2))) +
   labs(x = "导师", y = "人数", fill = "") +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 ```

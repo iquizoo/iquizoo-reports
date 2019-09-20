@@ -5,7 +5,7 @@ render_heading_content(
   cat()
 ```
 
-```{r {{ab_code}}-histogram, fig.cap=str_glue("{{name_unit}}总体学生{{ab_name}}测评的分数分布"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
+```{r {{ab_code}}-histogram, fig.cap=str_glue("{{name_unit}}总体学生{{ab_name}}测评的分数分布"), fig.width=8, fig.asp=0.618}
 ggplot(dataset, aes({{ab_code}})) +
   geom_density(color = NA, fill = "lightblue", alpha = 0.5) +
   geom_vline(xintercept = mean(dataset${{ab_code}}, na.rm = TRUE), color = "red") +
@@ -106,7 +106,7 @@ stats_level %>%
 
 表\@ref(tab:{{ab_code}}-levels)给出了所测各班级学生的各水平人数。划分方式如图\@ref(fig:blai-grading)。
 
-```{r {{ab_code}}-grading, include="{{ab_code}}"=="blai", fig.width=12, fig.height=1, dev='Cairo_png', fig.cap="评分等级划分"}
+```{r {{ab_code}}-grading, include="{{ab_code}}"=="blai", fig.width=8, fig.height=1, fig.cap="评分等级划分"}
 lvls <- c("S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D")
 grading <- tibble(
   label = factor(lvls, levels = lvls),
@@ -121,11 +121,11 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
   scale_y_continuous(
     breaks = c(0, cumsum(c(0.05, rep(0.1, 9), 0.05))),
     labels = c(
-      expression(-infinity),
+      50,
       sprintf(
       "%.0f", qnorm(c(seq(0.05, 0.95, by = 0.1))) * 15 + 100
       ),
-      expression(infinity)
+      150
     )
   ) +
   labs(x = "", y = "") +
@@ -133,7 +133,7 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
   theme(axis.text.y = element_blank(), panel.grid.minor = element_blank(), panel.grid.major.y = element_blank())
 ```
 
-```{r {{ab_code}}-boxplot-class, fig.cap=str_glue("本次测评全体、本校及各班级学生{{ab_name}}测评得分情况对比"), fig.width=12, fig.asp=1.2, dev='Cairo_png'}
+```{r {{ab_code}}-boxplot-class, fig.cap=str_glue("本次测评全体、本校及各班级学生{{ab_name}}测评得分情况对比"), fig.width=8, fig.asp=1.2}
 list(
   school = dataset_normal,
   by_class = dataset_normal
@@ -177,8 +177,8 @@ if (n_class > 1 && !any(is.na(dataset_normal$class))) {
     stats_descr_class,
     str_glue(
       "从学生的中位数水平来看，",
-      "{group[med == max(med)][1]}班学生的整体表现最好，",
-      "而{group[med == min(med)][1]}班学生的整体表现最差，",
+      "{group[which.max(med)]}班学生的整体表现最好，",
+      "而{group[which.min(med)]}班学生的整体表现最差，",
       "{dinfer_msg_med}。"
     )
   )
@@ -187,7 +187,7 @@ if (n_class > 1 && !any(is.na(dataset_normal$class))) {
 
 本校及各班级学生的{{ab_name}}测评分数的分布区间如图\@ref(fig:{{ab_code}}-boxplot-class)。`r diff_msg_med`
 
-```{r {{ab_code}}-boxplot-gender, fig.cap=str_glue("{{name_unit}}{{ab_name}}测评的性别差异对比"), fig.width=12, fig.asp=0.5, dev='Cairo_png'}
+```{r {{ab_code}}-boxplot-gender, fig.cap=str_glue("{{name_unit}}{{ab_name}}测评的性别差异对比"), fig.width=8, fig.asp=0.5}
 list(
   school = dataset_normal,
   by_gender = dataset_normal
@@ -228,28 +228,15 @@ if (diff_gender$p.value > 0.05) {
 
 本校学生的{{ab_name}}测评分数的性别对比如图\@ref(fig:{{ab_code}}-boxplot-gender)。从中位数（即得分恰好在正中间的学生）角度看，`r if_else(with(dataset_normal, median({{ab_code}}[gender == "男"], na.rm = TRUE) > median({{ab_code}}[gender == "女"], na.rm = TRUE)), "男生的表现好于女生", "女生的表现好于男生")`，`r diff_msg_gender`。
 
-```{r {{ab_code}}-correlation, fig.cap=str_glue("{{ab_name}}测评得分和数学成绩的关系"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
-dataset_with_math <- dataset_normal %>%
-  inner_join(mathscore, by = c("user_name" = "Name"))
-ggplot(dataset_with_math, aes({{ab_code}}, Shuxue)) +
-  geom_point() +
-  stat_smooth(method = "glm", se = FALSE) +
-  theme_classic(base_size = 18, base_family = text_family) +
-  labs(x = "{{ab_name}}", y = "数学成绩")
-corr_stats <- cor.test(~ {{ab_code}} + Shuxue, dataset_with_math)
-```
-
-图\@ref(fig:{{ab_code}}-correlation)展示了{{ab_name}}测评得分和数学成绩的关系。{{ab_name}}测评得分和数学成绩之间`r case_when(corr_stats$estimate < 0.1 ~ "几乎没有关联", corr_stats$estimate < 0.3 ~ "关联较小", corr_stats$estimate < 0.5 ~ "有中等程度的关联", corr_stats$estimate > 0.5 ~ "关联很强")`，相关系数为`r round(corr_stats$estimate, 2)`。
-
 ```{r {{ab_code}}-list-of-worst}
 dataset %>%
   arrange({{ab_code}}) %>%
-  head(20) %>%
+  head(50) %>%
   select(class, user_name, gender, {{ab_code}}) %>%
   arrange(class) %>% 
   knitr::kable(
     digits = 1,
     col.names = c("导师", "学生姓名", "性别", "得分"),
-    caption = "{{ab_name}}测评得分最差20名学生名单"
+    caption = "{{ab_name}}测评得分最差50名学生名单"
   )
 ```
