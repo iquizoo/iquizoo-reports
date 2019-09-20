@@ -1,16 +1,17 @@
--- !preview conn=iquizoo_user_db
+-- !preview conn=iquizoo_db
 
 SELECT
-  user_profile.Id AS user_id,
-  user_profile.RealName AS user_name,
-  user_profile.Gender AS gender,
-  user_profile.Birthday AS dob,
-  base_organization.Name AS school,
-  base_grade_class.GradeName AS grade,
-  base_grade_class.ClassName AS class
+	user_profile.Id AS user_id,
+	user_profile.RealName AS user_name,
+	user_profile.Birthday AS dob,
+	user_profile.Gender AS gender,
+	base_organization.`Name` AS school,
+	base_grade_class.GradeName AS grade,
+	base_grade_class.ClassName AS class
 FROM
-  user_profile
-  INNER JOIN base_organization ON base_organization.Id = user_profile.OrgId
-  INNER JOIN base_grade_class ON base_grade_class.Id = user_profile.ClassId
+	user_profile
+	INNER JOIN base_organization ON user_profile.OrgId = base_organization.Id
+	INNER JOIN base_grade_class ON user_profile.ClassId = base_grade_class.Id
 WHERE
-  base_organization.Id IN ( {customer_projectids} );
+	base_organization.`Name` = "北京十一学校（龙樾实验中学）"
+	AND base_grade_class.GradeName = "1年级";
