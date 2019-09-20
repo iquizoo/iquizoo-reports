@@ -5,15 +5,15 @@
 # This script is used to generate chapters for book building.
 
 # load packages ----
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(extrafont))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(optparse))
-suppressPackageStartupMessages(library(dbplyr))
-suppressPackageStartupMessages(library(ggthemes))
-suppressPackageStartupMessages(library(DBI))
-suppressPackageStartupMessages(library(iquizoor))
-suppressPackageStartupMessages(library(dataprocr))
+library(tidyverse)
+library(extrafont)
+library(lubridate)
+library(optparse)
+library(dbplyr)
+library(ggthemes)
+library(DBI)
+library(iquizoor)
+library(dataprocr)
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
@@ -98,32 +98,26 @@ if (hasName(subtitle_config, params$report_unit)) {
 
 # dataset preparations ----
 # connect to database and download data
-customer_projectids <- config::get("customer.projectid", config = params$customer_id)
-customer_projectids <- paste0("\"", customer_projectids, "\"", collapse = ",")
-iquizoo_report_db <- dbConnect(
-  odbc::odbc(), "iquizoo-v3",
-  database = "iquizoo_report_db"
-)
-iquizoo_user_db <- dbConnect(
+iquizoo_db <- dbConnect(
   odbc::odbc(), "iquizoo-v3",
   database = "iquizoo_user_db"
 )
 game_data <- dbGetQuery(
-  iquizoo_report_db,
+  iquizoo_db,
   getOption("reports.mysql.querydir") %>%
     file.path("scores.sql") %>%
     read_file() %>%
     str_glue()
 )
 users <- dbGetQuery(
-  iquizoo_user_db,
+  iquizoo_db,
   getOption("reports.mysql.querydir") %>%
     file.path("users.sql") %>%
     read_file() %>%
     str_glue()
-)
-dbDisconnect(iquizoo_report_db)
-dbDisconnect(iquizoo_user_db)
+) %>%
+  mutate(class = str_replace(class, "导师班", ""))
+dbDisconnect(iquizoo_db)
 # calculate scores
 data_configs <- jsonlite::read_json("config.json", simplifyVector = TRUE)
 norms <- read_tsv("assets/extra/norms.tsv") %>%
@@ -146,7 +140,6 @@ user_prop_used <- c(
 )
 scores_items_orig <- users %>%
   left_join(game_data, by = "user_id") %>%
-  filter(!str_detect(user_name, "测试")) %>%
   left_join(data_configs, by = "game_name") %>%
   mutate(
     game_data = map(
@@ -165,7 +158,7 @@ scores_items_orig <- users %>%
         get(.y)(.x)
       }
     ),
-    age = round((dob %--% part_time) / dyears(1))
+    age = round((dob %--% game_time) / dyears(1))
   ) %>%
   mutate(
     score = if_else(
@@ -174,15 +167,22 @@ scores_items_orig <- users %>%
     )
   ) %>%
   left_join(norms, by = c("game_name", "age")) %>%
-  mutate(std_score = (score - avg) / std * 15 + 100)
+  group_by(game_name) %>%
+  mutate(
+    std_score = if_else(
+      !is.na(avg),
+      (score - avg) / std * 15 + 100,
+      scale(score) * 15 + 100
+    )
+  )
 scores_subability <- scores_items_orig %>%
   complete(ability, nesting(!!!syms(c(names(users))))) %>%
   filter(!is.na(ability)) %>%
   group_by(!!!syms(user_prop_used)) %>%
-  mutate(part_time = min(part_time)) %>%
+  mutate(assess_time = min(game_time)) %>%
   complete(ability, nesting(!!!syms(names(users)))) %>%
   filter(!is.na(ability)) %>%
-  group_by(!!!syms(c(user_prop_used, "part_time", "ability"))) %>%
+  group_by(!!!syms(c(user_prop_used, "assess_time", "ability"))) %>%
   summarise(
     score = round(mean(std_score, na.rm = TRUE))
   ) %>%
@@ -190,12 +190,13 @@ scores_subability <- scores_items_orig %>%
   mutate(score = if_else(score < 50 | score > 150, NA_real_, score)) %>%
   ungroup()
 scores_total <- scores_subability %>%
-  group_by(!!!syms(c(user_prop_used, "part_time"))) %>%
+  group_by(!!!syms(c(user_prop_used, "assess_time"))) %>%
   summarise(score = round(mean(score, na.rm = TRUE))) %>%
   add_column(ability = "blai") %>%
   ungroup()
 dataset <- bind_rows(scores_subability, scores_total) %>%
-  spread(ability, score)
+  spread(ability, score) %>%
+  full_join(users)
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
