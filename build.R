@@ -97,9 +97,8 @@ if (hasName(subtitle_config, params$report_unit)) {
 # dataset preparations ----
 # load dataset and configurations
 config_game <- jsonlite::read_json("config_game.json", simplifyVector = TRUE)
-config_school <- read_csv("assets/extra/config_school.csv")
-users <- read_csv("assets/extra/select_users.csv")
-raw_data <- read_csv("assets/extra/select_data.csv")
+users <- read_tsv("assets/extra/select_users_paoxiao.txt")
+raw_data <- read_tsv("assets/extra/select_data_paoxiao.txt")
 # calculate game scores
 scores_item <- raw_data %>%
   left_join(config_game, by = "game_name") %>%
@@ -112,37 +111,43 @@ scores_item <- raw_data %>%
       }
     )
   ) %>%
-  left_join(users, by = "user_id") %>%
-  mutate(
-    assess_time = min(game_time),
-    age = round((dob %--% game_time) / dyears(1))
-  ) %>%
-  group_by(game_name, age, gender) %>%
+  group_by(game_name) %>%
   mutate(std_score_orig = scale(score) * 15 + 100) %>%
+  ungroup() %>%
+  group_by(user_id, game_name, ability) %>%
+  summarise(
+    game_time = max(game_time),
+    std_score_orig = max(std_score_orig, na.rm = TRUE)
+  ) %>%
   ungroup() %>%
   mutate(
     std_score = case_when(
+      is.infinite(std_score_orig) ~ NA_real_,
       std_score_orig > 150 ~ 150,
       std_score_orig < 50 ~ 50,
       TRUE ~ std_score_orig
     )
   ) %>%
-  left_join(config_school, by = "school") %>%
-  filter(!(game_name == "超级秒表" & !is_normal))
+  left_join(users, by = "user_id") %>%
+  group_by(user_id) %>%
+  mutate(assess_time = min(game_time)) %>%
+  ungroup()
 scores_subability <- scores_item %>%
   group_by(user_id, assess_time, ability) %>%
-  summarise(score = mean(std_score, na.rm = TRUE))
+  summarise(score = mean(std_score, na.rm = TRUE)) %>%
+  ungroup()
 scores_total <- scores_subability %>%
   group_by(user_id, assess_time) %>%
   summarise(score = mean(score, na.rm = TRUE)) %>%
+  ungroup() %>%
   add_column(ability = "blai")
 scores <- bind_rows(scores_subability, scores_total) %>%
   mutate(score = round(score)) %>%
   spread(ability, score)
 dataset <- users %>%
-  inner_join(config_school, by = "school") %>%
   left_join(scores, by = "user_id") %>%
-  unite(full_class, grade, class, sep = "", remove = FALSE)
+  unite(full_class, grade, class, sep = "", remove = FALSE) %>%
+  filter(full_class != "特别测试")
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit

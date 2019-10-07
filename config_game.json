@@ -12,7 +12,7 @@
         "game_name": "倒背数",
         "sequential": true,
         "split_half": false,
-        "fun": "count_correct",
+        "fun": "span",
         "ability": "Mem",
         "min_score": 1.5,
         "max_score": 16.5
@@ -21,7 +21,7 @@
         "game_name": "方块速记",
         "sequential": true,
         "split_half": false,
-        "fun": "count_correct",
+        "fun": "span",
         "ability": "Mem",
         "min_score": 1.5,
         "max_score": 16.5
@@ -39,7 +39,7 @@
         "game_name": "卡片分类",
         "sequential": true,
         "split_half": true,
-        "fun": "meanscore",
+        "fun": "control",
         "ability": "Rsn",
         "min_score": 0,
         "max_score": 2
@@ -57,7 +57,7 @@
         "game_name": "魔术师初级",
         "sequential": true,
         "split_half": true,
-        "fun": "count_correct",
+        "fun": "accuracy",
         "ability": "SC",
         "min_score": 0,
         "max_score": 1
@@ -66,7 +66,7 @@
         "game_name": "魔术师中级",
         "sequential": true,
         "split_half": true,
-        "fun": "count_correct",
+        "fun": "accuracy",
         "ability": "SC",
         "min_score": 0,
         "max_score": 1
@@ -75,7 +75,7 @@
         "game_name": "魔术师高级",
         "sequential": true,
         "split_half": true,
-        "fun": "count_correct",
+        "fun": "accuracy",
         "ability": "SC",
         "min_score": 0,
         "max_score": 1
@@ -84,7 +84,7 @@
         "game_name": "魔术师终极",
         "sequential": true,
         "split_half": true,
-        "fun": "count_correct",
+        "fun": "accuracy",
         "ability": "SC",
         "min_score": 0,
         "max_score": 1
@@ -93,7 +93,7 @@
         "game_name": "顺背数",
         "sequential": true,
         "split_half": false,
-        "fun": "count_correct",
+        "fun": "span",
         "ability": "Mem",
         "min_score": 1.5,
         "max_score": 16.5
@@ -102,7 +102,7 @@
         "game_name": "蝴蝶照相机",
         "sequential": true,
         "split_half": false,
-        "fun": "count_correct",
+        "fun": "span",
         "ability": "SC",
         "min_score": 1.5,
         "max_score": 16.5
@@ -111,7 +111,7 @@
         "game_name": "位置记忆",
         "sequential": true,
         "split_half": false,
-        "fun": "count_correct",
+        "fun": "span",
         "ability": "Mem",
         "min_score": 1.5,
         "max_score": 16.5
@@ -120,7 +120,7 @@
         "game_name": "萤火虫",
         "sequential": true,
         "split_half": false,
-        "fun": "count_correct",
+        "fun": "span",
         "ability": "Att",
         "min_score": 1.5,
         "max_score": 10.5
@@ -138,9 +138,27 @@
         "game_name": "太空飞船",
         "sequential": false,
         "split_half": true,
-        "fun": "meanscore",
+        "fun": "control",
         "ability": "SC",
         "min_score": 0,
         "max_score": 2
+    },
+    {
+        "game_name": "捉虫",
+        "sequential": true,
+        "split_half": false,
+        "fun": "cpt",
+        "ability": "Att",
+        "min_score": -1,
+        "max_score": 1
+    },
+    {
+        "game_name": "连点成画",
+        "sequential": true,
+        "split_half": false,
+        "fun": "meanscore",
+        "ability": "Rsn",
+        "min_score": null,
+        "max_score": null
     }
 ]

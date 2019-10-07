@@ -12,6 +12,12 @@ context_child_file <- file.path(
     )
   )
 )
+if (!file.exists(context_child_file)) {
+  context_child_file <- file.path(
+    getOption("reports.archytype"),
+    "context.default.Rmd"
+  )
+}
 context_to_knit <- knitr::knit_expand(text = readLines(context_child_file, encoding = "UTF-8"))
 cat(knitr::knit(text = context_to_knit, quiet = TRUE))
 ```
