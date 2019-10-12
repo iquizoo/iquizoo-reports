@@ -1,5 +1,10 @@
 ```{r assess-date-prep, include=FALSE}
-assess_date <- format.Date(range(dataset$assess_time, finite = TRUE), "%Y年%m月")
+dataset_unit <- dataset %>% 
+  filter(school == name_unit)
+assess_date <- dataset_unit %>% 
+  pull(assess_time) %>% 
+  range(finite = TRUE) %>% 
+  format.Date("%Y年%m月")
 if (any(duplicated(assess_date))) assess_date <- assess_date[1]
 if (length(assess_date) == 1) {
   assess_date_inline <- assess_date
@@ -49,14 +54,14 @@ knitr::include_graphics("assets/image/model.jpg")
 ## 学生参加测评的情况
 
 ```{r participation-summary-table}
-if (n_distinct(dataset$full_class) > 1) {
+if (n_distinct(dataset_unit$full_class) > 1) {
   compare_unit <- "full_class"
   compare_unit_name <- "班级"
 } else {
   compare_unit <- "school"
   compare_unit_name <- "学校"
 }
-participation <- dataset %>%
+participation <- dataset_unit %>%
   group_by(!!sym(compare_unit)) %>% 
   summarise(
     assessed = sum(!is.na(assess_time)),
