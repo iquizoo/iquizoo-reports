@@ -160,5 +160,14 @@
         "ability": "Rsn",
         "min_score": null,
         "max_score": null
+    },
+    {
+        "game_name": "宇宙黑洞2",
+        "sequential": false,
+        "split_half": true,
+        "fun": "meanprox",
+        "ability": "Mem",
+        "min_score": 0,
+        "max_score": 10
     }
 ]

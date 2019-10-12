@@ -6,6 +6,7 @@
 
 # load packages ----
 library(tidyverse)
+library(DBI)
 library(ggthemes)
 library(extrafont)
 library(lubridate)
@@ -95,10 +96,37 @@ if (hasName(subtitle_config, params$report_unit)) {
 }
 
 # dataset preparations ----
-# load dataset and configurations
+# load dataset configurations
 config_game <- jsonlite::read_json("config_game.json", simplifyVector = TRUE)
-users <- read_tsv("assets/extra/select_users_paoxiao.txt")
-raw_data <- read_tsv("assets/extra/select_data_paoxiao.txt")
+organization_names <- str_c(
+  "\"", config::get("customer.organizations"), "\"",
+  collapse = ","
+)
+# load dataset and configurations
+database <- dbConnect(
+  odbc::odbc(), "iquizoo-v3",
+  database = "iquizoo_user_db"
+)
+raw_data <- dbGetQuery(
+  database,
+  read_file(
+    file.path(
+      getOption("reports.mysql.querydir"),
+      "scores.sql"
+    )
+  ) %>%
+    str_glue()
+)
+users <- dbGetQuery(
+  database,
+  read_file(
+    file.path(
+      getOption("reports.mysql.querydir"),
+      "users.sql"
+    )
+  ) %>%
+    str_glue()
+)
 # calculate game scores
 scores_item <- raw_data %>%
   left_join(config_game, by = "game_name") %>%
@@ -111,14 +139,14 @@ scores_item <- raw_data %>%
       }
     )
   ) %>%
-  group_by(game_name) %>%
-  mutate(std_score_orig = scale(score) * 15 + 100) %>%
-  ungroup() %>%
+  # only keep the latest score
   group_by(user_id, game_name, ability) %>%
   summarise(
-    game_time = max(game_time),
-    std_score_orig = max(std_score_orig, na.rm = TRUE)
+    score = score[which.max(game_time)],
+    game_time = max(game_time)
   ) %>%
+  group_by(game_name) %>%
+  mutate(std_score_orig = scale(score) * 15 + 100) %>%
   ungroup() %>%
   mutate(
     std_score = case_when(
