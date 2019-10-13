@@ -102,13 +102,10 @@ organization_names <- str_c(
   "\"", config::get("customer.organizations"), "\"",
   collapse = ","
 )
-# load dataset and configurations
-database <- dbConnect(
-  odbc::odbc(), "iquizoo-v3",
-  database = "iquizoo_user_db"
-)
+# collect data from database server
+db_server <- dbConnect(odbc::odbc(), "iquizoo-v3")
 raw_data <- dbGetQuery(
-  database,
+  db_server,
   read_file(
     file.path(
       getOption("reports.mysql.querydir"),
@@ -118,7 +115,7 @@ raw_data <- dbGetQuery(
     str_glue()
 )
 users <- dbGetQuery(
-  database,
+  db_server,
   read_file(
     file.path(
       getOption("reports.mysql.querydir"),
@@ -127,6 +124,7 @@ users <- dbGetQuery(
   ) %>%
     str_glue()
 )
+dbDisconnect(db_server)
 # calculate game scores
 scores_item <- raw_data %>%
   left_join(config_game, by = "game_name") %>%
