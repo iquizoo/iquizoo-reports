@@ -6,12 +6,12 @@ render_heading_content(
 ```
 
 ```{r {{ab_code}}-histogram, fig.cap=str_glue("{{name_unit}}总体学生{{ab_name}}测评的分数分布"), fig.width=10, fig.asp=0.618}
-dataset_unit <- dataset %>% 
+dataset_unit <- dataset %>%
   filter(school == name_unit)
 dataset_hist <- list(
   全体 = dataset,
   本校 = dataset_unit
-) %>% 
+) %>%
   bind_rows(.id = "group")
 ggplot(dataset_hist, aes({{ab_code}}, fill = group)) +
   geom_density(color = NA, alpha = 0.5) +
@@ -43,7 +43,7 @@ if (stat_cmp$p.value > 0.05) {
 # remove outliers
 dataset_normal <- dataset %>%
   filter({{ab_code}} >= bpstats[1] & {{ab_code}} <= bpstats[5])
-dataset_unit_normal <- dataset_unit %>% 
+dataset_unit_normal <- dataset_unit %>%
   filter({{ab_code}} >= bpstats[1] & {{ab_code}} <= bpstats[5])
 ```
 
@@ -56,7 +56,7 @@ dataset_with_level <- dataset_normal %>%
     level = cut({{ab_code}}, breaks = score_levels$breaks, labels = score_levels$labels) %>%
       fct_rev()
   )
-dataset_unit_with_level <- dataset_with_level %>% 
+dataset_unit_with_level <- dataset_with_level %>%
   filter(school == name_unit)
 # summary statistics of whole and each cls
 stats_descr_region <- dataset_with_level %>%
@@ -80,8 +80,8 @@ stats_descr_school <- dataset_unit_with_level %>%
   ) %>%
   add_column(group = "本校", .before = 1)
 stats_descr_cls <- dataset_unit_with_level %>%
-  rename(group = cls) %>% 
-  group_by(group) %>% 
+  rename(group = cls) %>%
+  group_by(group) %>%
   summarise(
     cnt = sum(!is.na({{ab_code}})),
     avg = mean({{ab_code}}, na.rm = TRUE),
@@ -93,7 +93,7 @@ stats_descr_cls <- dataset_unit_with_level %>%
   ungroup()
 stats_descr <- bind_rows(stats_descr_cls, stats_descr_school, stats_descr_region)
 # output descriptive statistics as a table
-stats_descr %>% 
+stats_descr %>%
   knitr::kable(
     digits = 2,
     col.names = c("班级", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
@@ -150,13 +150,13 @@ stats_level_cls <- dataset_unit_with_level %>%
   mutate(prop_level = n_level / cnt) %>%
   filter(!is.na(level))
 stats_level <- bind_rows(stats_level_cls, stats_level_school, stats_level_region) %>%
-  mutate(group = factor(group, levels = unique(.$group))) %>% 
+  mutate(group = factor(group, levels = unique(.$group))) %>%
   complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 # output level statiscs as a table
-stats_level %>% 
+stats_level %>%
   select(-n_level) %>%
   mutate(prop_level = paste0(round(100 * prop_level), "%")) %>%
-  spread(level, prop_level, fill = "0%") %>% 
+  spread(level, prop_level, fill = "0%") %>%
   knitr::kable(
     digits = 2,
     col.names = c("班级", "实测人数", rev(score_levels$labels)),
@@ -197,8 +197,8 @@ list(
       set == "school" ~ "本校",
       TRUE ~ gender
     )
-  ) %>% 
-  mutate(group = fct_rev(factor(group, unique(.$group)))) %>% 
+  ) %>%
+  mutate(group = fct_rev(factor(group, unique(.$group)))) %>%
   ggplot(aes(group, {{ab_code}}, fill = set)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel2", guide = FALSE) +
@@ -286,9 +286,9 @@ if (n_cls > 1 && !any(is.na(dataset_unit_normal$cls))) {
 本次测评全体、本校及各班级学生的{{ab_name}}测评分数的分布区间如图\@ref(fig:{{ab_code}}-boxplot-cls)。`r diff_msg_med`
 
 ```{r {{ab_code}}-correlation, fig.cap=str_glue("{{ab_name}}测评得分和数学成绩的关系"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
-mathscore <- read_sav("assets/extra/Math.sav", encoding = "gbk") %>% 
+mathscore <- read_sav("assets/extra/Math.sav", encoding = "gbk") %>%
   select(stu_code, total_score)
-dataset_unit_with_math <- dataset_unit_normal %>% 
+dataset_unit_with_math <- dataset_unit_normal %>%
   inner_join(mathscore, by = c("idNumber1" = "stu_code"))
 ggplot(dataset_unit_with_math, aes({{ab_code}}, total_score, color = cls, group = 1)) +
   geom_point() +

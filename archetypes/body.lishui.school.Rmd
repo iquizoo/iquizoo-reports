@@ -6,12 +6,12 @@ render_heading_content(
 ```
 
 ```{r {{ab_code}}-histogram, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("{{name_unit}}总体学生{{ab_name}}测评的分数分布")}
-dataset_unit <- dataset %>% 
+dataset_unit <- dataset %>%
   filter(school == name_unit)
 dataset_hist <- list(
   全体 = dataset,
   本校 = dataset_unit
-) %>% 
+) %>%
   bind_rows(.id = "group")
 ggplot(dataset_hist, aes({{ab_code}}, fill = group)) +
   geom_density(color = NA, alpha = 0.5) +
@@ -52,7 +52,7 @@ dataset_with_level <- dataset %>%
     level = cut({{ab_code}}, breaks = score_levels$breaks, labels = score_levels$labels) %>%
       fct_rev()
   )
-dataset_unit_with_level <- dataset_with_level %>% 
+dataset_unit_with_level <- dataset_with_level %>%
   filter(school == name_unit)
 # summary statistics of whole and each grade
 stats_descr_region <- dataset_with_level %>%
@@ -76,8 +76,8 @@ stats_descr_school <- dataset_unit_with_level %>%
   ) %>%
   add_column(group = "本校", .before = 1)
 stats_descr_grade <- dataset_unit_with_level %>%
-  rename(group = grade) %>% 
-  group_by(group) %>% 
+  rename(group = grade) %>%
+  group_by(group) %>%
   summarise(
     cnt = sum(!is.na({{ab_code}})),
     avg = mean({{ab_code}}, na.rm = TRUE),

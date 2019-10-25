@@ -31,7 +31,7 @@ dataset_with_level <- dataset_normal %>%
       fct_rev()
   )
 if ("{{ab_code}}" == "RT") {
-  dataset_with_level <- dataset_with_level %>% 
+  dataset_with_level <- dataset_with_level %>%
     semi_join(filter(config_school, is_normal), by = "school")
 }
 # summary statistics of whole and each school
@@ -56,7 +56,7 @@ stats_descr_school <- dataset_with_level %>%
     med = median({{ab_code}}, na.rm = TRUE),
     btm = min({{ab_code}}, na.rm = TRUE)
   ) %>%
-  ungroup() %>% 
+  ungroup() %>%
   arrange(med)
 stats_descr <- bind_rows(stats_descr_school, stats_descr_total)
 # output descriptive statistics as a table
@@ -174,16 +174,16 @@ if (n_school > 1 && !any(is.na(dataset_normal$school))) {
   }
   top_school <- with(stats_descr_school, group[med == max(med)])
   if (length(top_school) > 1) {
-    top_school_head <- top_school %>% 
-      head(-1) %>% 
+    top_school_head <- top_school %>%
+      head(-1) %>%
       paste(collapse = "、")
     top_school_tail <- str_glue("和{last(top_school)}")
     top_school <- str_glue("{top_school_head}{top_school_tail}")
   }
   worst_school <- with(stats_descr_school, group[med == min(med)])
   if (length(worst_school) > 1) {
-    worst_school_head <- worst_school %>% 
-      head(-1) %>% 
+    worst_school_head <- worst_school %>%
+      head(-1) %>%
       paste(collapse = "、")
     worst_school_tail <- str_glue("和{last(worst_school)}")
     worst_school <- str_glue("{worst_school_head}{worst_school_tail}")
@@ -225,7 +225,7 @@ list(
     )
   ) %>%
   mutate(group = fct_rev(factor(group, unique(.$group)))) %>%
-  filter(grade != "1年级") %>% 
+  filter(grade != "1年级") %>%
   ggplot(aes(group, {{ab_code}}, fill = set)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel2", guide = FALSE) +

@@ -27,7 +27,7 @@ knitr::include_graphics("assets/image/model.jpg")
 根据学业成绩的金字塔模型，我们可以知道想要最终达到提升学生学业成绩的目的，就必须对学生的大脑核心能力以及学科能力进行测评与提升。采用基于脑科学的科学评价和干预手段，国际上一些发达国家已经开始运对学生的学习能力进行系统的检测和评估，并大力推行有针对性的提升方案。这些创新实践所产生的大量实证数据表明，想要切实系统地提高学生的学习能力，真正解决部分学生所面临的特殊需要，实现教育质量从外延到内涵的发展，就必须对制约学生学习的核心学习能力进行系统的评估和检测，并进行针对性的提高训练，也必须结合脑科学的最新研究成果，进一步拓展教师的教育视野和业务素养。
 
 在国际教育发展趋势与我区教育发展的特定需求这样的重要背景下，我们在本次教育质量监测中创新地采用了基于脑神经科学及心理学的测评技术，在关注学生应获得的知识、技能的同时，更加突出对学生基础学习能力和基础学科能力的测评。本报告将呈现本区学生的基础学习能力以及数学等基础学科能力的发展状况，并针对测评结果提供针对性的发展建议。
-    
+
 ## 测评系统介绍
 
 本次测评使用“大脑学习能力”测评系统完成。该测评由北京师范大学脑与学习科学研究中心编制。同传统智力测验相比，“大脑学习能力”测评具有科学性强、实施方便、准确度高、预测效度好、可反复测试等优势，代表了当今脑力测试的新趋势。
@@ -55,9 +55,9 @@ school_encrypt <- tibble(
   school_name_disp = sprintf("校%02d", school_number)
 )
 writexl::write_xlsx(school_encrypt, "tmp/school_encrypt.xlsx")
-dataset <- dataset %>% 
-  left_join(school_encrypt, by = "school") %>% 
-  select(-school) %>% 
+dataset <- dataset %>%
+  left_join(school_encrypt, by = "school") %>%
+  select(-school) %>%
   rename(school = school_name_disp)
 participation <- dataset %>%
   group_by(school) %>%

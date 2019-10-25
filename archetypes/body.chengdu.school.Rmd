@@ -9,7 +9,7 @@ render_heading_content(
 dataset_hist <- list(
   全体 = dataset,
   本校 = dataset_unit
-) %>% 
+) %>%
   bind_rows(.id = "group")
 ggplot(dataset_hist, aes({{ab_code}}, fill = group)) +
   geom_density(color = NA, alpha = 0.5) +
@@ -44,13 +44,13 @@ if (stat_cmp$p.value > 0.05) {
 dataset_with_level <- dataset %>%
   mutate(
     level = cut(
-      {{ab_code}}, 
-      breaks = score_levels$breaks, 
+      {{ab_code}},
+      breaks = score_levels$breaks,
       labels = score_levels$labels
     ) %>%
       fct_rev()
   )
-dataset_unit_with_level <- dataset_with_level %>% 
+dataset_unit_with_level <- dataset_with_level %>%
   filter(school == name_unit)
 # summary statistics of whole and each report unit
 stats_descr_region <- dataset_with_level %>%
@@ -75,8 +75,8 @@ stats_descr_school <- dataset_unit_with_level %>%
   add_column(group = "本校", .before = 1)
 if (report_unit != "school") {
   stats_descr_group <- dataset_unit_with_level %>%
-    rename(group = !!report_unit) %>% 
-    group_by(group) %>% 
+    rename(group = !!report_unit) %>%
+    group_by(group) %>%
     summarise(
       cnt = sum(!is.na({{ab_code}})),
       avg = mean({{ab_code}}, na.rm = TRUE),
@@ -86,10 +86,10 @@ if (report_unit != "school") {
       btm = min({{ab_code}}, na.rm = TRUE)
     ) %>%
     ungroup()
-  stats_descr <- bind_rows(stats_descr_group, stats_descr_school, stats_descr_region) %>% 
+  stats_descr <- bind_rows(stats_descr_group, stats_descr_school, stats_descr_region) %>%
     mutate(group = factor(group, c(unique(stats_descr_group$group), "本校", "全体")))
 } else {
-  stats_descr <- bind_rows(stats_descr_school, stats_descr_region) %>% 
+  stats_descr <- bind_rows(stats_descr_school, stats_descr_region) %>%
     mutate(group = factor(group, c("本校", "全体")))
 }
 # output descriptive statistics as a table
@@ -99,7 +99,7 @@ stats_descr %>%
     col.names = c(report_unit_name, "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
     caption = str_glue("本次测评全体、本校及各{report_unit_name}学生{{ab_name}}测评的整体表现详表")
   )
-n_grps <- dataset_unit %>% 
+n_grps <- dataset_unit %>%
   filter(!is.na({{ab_code}})) %>%
   pull(!!report_unit) %>%
   n_distinct()
@@ -170,11 +170,11 @@ if (report_unit != "school") {
     mutate(prop_level = n_level / cnt) %>%
     filter(!is.na(level))
   stats_level <- bind_rows(stats_level_group, stats_level_school, stats_level_region) %>%
-    mutate(group = factor(group, c(unique(stats_level_group$group), "本校", "全体"))) %>% 
+    mutate(group = factor(group, c(unique(stats_level_group$group), "本校", "全体"))) %>%
     complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 } else {
   stats_level <- bind_rows(stats_level_school, stats_level_region) %>%
-    mutate(group = factor(group, c("本校", "全体"))) %>% 
+    mutate(group = factor(group, c("本校", "全体"))) %>%
     complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 }
 # output level statiscs as a table
@@ -236,7 +236,7 @@ if (report_unit != "school") {
       )
     ) %>%
     mutate(group = factor(group, c(order_med$group, "本校", "全体"))) %>%
-    filter(!group %in% with(stats_descr_group, group[which(cnt == 0)])) %>% 
+    filter(!group %in% with(stats_descr_group, group[which(cnt == 0)])) %>%
     ggplot(aes(group, {{ab_code}}, fill = set)) +
     geom_boxplot(outlier.color = NA, width = 0.5) +
     scale_fill_brewer(palette = "Pastel1", guide = FALSE) +

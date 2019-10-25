@@ -61,7 +61,7 @@ stats_descr_school <- dataset_with_level %>%
   ungroup()
 stats_descr <- bind_rows(stats_descr_region, stats_descr_school)
 # output descriptive statistics as a table
-stats_descr %>% 
+stats_descr %>%
   knitr::kable(
     digits = 2,
     col.names = c("学校", "实测人数", "平均数", "标准差", "最高分", "中位数", "最低分"),
@@ -97,13 +97,13 @@ stats_level_school <- dataset_with_level %>%
   mutate(prop_level = n_level / cnt) %>%
   filter(!is.na(level))
 stats_level <- bind_rows(stats_level_region, stats_level_school) %>%
-  mutate(group = factor(group, levels = unique(.$group))) %>% 
+  mutate(group = factor(group, levels = unique(.$group))) %>%
   complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 # output level statiscs as a table
-stats_level %>% 
+stats_level %>%
   select(-n_level) %>%
   mutate(prop_level = paste0(round(100 * prop_level), "%")) %>%
-  spread(level, prop_level, fill = "0%") %>% 
+  spread(level, prop_level, fill = "0%") %>%
   knitr::kable(
     digits = 2,
     col.names = c("学校", "实测人数", rev(score_levels$labels)),
@@ -142,7 +142,7 @@ list(
       set == "region" ~ "全体",
       TRUE ~ gender
     )
-  ) %>% 
+  ) %>%
   ggplot(aes(group, {{ab_code}}, fill = set)) +
   geom_boxplot(outlier.shape = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel2", guide = FALSE) +
@@ -216,9 +216,9 @@ if (diff_school$p.value > 0.05) {
 本区及各个学校的{{ab_name}}测评分数的分布区间如图\@ref(fig:{{ab_code}}-boxplot-school)。从中位数（即得分恰好在正中间的学生，参考表\@ref(tab:{{ab_code}}-tab)查看具体数值）角度看，`r with(stats_descr_school, group[med == max(med)])`的表现最好，`r with(stats_descr_school, group[med == min(med)])`的表现最差，`r diff_msg_school`。在后期应该重点关注`r with(stats_descr_school, group[med == min(med)])`，在该校进行相关基础能力课程的推广，对该校能力不足的学生进行干预和有计划的训练。
 
 ```{r {{ab_code}}-correlation, fig.cap=str_glue("{{ab_name}}测评得分和数学成绩的关系"), fig.width=12, fig.asp=0.618, dev='Cairo_png'}
-mathscore <- haven::read_sav("assets/extra/Math.sav", encoding = "gbk") %>% 
+mathscore <- haven::read_sav("assets/extra/Math.sav", encoding = "gbk") %>%
   select(stu_code, total_score)
-dataset_with_math <- dataset_normal %>% 
+dataset_with_math <- dataset_normal %>%
   inner_join(mathscore, by = c("idNumber1" = "stu_code"))
 ggplot(dataset_with_math, aes({{ab_code}}, total_score, group = 1)) +
   geom_point(alpha = 0.5) +

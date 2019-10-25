@@ -50,8 +50,8 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ```{r participation-summary-table}
 participation <- dataset %>%
-  filter(school == name_unit) %>% 
-  group_by(cls) %>% 
+  filter(school == name_unit) %>%
+  group_by(cls) %>%
   summarise(
     assessed = sum(!is.na(createDate)),
     missing = n() - assessed,

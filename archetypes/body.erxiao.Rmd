@@ -2,7 +2,7 @@
 ab_id <- "<<ab_id>>"
 ab_info <- as_tibble(
   config::get("ability", config = params$customer_id)
-) %>% 
+) %>%
   filter(id == ab_id)
 ab_name_cn <- ab_info$name
 scores_unit_this_ability <- scores_unit %>%
@@ -10,7 +10,7 @@ scores_unit_this_ability <- scores_unit %>%
 scores_combined_this_ability <- list(
   full = scores_unit_this_ability,
   by_class = scores_unit_this_ability
-) %>% 
+) %>%
   bind_rows(.id = "set") %>%
   mutate(
     group = if_else(
@@ -20,7 +20,7 @@ scores_combined_this_ability <- list(
     )
   )
 # descriptive statistics
-ability_summary_combined <- scores_combined_this_ability %>% 
+ability_summary_combined <- scores_combined_this_ability %>%
   group_by(set, group) %>%
   summarise(
     n = n(),
@@ -37,7 +37,7 @@ ability_summary_combined <- scores_combined_this_ability %>%
   ungroup()
 n_cls <- n_distinct(scores_unit_this_ability$class)
 order_med <- ability_summary_combined %>%
-  arrange(set, med) %>% 
+  arrange(set, med) %>%
   pull(group)
 ```
 
@@ -48,8 +48,8 @@ ab_info %>%
       heading = name, content = description,
       hlevel = hlevel, style = style
     )
-  ) %>% 
-  pull(md) %>% 
+  ) %>%
+  pull(md) %>%
   cat()
 ```
 
@@ -86,7 +86,7 @@ ability_summary_combined %>%
 
 ```{r <<ab_id>>-boxplot, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=str_glue("本校和各班学生{ab_name_cn}测评的得分情况对比")}
 scores_combined_this_ability %>%
-  mutate(group = factor(group, order_med)) %>% 
+  mutate(group = factor(group, order_med)) %>%
   ggplot(aes(group, score, fill = set)) +
   geom_boxplot(outlier.color = NA, width = 0.5) +
   scale_fill_brewer(palette = "Pastel1", guide = FALSE) +

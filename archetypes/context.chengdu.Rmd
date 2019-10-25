@@ -50,12 +50,12 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ```{r participation-summary-table}
 participation <- dataset %>%
-  group_by(school, grade) %>% 
+  group_by(school, grade) %>%
   summarise(
     assessed = sum(!is.na(assess_time)),
     missing = n() - assessed,
     completion = paste0(round(assessed / n() * 100), "%")
-  ) %>% 
+  ) %>%
   ungroup()
 knitr::kable(
   participation,
@@ -63,8 +63,8 @@ knitr::kable(
   col.names = c("学校", "年级", "已测", "未测", "完成率")
 )
 schools_abnormal <- with(config_school, school[!is_normal])
-schools_abnormal_head <- schools_abnormal %>% 
-  head(-1) %>% 
+schools_abnormal_head <- schools_abnormal %>%
+  head(-1) %>%
   paste(collapse = "、")
 schools_abnormal_tail <- str_glue("和{last(schools_abnormal)}")
 schools_abnormal_inline <- paste0(
@@ -76,7 +76,7 @@ schools_abnormal_inline <- paste0(
 
 ```{r participation-summary-plot, fig.cap=str_glue("{customer_name}{assess_date_inline}各学校测评完成情况"), fig.height=8, fig.width=6}
 dataset %>%
-  group_by(school) %>% 
+  group_by(school) %>%
   summarise(
     assessed = sum(!is.na(assess_time)),
     missing = n() - assessed,
@@ -96,6 +96,6 @@ dataset %>%
   labs(x = "", y = "人数", fill = "") +
   theme_hc(base_size = 12, base_family = text_family) +
   coord_flip()
-dataset_normal <- dataset %>% 
+dataset_normal <- dataset %>%
   filter(!school %in% schools_abnormal)
 ```

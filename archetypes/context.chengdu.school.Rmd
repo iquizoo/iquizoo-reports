@@ -1,5 +1,5 @@
 ```{r assess-date-prep, include=FALSE}
-dataset_unit <- dataset %>% 
+dataset_unit <- dataset %>%
   filter(school == name_unit)
 assess_date <- format.Date(range(dataset_unit$assess_time, finite = TRUE), "%Y年%m月")
 if (any(duplicated(assess_date))) assess_date <- assess_date[1]
@@ -59,7 +59,7 @@ if (n_distinct(dataset_unit$full_class) > 1) {
   report_unit_name <- "学校"
 }
 participation <- dataset_unit %>%
-  group_by(!!sym(report_unit)) %>% 
+  group_by(!!sym(report_unit)) %>%
   summarise(
     assessed = sum(!is.na(assess_time)),
     missing = n() - assessed,
@@ -76,7 +76,7 @@ knitr::kable(
 participation %>%
   gather("type", "count", assessed, missing) %>%
   mutate(
-    type = recode(type, assessed = "已测", missing = "未测") %>% 
+    type = recode(type, assessed = "已测", missing = "未测") %>%
       factor(levels = c("未测", "已测")),
     count = if_else(count == 0, NA_integer_, count)
   ) %>%
