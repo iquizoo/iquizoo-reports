@@ -192,6 +192,17 @@ if (params$debug_test) {
   )
   output_dir <- "test"
 }
+if (!is.null(params$report_slice) && params$report_slice != "default") {
+  if (params$report_slice %in% name_units) {
+    name_units <- params$report_slice
+  } else {
+    warning(
+      str_glue("The choosen name unit {params$debug_test} is not found,
+               restore to default."),
+      immediate. = TRUE
+    )
+  }
+}
 # rendering report for each unit
 for (name_unit in name_units) {
   # report rendering
