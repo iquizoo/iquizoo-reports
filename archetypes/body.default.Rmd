@@ -5,7 +5,7 @@ render_heading_content(
   cat()
 ```
 
-```{r {{ab_code}}-histogram, fig.cap=str_glue("总体学生{{ab_name}}测评的分数分布"), fig.width=8, fig.asp=0.618}
+```{r {{ab_code}}-histogram, fig.cap=str_glue("总体学生{{ab_name}}测评的分数分布")}
 dataset_hist <- list(
   全体 = dataset,
   本校 = dataset_unit
@@ -217,7 +217,7 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
   theme(axis.text.y = element_blank(), panel.grid.minor = element_blank(), panel.grid.major.y = element_blank())
 ```
 
-```{r {{ab_code}}-boxplot, include=n_grps > 1, fig.cap=str_glue("本次测评全体、本校及各{compare_unit_name}学生{{ab_name}}测评得分情况对比"), fig.width=10, fig.height=12}
+```{r {{ab_code}}-boxplot, include=n_grps > 1, fig.cap=str_glue("本次测评全体、本校及各{compare_unit_name}学生{{ab_name}}测评得分情况对比")}
 if (compare_unit != "school") {
   order_med <- stats_descr_group %>%
     mutate(rnk = row_number(med)) %>%
