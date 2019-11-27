@@ -97,83 +97,41 @@ if (hasName(subtitle_config, params$report_unit)) {
 
 # dataset preparations ----
 # load dataset configurations
-config_game <- jsonlite::read_json("config_game.json", simplifyVector = TRUE)
-organization_names <- str_c(
-  "\"", config::get("customer.organizations"), "\"",
-  collapse = ","
-)
-# collect data from database server
-db_server <- dbConnect(odbc::odbc(), "iquizoo-v3")
-raw_data <- dbGetQuery(
-  db_server,
-  read_file(
-    file.path(
-      getOption("reports.mysql.querydir"),
-      "scores.sql"
-    )
-  ) %>%
-    str_glue()
-)
-users <- dbGetQuery(
-  db_server,
-  read_file(
-    file.path(
-      getOption("reports.mysql.querydir"),
-      "users.sql"
-    )
-  ) %>%
-    str_glue()
-)
-dbDisconnect(db_server)
+raw_data <- read_tsv("assets/extra/select_data_20191125.txt")
+users <- read_tsv("assets/extra/select_users_20191125.txt") %>%
+  filter(!str_detect(user_name, "(测试)|(体验)"))
+norms <- read_tsv("assets/extra/norms.tsv")
 # calculate game scores
-scores_item <- raw_data %>%
-  left_join(config_game, by = "game_name") %>%
-  mutate(game_data = map(game_data, jsonlite::fromJSON)) %>%
+scores_item <- users %>%
+  inner_join(raw_data, by = c("user_id", "org_id")) %>%
+  mutate(age_int = round((user_dob %--% game_time) / dyears())) %>%
+  left_join(norms, by = c("user_sex", "age_int", "game_name")) %>%
   mutate(
-    score = pmap_dbl(
-      .,
-      function(game_data, fun, game_duration, ...) {
-        get(fun)(game_data, game_duration / 60 / 1000)
-      }
-    )
-  ) %>%
-  # only keep the latest score
-  group_by(user_id, game_name, ability) %>%
-  summarise(
-    score = score[which.max(game_time)],
-    game_time = max(game_time)
-  ) %>%
-  group_by(game_name) %>%
-  mutate(std_score_orig = scale(score) * 15 + 100) %>%
-  ungroup() %>%
-  mutate(
+    std_score = (raw_score - AVG) / SD * 15 + 100,
     std_score = case_when(
-      is.infinite(std_score_orig) ~ NA_real_,
-      std_score_orig > 150 ~ 150,
-      std_score_orig < 50 ~ 50,
-      TRUE ~ std_score_orig
+      std_score > 150 ~ 150,
+      std_score < 50 ~ 50,
+      TRUE ~ std_score
     )
   ) %>%
-  left_join(users, by = "user_id") %>%
   group_by(user_id) %>%
   mutate(assess_time = min(game_time)) %>%
   ungroup()
 scores_subability <- scores_item %>%
-  group_by(user_id, assess_time, ability) %>%
+  group_by(user_id, assess_time, ab_code) %>%
   summarise(score = mean(std_score, na.rm = TRUE)) %>%
   ungroup()
 scores_total <- scores_subability %>%
   group_by(user_id, assess_time) %>%
   summarise(score = mean(score, na.rm = TRUE)) %>%
   ungroup() %>%
-  add_column(ability = "blai")
+  add_column(ab_code = "blai")
 scores <- bind_rows(scores_subability, scores_total) %>%
   mutate(score = round(score)) %>%
-  spread(ability, score)
+  spread(ab_code, score)
 dataset <- users %>%
   left_join(scores, by = "user_id") %>%
-  unite(full_class, grade, class, sep = "", remove = FALSE) %>%
-  filter(full_class != "特别测试")
+  unite(full_class, grade, class, sep = "", remove = FALSE)
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
