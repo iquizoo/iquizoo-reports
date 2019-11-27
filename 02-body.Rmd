@@ -1,21 +1,17 @@
 # 报告正文
 
 ```{r setup-body-content}
+# default child file pattern: {part}.{report_unit}.{customer_id}
+# TODO: use `region_id` to replace `customer_id`
 body_child_file <- file.path(
   getOption("reports.archytype"),
-  with(
-    params,
-    switch(
-      report_unit,
-      default = str_glue("body.{customer_id}.Rmd"),
-      str_glue("body.{customer_id}.{report_unit}.Rmd")
-    )
-  )
+  "body", params$report_unit, params$report_type,
+  str_c(params$customer_id, ".Rmd")
 )
 if (!file.exists(body_child_file)) {
   body_child_file <- file.path(
     getOption("reports.archytype"),
-    "body.default.Rmd"
+    "body", params$report_unit, params$report_type, "default.Rmd"
   )
 }
 score_levels <- config::get("score.level")

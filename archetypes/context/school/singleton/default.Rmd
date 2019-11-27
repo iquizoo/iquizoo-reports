@@ -45,16 +45,15 @@ knitr::include_graphics("assets/image/model.jpg")
 
 ## 测评内容简介
 
-本次测评主要包括基础学习能力测评和基础数学能力测评两部分。
-
-基础学习能力测评包含五个子能力维度指数（注意力指数、记忆力指数、自控力指数、反应力指数和思维力指数）。大量证据表明，个体在这些维度所代表的能力中的表现与其智力，学习能力，社会适应能力和未来发展潜力具有密切关系。
-
-同时，我们还重点考察了基础数学能力，主要测评了数字加工、数量加工、数学计算、数学推理和空间几何这五个方面的核心能力。大量证据表明，个体在这五个方面的差异与数学能力的高低具有密切关系。基础数学能力测评包含综合的基础数学能力指数和各个能力维度指数（数字加工指数、数量加工指数、数学计算指数、数学推理指数和空间几何指数）。
+本次测评为基础学习能力测评。其中包含五个子能力维度指数（注意力指数、记忆力指数、自控力指数、反应力指数和思维力指数）。大量证据表明，个体在这些维度所代表的能力中的表现与其智力，学习能力，社会适应能力和未来发展潜力具有密切关系。
 
 ## 学生参加测评的情况
 
 ```{r participation-summary-table}
-if (n_distinct(dataset_unit$full_class) > 1) {
+if (n_distinct(dataset_unit$grade) > 1) {
+  compare_unit <- "grade"
+  compare_unit_name <- "年级"
+} else if (n_distinct(dataset_unit$full_class) > 1) {
   compare_unit <- "full_class"
   compare_unit_name <- "班级"
 } else {
@@ -66,7 +65,7 @@ participation <- dataset_unit %>%
   summarise(
     assessed = sum(!is.na(assess_time)),
     missing = n() - assessed,
-    completion = paste0(round(assessed / n() * 100), "%")
+    completion = paste0(round(assessed / n() * 100, 1), "%")
   )
 knitr::kable(
   participation,
@@ -75,7 +74,7 @@ knitr::kable(
 )
 ```
 
-```{r participation-summary-plot, fig.cap=str_glue("{name_unit}{assess_date_inline}各学校测评完成情况")}
+```{r participation-summary-plot, fig.cap=str_glue("{name_unit}{assess_date_inline}测评完成情况")}
 participation %>%
   gather("type", "count", assessed, missing) %>%
   mutate(
