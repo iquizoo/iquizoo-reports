@@ -15,8 +15,5 @@ if (!file.exists(context_child_file)) {
     "context", params$report_unit, params$report_type, "default.Rmd"
   )
 }
-context_to_knit <- knitr::knit_expand(
-  text = readLines(context_child_file, encoding = "UTF-8")
-)
-cat(knitr::knit(text = context_to_knit, quiet = TRUE))
+cat(knitr::knit(text = knitr::knit_expand(context_child_file), quiet = TRUE))
 ```
