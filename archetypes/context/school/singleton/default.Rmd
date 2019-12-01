@@ -65,10 +65,11 @@ participation <- dataset_unit %>%
   summarise(
     assessed = sum(!is.na(assess_time)),
     missing = n() - assessed,
-    completion = paste0(round(assessed / n() * 100, 1), "%")
+    completion = assessed / n(),
+    completion_str = paste0(round(completion * 100, 1), "%")
   )
 knitr::kable(
-  participation,
+  select(participation, !!compare_unit, assessed, missing, completion_str),
   caption = str_glue("{name_unit}{assess_date_inline}测评完成情况表"),
   col.names = c(compare_unit_name, "已测", "未测", "完成率")
 )
@@ -95,4 +96,20 @@ participation %>%
   theme(
     axis.text.x = element_text(angle = 45, vjust = 0.5)
   )
+```
+
+```{r remove-critical-missing-unit, results='asis'}
+compare_unit_invalid <- participation %>%
+  filter(assessed < 10 & completion < 0.1)
+if (nrow(compare_unit_invalid) > 0) {
+  cat(
+    "注意：",
+    str_c(compare_unit_invalid[[compare_unit]], collapse = "、"),
+    "参与测评的人数比例太低（低于10%），同时参与人数也太少（低于10人）。",
+    "为了增加报告的可靠性，后面的报告中将不包含这些", compare_unit_name, "。",
+    sep = ""
+  )
+}
+dataset_unit <- dataset_unit %>%
+  anti_join(compare_unit_invalid, by = compare_unit)
 ```
