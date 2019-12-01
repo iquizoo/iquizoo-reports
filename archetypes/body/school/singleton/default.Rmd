@@ -1,4 +1,6 @@
-### {{ab_name}}
+`r if_else("{{ab_hstyle}}" != "", ":::{custom-style=\"{{ab_hstyle}}\"}", "")`
+`r strrep("#", {{ab_hlevel}})` {{ab_name}}
+`r if_else("{{ab_hstyle}}" != "", ":::", "")`
 
 {{ab_def}}
 
