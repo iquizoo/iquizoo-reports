@@ -89,7 +89,7 @@ participation %>%
   #   aes(label = count), color = "white",
   #   position = position_stack(vjust = 0.5)
   # ) +
-  theme_hc(base_size = 12, base_family = text_family) +
+  theme_hc(base_family = text_family) +
   scale_fill_manual(values = rev(hc_pal()(2))) +
   labs(x = compare_unit_name, y = "人数", fill = "") +
   theme(

@@ -1,20 +1,22 @@
-```{r {{ab_code}}-description, results='asis'}
-render_heading_content(
-  heading = "{{ab_name}}", hlevel = "{{ab_hlevel}}", style = "{{ab_hstyle}}", content = "{{ab_def}}"
-) %>%
-  cat()
+### {{ab_name}}
+
+{{ab_def}}
+
+```{r {{ab_code}}-remove-missing, include=FALSE}
+data_report <- dataset_unit %>%
+  filter(!is.na({{ab_code}}))
 ```
 
 ```{r {{ab_code}}-histogram, fig.cap=str_glue("总体学生{{ab_name}}测评的分数分布")}
-ggplot(dataset_unit, aes({{ab_code}})) +
+ggplot(data_report, aes({{ab_code}})) +
   geom_density(color = NA, alpha = 0.5, fill = "lightblue") +
   geom_vline(
-    xintercept = mean(dataset_unit${{ab_code}}, na.rm = TRUE), 
+    xintercept = mean(data_report${{ab_code}}),
     color = "red"
   ) +
   scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
   labs(x = "分数", y = "", fill = "") +
-  theme_minimal(base_size = 18, base_family = text_family) +
+  theme_minimal(base_family = text_family) +
   theme(
     axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
     axis.line.x = element_line(),
@@ -28,31 +30,31 @@ ggplot(dataset_unit, aes({{ab_code}})) +
 
 ```{r {{ab_code}}-describe}
 # summary statistics of the report unit
-stats_descr_school <- dataset_unit %>%
+stats_descr_school <- data_report %>%
   summarise(
     cnt = sum(!is.na({{ab_code}})),
-    avg = mean({{ab_code}}, na.rm = TRUE),
-    std = sd({{ab_code}}, na.rm = TRUE),
-    top = max({{ab_code}}, na.rm = TRUE),
-    med = median({{ab_code}}, na.rm = TRUE),
-    btm = min({{ab_code}}, na.rm = TRUE)
+    avg = mean({{ab_code}}),
+    std = sd({{ab_code}}),
+    top = max({{ab_code}}),
+    med = median({{ab_code}}),
+    btm = min({{ab_code}})
   ) %>%
   add_column(group = "本校", .before = 1)
 if (compare_unit != "school") {
-  stats_descr_group <- dataset_unit %>%
+  stats_descr_group <- data_report %>%
     rename(group = !!compare_unit) %>%
     group_by(group) %>%
     summarise(
       cnt = sum(!is.na({{ab_code}})),
-      avg = mean({{ab_code}}, na.rm = TRUE),
-      std = sd({{ab_code}}, na.rm = TRUE),
-      top = max({{ab_code}}, na.rm = TRUE),
-      med = median({{ab_code}}, na.rm = TRUE),
-      btm = min({{ab_code}}, na.rm = TRUE)
+      avg = mean({{ab_code}}),
+      std = sd({{ab_code}}),
+      top = max({{ab_code}}),
+      med = median({{ab_code}}),
+      btm = min({{ab_code}})
     ) %>%
     ungroup()
   stats_descr <- bind_rows(stats_descr_group, stats_descr_school) %>%
-    mutate(group = factor(group) %>% fct_relevel("本校", after = Inf))
+    mutate(group = as_factor(group))
 } else {
   stats_descr <- stats_descr_school
 }
@@ -61,22 +63,19 @@ stats_descr %>%
   knitr::kable(
     digits = 1,
     col.names = c(
-      compare_unit_name, 
-      "实测人数", "平均数", "标准差", 
+      compare_unit_name,
+      "实测人数", "平均数", "标准差",
       "最高分", "中位数", "最低分"
     ),
     caption = str_glue("本次测评本校及各{compare_unit_name}学生{{ab_name}}测评的整体表现详表")
   )
-n_grps <- dataset_unit %>%
-  filter(!is.na({{ab_code}})) %>%
-  pull(!!compare_unit) %>%
-  n_distinct()
+n_grps <- n_distinct(data_report[[compare_unit]])
 diff_msg_avg <- ""
 if (n_grps > 1) {
   dinfer_avg <- aov(
-    as.formula(str_glue("{{ab_code}} ~ {compare_unit}")), 
-    dataset_unit
-  ) %>% 
+    as.formula(str_glue("{{ab_code}} ~ {compare_unit}")),
+    data_report
+  ) %>%
     broom::tidy()
   if (n_grps > 2) {
     if (dinfer_avg$p.value[1] > 0.05) {
@@ -115,7 +114,7 @@ if (n_grps > 1) {
 
 ```{r {{ab_code}}-levels}
 # get the level of each participant
-dataset_unit_with_level <- dataset_unit %>%
+data_report_with_level <- data_report %>%
   mutate(
     level = cut(
       {{ab_code}},
@@ -125,26 +124,24 @@ dataset_unit_with_level <- dataset_unit %>%
       fct_rev()
   )
 # summary statistics of levels for the school
-stats_level_school <- dataset_unit_with_level %>%
-  mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+stats_level_school <- data_report_with_level %>%
+  mutate(cnt = n()) %>%
   group_by(level, cnt) %>%
-  summarise(n_level = sum(!is.na(level))) %>%
+  summarise(n_level = n()) %>%
   ungroup() %>%
   mutate(prop_level = n_level / cnt) %>%
-  filter(!is.na(level)) %>%
   add_column(group = "本校", .before = 1)
 if (compare_unit != "school") {
-  stats_level_group <- dataset_unit_with_level %>%
+  stats_level_group <- data_report_with_level %>%
     rename(group = !!compare_unit) %>%
     group_by(group) %>%
-    mutate(cnt = sum(!is.na({{ab_code}}))) %>%
+    mutate(cnt = n()) %>%
     group_by(group, level, cnt) %>%
-    summarise(n_level = sum(!is.na(level))) %>%
+    summarise(n_level = n()) %>%
     ungroup() %>%
-    mutate(prop_level = n_level / cnt) %>%
-    filter(!is.na(level))
+    mutate(prop_level = n_level / cnt)
   stats_level <- bind_rows(stats_level_group, stats_level_school) %>%
-    mutate(group = factor(group) %>% fct_relevel("本校", after = Inf)) %>% 
+    mutate(group = as_factor(group)) %>%
     complete(level, nesting(group, cnt), fill = list(n_level = 0, prop_level = 0))
 } else {
   stats_level <- stats_level_school %>%
@@ -188,8 +185,8 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
   labs(x = "", y = "") +
   theme_minimal() +
   theme(
-    axis.text.y = element_blank(), 
-    panel.grid.minor = element_blank(), 
+    axis.text.y = element_blank(),
+    panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank()
   )
 ```
@@ -200,8 +197,8 @@ if (compare_unit != "school") {
     mutate(rnk = row_number(med)) %>%
     arrange(rnk)
   list(
-    school = dataset_unit,
-    by_group = dataset_unit
+    school = data_report,
+    by_group = data_report
   ) %>%
     bind_rows(.id = "set") %>%
     mutate(
@@ -216,8 +213,8 @@ if (compare_unit != "school") {
     geom_boxplot(outlier.color = NA, width = 0.5) +
     scale_fill_brewer(palette = "Pastel1", guide = FALSE) +
     labs(x = compare_unit_name, y = "分数", fill = "") +
-    coord_flip(ylim = boxplot.stats(dataset_unit${{ab_code}})$stats[c(1, 5)]) +
-    theme_minimal(base_size = 18, base_family = text_family) +
+    coord_flip(ylim = boxplot.stats(data_report${{ab_code}})$stats[c(1, 5)]) +
+    theme_minimal(base_family = text_family) +
     theme(
       # x axis is at the bottom
       axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
@@ -231,13 +228,13 @@ if (compare_unit != "school") {
       panel.grid.major.x = element_line(linetype = "dotdash", color = "grey")
     )
 } else {
-  dataset_unit %>% 
-    add_column(group = "本校") %>% 
+  data_report %>%
+    add_column(group = "本校") %>%
     ggplot(aes(group, {{ab_code}})) +
     geom_boxplot(outlier.color = NA, width = 0.5) +
     labs(x = compare_unit_name, y = "分数", fill = "") +
     coord_flip(ylim = boxplot.stats(dataset${{ab_code}})$stats[c(1, 5)]) +
-    theme_minimal(base_size = 18, base_family = text_family) +
+    theme_minimal(base_family = text_family) +
     theme(
       # x axis is at the bottom
       axis.title.x = element_text(margin = margin(t = 1, unit = "lines")),
@@ -253,7 +250,7 @@ if (compare_unit != "school") {
 }
 diff_msg_med <- ""
 if (n_grps > 1) {
-  dinfer_med <- broom::tidy(kruskal.test(as.formula(str_glue("{{ab_code}} ~ {compare_unit}")), dataset_unit))
+  dinfer_med <- broom::tidy(kruskal.test(as.formula(str_glue("{{ab_code}} ~ {compare_unit}")), data_report))
   if (n_grps > 2) {
     if (dinfer_med$p.value[1] > 0.05) {
       diff_msg_med <- str_glue("但是各{compare_unit_name}的表现差异不明显")
