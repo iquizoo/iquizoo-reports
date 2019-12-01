@@ -11,8 +11,6 @@ library(ggthemes)
 library(extrafont)
 library(lubridate)
 library(optparse)
-library(iquizoor)
-library(dataprocr)
 
 # get the configuration parameters used in report generation ----
 if (!interactive()) {
