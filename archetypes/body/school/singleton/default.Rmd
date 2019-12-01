@@ -4,7 +4,7 @@
 
 {{ab_def}}
 
-```{r {{ab_code}}-remove-missing, include=FALSE}
+```{r {{ab_code}}-remove-missing}
 data_report <- dataset_unit %>%
   filter(!is.na({{ab_code}}))
 ```
