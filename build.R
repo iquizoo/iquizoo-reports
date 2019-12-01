@@ -150,16 +150,17 @@ if (params$debug_test) {
   )
   output_dir <- "test"
 }
-if (!is.null(params$report_slice) && params$report_slice != "default") {
-  if (params$report_slice %in% name_units) {
-    name_units <- params$report_slice
-  } else {
+if (!is.null(params$report_slices) &&
+    !identical(params$report_slices, "default")) {
+  report_slices_existed <- params$report_slice %in% name_units
+  if (!all(report_slices_existed)) {
     warning(
-      str_glue("The choosen name unit {params$debug_test} is not found,
-               restore to default."),
+      str_glue("Some of the choosen name units are not found,
+               will use the found ones only."),
       immediate. = TRUE
     )
   }
+  name_units <- params$report_slice[report_slices_existed]
 }
 # rendering report for each unit
 for (name_unit in name_units) {
