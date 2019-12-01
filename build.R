@@ -94,10 +94,41 @@ if (hasName(subtitle_config, params$report_unit)) {
 }
 
 # dataset preparations ----
-# load dataset configurations
-raw_data <- read_tsv("assets/extra/select_data_20191125.txt")
-users <- read_tsv("assets/extra/select_users_20191125.txt") %>%
-  filter(!str_detect(user_name, "(测试)|(体验)"))
+organization_names <- str_c(
+  "\"", config::get("customer.organizations"), "\"", collapse = ", "
+)
+# connect to database
+db_server <- dbConnect(odbc::odbc(), "iquizoo-v3")
+dbExecute(db_server, "USE iquizoo_datacenter_db;")
+raw_data <- dbGetQuery(
+  db_server,
+  read_file(
+    file.path(
+      getOption("reports.mysql.querydir"),
+      "scores.sql"
+    )
+  ) %>%
+    str_glue()
+)
+dbExecute(db_server, "USE iquizoo_user_db;")
+users <- dbGetQuery(
+  db_server,
+  read_file(
+    file.path(
+      getOption("reports.mysql.querydir"),
+      "users.sql"
+    )
+  ) %>%
+    str_glue()
+) %>%
+  filter(!str_detect(user_name, "(测试)|(体验)")) %>%
+  mutate(
+    grade = if_else(
+      str_detect(grade, "年级"),
+      grade, str_c(grade, "年级")
+    )
+  )
+dbDisconnect(db_server)
 norms <- read_tsv("assets/extra/norms.tsv")
 # calculate game scores
 scores_item <- users %>%
