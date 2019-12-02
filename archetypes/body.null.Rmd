@@ -1,8 +1,7 @@
-```{r {{ab_code}}-description, echo=FALSE, results='asis'}
-render_heading_content(
-  heading = "{{ab_name}}", hlevel = "{{ab_hlevel}}", style = "{{ab_hstyle}}", content = "{{ab_def}}"
-) %>%
-  cat()
-```
+`r if_else("{{ab_hstyle}}" != "", ":::{custom-style=\"{{ab_hstyle}}\"}", "")`
+`r strrep("#", {{ab_hlevel}})` {{ab_name}}
+`r if_else("{{ab_hstyle}}" != "", ":::", "")`
+
+{{ab_def}}
 
 很抱歉，该能力相关的测评数据缺失或记录异常。
