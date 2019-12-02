@@ -1,8 +1,8 @@
+#!/usr/bin/env Rscript
+
 # Copyright (C) 2018 Liang Zhang - All Rights Reserved
-
 # @author Liang Zhang <psychelzh@outlook.com>
-
-# This script is used to generate chapters for book building.
+# @description This script is used to build collective reports for customers.
 
 # load packages ----
 library(tidyverse)
