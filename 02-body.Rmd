@@ -1,13 +1,14 @@
 # 报告正文
 
 ```{r setup-body-content}
-# default child file pattern: {part}.{report_unit}.{customer_id}
+# default child file pattern: {part}/{report_unit}/{report_type}/{customer_id}
 # TODO: use `region_id` to replace `customer_id`
 body_child_file <- file.path(
   getOption("reports.archytype"),
   "body", params$report_unit, params$report_type,
   str_c(params$customer_id, ".Rmd")
 )
+# if the file not found, use a default one
 if (!file.exists(body_child_file)) {
   body_child_file <- file.path(
     getOption("reports.archytype"),
