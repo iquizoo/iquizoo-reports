@@ -35,6 +35,22 @@ if (!interactive()) {
       )
     ),
     make_option(
+      c("-t", "--report-type"), default = "default",
+      help = paste(
+        "Optional. Specify the report type, which is used to select which",
+        "archetype Rmarkdown to use.",
+        "Default value is 'default'."
+      )
+    ),
+    make_option(
+      c("-s", "--report-slices"),
+      help = paste(
+        "Optional. Specify the name(s) of organization(s), which is useful",
+        "when you want to generate reports only for those of interest.",
+        "No default value is set, which means generate reports for all."
+      )
+    ),
+    make_option(
       c("-T", "--debug-test"), action = "store_true", default = FALSE,
       help = paste(
         "Optional. Used when in testing mode.",
