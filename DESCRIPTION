@@ -7,9 +7,6 @@ Imports:
     extrafont,
     optparse,
     DBI,
-    RMySQL,
+    odbc,
     config,
-    iquizoor,
     ggthemes
-Remotes:
-    iquizoo/iquizoor

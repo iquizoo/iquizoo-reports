@@ -1,4 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.travis\.yml$
-assets/
+^archetypes$
+^assets$
+^\.github/workflows$
