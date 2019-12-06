@@ -53,11 +53,6 @@ iquizoo_high:
   customer.organizations:
   - 四川省双流棠湖中学高中部
   - 中和中学
-  report.title:
-    default: 大脑学习能力测评
-  report.subtitle:
-    default: 集体报告
-    school: 学校集体报告
 
 iquizoo_middle:
   customer.name: 初中
@@ -67,11 +62,6 @@ iquizoo_middle:
   - 北师大成都实验中学
   - 崇庆中学实验学校
   - 简阳中学
-  report.title:
-    default: 大脑学习能力测评
-  report.subtitle:
-    default: 集体报告
-    school: 学校集体报告
 
 iquizoo_primary:
   customer.name: 小学
@@ -91,11 +81,7 @@ iquizoo_primary:
   - 都江堰市北街小学实验外国语学校
   - 成都市泡桐树小学
   - 华阳中学附属小学
-  report.title:
-    default: 大脑学习能力测评
-  report.subtitle:
-    default: 集体报告
-    school: 学校集体报告
+  - 成都市机投小学
 
 bnu:
   customer.name: 北京师范大学
@@ -143,3 +129,4 @@ batch:
   - 北京师范大学长春附属学校
   - 北京师范大学青岛附属学校
   - 北京师范大学福清附属学校
+  - 成都市机投小学
