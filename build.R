@@ -4,15 +4,8 @@
 # @author Liang Zhang <psychelzh@outlook.com>
 # @description This script is used to build collective reports for customers.
 
-# load packages ----
-library(tidyverse)
-library(DBI)
-library(ggthemes)
-library(extrafont)
-library(lubridate)
-library(optparse)
-
 # get the configuration parameters used in report generation ----
+library(optparse)
 if (!interactive()) {
   # parse command line argument if not in interactive mode
   # specify our desired options in a list
@@ -70,6 +63,13 @@ if (!interactive()) {
 if (is.null(params$customer_id)) {
   stop("Fatal error! You must specify the identifier of the customer.")
 }
+
+# load packages ----
+library(tidyverse)
+library(DBI)
+library(ggthemes)
+library(extrafont)
+library(lubridate)
 
 # environmental settings ----
 # package options
