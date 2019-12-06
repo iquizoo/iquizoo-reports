@@ -155,7 +155,7 @@ stats_level %>%
   spread(level, n_level, fill = "0") %>%
   knitr::kable(
     digits = 1,
-    col.names = c("学校", "实测人数", rev(score_levels$labels)),
+    col.names = c(compare_unit_name, "实测人数", rev(score_levels$labels)),
     caption = str_glue("本次测评全体、本校及各{compare_unit_name}学生{{ab_name}}测评的等级比例详表")
   )
 ```
