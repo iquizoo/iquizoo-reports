@@ -112,7 +112,7 @@ if (n_grps > 1) {
 }
 ```
 
-表\@ref(tab:{{ab_code}}-describe)中展示了本次测评全体、本校和各年级的学生整体表现情况。`r diff_msg_avg`
+表\@ref(tab:{{ab_code}}-describe)中展示了本次测评本校和各年级的学生整体表现情况。`r diff_msg_avg`
 
 ```{r {{ab_code}}-levels}
 # get the level of each participant
@@ -156,11 +156,11 @@ stats_level %>%
   knitr::kable(
     digits = 1,
     col.names = c(compare_unit_name, "实测人数", rev(score_levels$labels)),
-    caption = str_glue("本次测评全体、本校及各{compare_unit_name}学生{{ab_name}}测评的等级比例详表")
+    caption = str_glue("本次测评本校及各{compare_unit_name}学生{{ab_name}}测评的等级比例详表")
   )
 ```
 
-表\@ref(tab:{{ab_code}}-levels)给出了所测各学校学生的各水平人数。划分方式如图\@ref(fig:blai-levels-rule)。
+表\@ref(tab:{{ab_code}}-levels)给出了所测各`r compare_unit_name`学生的各水平人数。划分方式如图\@ref(fig:blai-levels-rule)。
 
 ```{r {{ab_code}}-levels-rule, include="{{ab_code}}"=="blai", fig.width=12, fig.height=1, fig.cap="评分等级划分"}
 lvls <- c("S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D")
@@ -193,7 +193,7 @@ ggplot(grading, aes(x, y, fill = label, label = label)) +
   )
 ```
 
-```{r {{ab_code}}-boxplot, include=n_grps > 1, fig.cap=str_glue("本次测评全体、本校及各{compare_unit_name}学生{{ab_name}}测评得分情况对比")}
+```{r {{ab_code}}-boxplot, include=n_grps > 1, fig.cap=str_glue("本次测评本校及各{compare_unit_name}学生{{ab_name}}测评得分情况对比")}
 if (compare_unit != "school") {
   order_med <- stats_descr_group %>%
     mutate(rnk = row_number(med)) %>%
