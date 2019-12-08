@@ -1,21 +1,18 @@
 # 报告正文
 
 ```{r setup-body-content}
+# default child file pattern: {part}/{report_unit}/{report_type}/{customer_id}
+# TODO: use `region_id` to replace `customer_id`
 body_child_file <- file.path(
   getOption("reports.archytype"),
-  with(
-    params,
-    switch(
-      report_unit,
-      default = str_glue("body.{customer_id}.Rmd"),
-      str_glue("body.{customer_id}.{report_unit}.Rmd")
-    )
-  )
+  "body", params$report_unit, params$report_type,
+  str_c(params$customer_id, ".Rmd")
 )
+# if the file not found, use a default one
 if (!file.exists(body_child_file)) {
   body_child_file <- file.path(
     getOption("reports.archytype"),
-    "body.default.Rmd"
+    "body", params$report_unit, params$report_type, "default.Rmd"
   )
 }
 score_levels <- config::get("score.level")
@@ -27,9 +24,7 @@ ab_name <- "大脑学习能力"
 ab_hlevel <- 2
 ab_hstyle <- "标题2-编号"
 ab_def <- "大脑学习能力反映了注意力、记忆力、自控力、反应力和思维力这五个方面的综合水平，分数越高代表大脑学习能力的综合发展水平越高。"
-text_to_render_blai <- knitr::knit_expand(
-  text = readLines(body_child_file, encoding = "UTF-8")
-)
+text_to_render_blai <- knitr::knit_expand(body_child_file)
 cat(knitr::knit(text = text_to_render_blai, quiet = TRUE))
 ```
 
@@ -49,18 +44,16 @@ for (i_row in 1:n_abilities) {
   ab_hstyle <- report_abilities[[i_row, "hstyle"]]
   ab_def <- report_abilities[[i_row, "def"]]
   if (all(is.na(dataset_unit[[ab_code]]))) {
-    text_to_render[i_row] <- knitr::knit_expand(
-      text = readLines(
-        file.path(
-          getOption("reports.archytype"),
-          "body.null.Rmd"
-        ), encoding = "UTF-8")
+    text_to_render <- knitr::knit_expand(
+      file.path(
+        getOption("reports.archytype"),
+        "body.null.Rmd"
+      )
     )
-    next
+  } else {
+    text_to_render <- knitr::knit_expand(body_child_file)
   }
-  text_to_render[i_row] <- knitr::knit_expand(
-    text = readLines(body_child_file, encoding = "UTF-8")
-  )
+  cat(knitr::knit(text = text_to_render, quiet = TRUE))
+  cat("\n\n")
 }
-cat(knitr::knit(text = text_to_render, quiet = TRUE))
 ```

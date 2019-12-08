@@ -1,20 +1,11 @@
+#!/usr/bin/env Rscript
+
 # Copyright (C) 2018 Liang Zhang - All Rights Reserved
-
 # @author Liang Zhang <psychelzh@outlook.com>
-
-# This script is used to generate chapters for book building.
-
-# load packages ----
-library(tidyverse)
-library(DBI)
-library(ggthemes)
-library(extrafont)
-library(lubridate)
-library(optparse)
-library(iquizoor)
-library(dataprocr)
+# @description This script is used to build collective reports for customers.
 
 # get the configuration parameters used in report generation ----
+library(optparse)
 if (!interactive()) {
   # parse command line argument if not in interactive mode
   # specify our desired options in a list
@@ -37,6 +28,22 @@ if (!interactive()) {
       )
     ),
     make_option(
+      c("-t", "--report-type"), default = "default",
+      help = paste(
+        "Optional. Specify the report type, which is used to select which",
+        "archetype Rmarkdown to use.",
+        "Default value is 'default'."
+      )
+    ),
+    make_option(
+      c("-s", "--report-slices"),
+      help = paste(
+        "Optional. Specify the name(s) of organization(s), which is useful",
+        "when you want to generate reports only for those of interest.",
+        "No default value is set, which means generate reports for all."
+      )
+    ),
+    make_option(
       c("-T", "--debug-test"), action = "store_true", default = FALSE,
       help = paste(
         "Optional. Used when in testing mode.",
@@ -56,6 +63,13 @@ if (!interactive()) {
 if (is.null(params$customer_id)) {
   stop("Fatal error! You must specify the identifier of the customer.")
 }
+
+# load packages ----
+library(tidyverse)
+library(DBI)
+library(ggthemes)
+library(extrafont)
+library(lubridate)
 
 # environmental settings ----
 # package options
@@ -96,14 +110,12 @@ if (hasName(subtitle_config, params$report_unit)) {
 }
 
 # dataset preparations ----
-# load dataset configurations
-config_game <- jsonlite::read_json("config_game.json", simplifyVector = TRUE)
 organization_names <- str_c(
-  "\"", config::get("customer.organizations"), "\"",
-  collapse = ","
+  "\"", config::get("customer.organizations"), "\"", collapse = ", "
 )
-# collect data from database server
+# connect to database
 db_server <- dbConnect(odbc::odbc(), "iquizoo-v3")
+dbExecute(db_server, "USE iquizoo_datacenter_db;")
 raw_data <- dbGetQuery(
   db_server,
   read_file(
@@ -114,6 +126,7 @@ raw_data <- dbGetQuery(
   ) %>%
     str_glue()
 )
+dbExecute(db_server, "USE iquizoo_user_db;")
 users <- dbGetQuery(
   db_server,
   read_file(
@@ -123,57 +136,47 @@ users <- dbGetQuery(
     )
   ) %>%
     str_glue()
-)
+) %>%
+  filter(!str_detect(user_name, "(测试)|(体验)")) %>%
+  mutate(
+    grade = if_else(
+      str_detect(grade, "年级"),
+      grade, str_c(grade, "年级")
+    )
+  )
 dbDisconnect(db_server)
+norms <- read_tsv("assets/extra/norms.tsv")
 # calculate game scores
-scores_item <- raw_data %>%
-  left_join(config_game, by = "game_name") %>%
-  mutate(game_data = map(game_data, jsonlite::fromJSON)) %>%
+scores_item <- users %>%
+  inner_join(raw_data, by = c("user_id", "org_id")) %>%
+  mutate(age_int = round((user_dob %--% game_time) / dyears())) %>%
+  left_join(norms, by = c("user_sex", "age_int", "game_name")) %>%
   mutate(
-    score = pmap_dbl(
-      .,
-      function(game_data, fun, game_duration, ...) {
-        get(fun)(game_data, game_duration / 60 / 1000)
-      }
-    )
-  ) %>%
-  # only keep the latest score
-  group_by(user_id, game_name, ability) %>%
-  summarise(
-    score = score[which.max(game_time)],
-    game_time = max(game_time)
-  ) %>%
-  group_by(game_name) %>%
-  mutate(std_score_orig = scale(score) * 15 + 100) %>%
-  ungroup() %>%
-  mutate(
+    std_score = (raw_score - AVG) / SD * 15 + 100,
     std_score = case_when(
-      is.infinite(std_score_orig) ~ NA_real_,
-      std_score_orig > 150 ~ 150,
-      std_score_orig < 50 ~ 50,
-      TRUE ~ std_score_orig
+      std_score > 150 ~ 150,
+      std_score < 50 ~ 50,
+      TRUE ~ std_score
     )
   ) %>%
-  left_join(users, by = "user_id") %>%
   group_by(user_id) %>%
   mutate(assess_time = min(game_time)) %>%
   ungroup()
 scores_subability <- scores_item %>%
-  group_by(user_id, assess_time, ability) %>%
+  group_by(user_id, assess_time, ab_code) %>%
   summarise(score = mean(std_score, na.rm = TRUE)) %>%
   ungroup()
 scores_total <- scores_subability %>%
   group_by(user_id, assess_time) %>%
   summarise(score = mean(score, na.rm = TRUE)) %>%
   ungroup() %>%
-  add_column(ability = "blai")
+  add_column(ab_code = "blai")
 scores <- bind_rows(scores_subability, scores_total) %>%
   mutate(score = round(score)) %>%
-  spread(ability, score)
+  spread(ab_code, score)
 dataset <- users %>%
   left_join(scores, by = "user_id") %>%
-  unite(full_class, grade, class, sep = "", remove = FALSE) %>%
-  filter(full_class != "特别测试")
+  unite(full_class, grade, class, sep = "", remove = FALSE)
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
@@ -191,6 +194,18 @@ if (params$debug_test) {
     immediate. = TRUE
   )
   output_dir <- "test"
+}
+if (!is.null(params$report_slices) &&
+    !identical(params$report_slices, "default")) {
+  report_slices_existed <- params$report_slice %in% name_units
+  if (!all(report_slices_existed)) {
+    warning(
+      str_glue("Some of the choosen name units are not found,
+               will use the found ones only."),
+      immediate. = TRUE
+    )
+  }
+  name_units <- params$report_slice[report_slices_existed]
 }
 # rendering report for each unit
 for (name_unit in name_units) {

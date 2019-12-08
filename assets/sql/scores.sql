@@ -1,15 +1,16 @@
+-- !preview conn=DBI::dbConnect(odbc::odbc(), "iquizoo-v3", database = "iquizoo_datacenter_db")
 SELECT
-	user_profile.Id AS user_id,
-	iquizoo_report_db.course_result_orginal.ContentId AS game_id,
-	iquizoo_content_db.evaluation_games.`Name` AS game_name,
-	iquizoo_report_db.course_result_orginal.CreateTime AS game_time,
-	iquizoo_report_db.course_result_orginal.TimeConsuming AS game_duration,
-	iquizoo_report_db.course_result_orginal.OrginalData AS game_data
+	content_score_detail.OrganizationId org_id,
+	content_score_detail.UserId user_id,
+	iquizoo_content_db.content.`Name` game_name,
+	content_score_detail.CreateTime game_time,
+	ab_ref.AbilityCode ab_code,
+	ab_ref.AbilityName ab_name,
+	content_score_detail.ApproximateScore raw_score
 FROM
-	iquizoo_report_db.course_result_orginal
-	INNER JOIN user_profile ON user_profile.Id = iquizoo_report_db.course_result_orginal.UserId
-	INNER JOIN base_organization ON base_organization.Id = user_profile.OrgId
-	INNER JOIN base_grade_class ON user_profile.ClassId = base_grade_class.Id
-	INNER JOIN iquizoo_content_db.evaluation_games ON iquizoo_report_db.course_result_orginal.ContentId = iquizoo_content_db.evaluation_games.Id
+	content_score_detail
+	INNER JOIN iquizoo_user_db.base_organization ON iquizoo_user_db.base_organization.Id = content_score_detail.OrganizationId
+	INNER JOIN iquizoo_content_db.content ON content_score_detail.ContentId = iquizoo_content_db.content.Id
+	INNER JOIN ( SELECT DISTINCTROW AbilityId, AbilityName, AbilityCode FROM iquizoo_report_db.ability_reference ) ab_ref ON ab_ref.AbilityId = iquizoo_content_db.content.FirstAbilityId
 WHERE
 	base_organization.`Name` IN ( {organization_names} );

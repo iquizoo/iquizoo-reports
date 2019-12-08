@@ -1,23 +1,19 @@
 # 报告说明
 
 ```{r get-context-content, results='asis'}
+# child file pattern: {part}/{report_unit}/{report_type}/{customer_id}.Rmd
+# TODO: use `region_id` to replace `customer_id`
 context_child_file <- file.path(
   getOption("reports.archytype"),
-  with(
-    params,
-    switch(
-      report_unit,
-      default = str_glue("context.{customer_id}.Rmd"),
-      str_glue("context.{customer_id}.{report_unit}.Rmd")
-    )
-  )
+  "context", params$report_unit, params$report_type,
+  str_c(params$customer_id, ".Rmd")
 )
+# if the file not found, use a default one
 if (!file.exists(context_child_file)) {
   context_child_file <- file.path(
     getOption("reports.archytype"),
-    "context.default.Rmd"
+    "context", params$report_unit, params$report_type, "default.Rmd"
   )
 }
-context_to_knit <- knitr::knit_expand(text = readLines(context_child_file, encoding = "UTF-8"))
-cat(knitr::knit(text = context_to_knit, quiet = TRUE))
+cat(knitr::knit(text = knitr::knit_expand(context_child_file), quiet = TRUE))
 ```
