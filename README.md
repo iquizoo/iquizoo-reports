@@ -12,14 +12,15 @@ There are two types of structures used to build our reports: **configurations** 
 
 Configurations are set based on two main sources. One is the file [config.yml](config.yml), which is used to set static configurations, i.e., those configurations not subject to user's input. The other is *the command line arguments*, which are used to set dynamic configurations, i.e., those configurations modified by user's input. The most significant configurations are listed bellow.
 
-Set in file `config.yml`:
+Major settings in file `config.yml`:
 
-* **Customer**. The report receivers are called *customer*s. We store the names and corresponding project identifies of customers in the configuration file.
-* **ability**. This is a structure stored the abilities information to be reported.
+* **Customer**. The report receivers are called *customer*s (mostly, they are just pseudo and just play a role of identification). The corresponding organizations of customers are stored.
+* **Ability**. This is a structure stored the information (including "name", "definition" and styles information: "heading level" and "custom style name") of abilities  to be reported.
 
-Set in the command line arguments:
+Major settings as command line arguments:
 
 * **Report unit**. The *report unit* is a dynamic configuration used to determine the report unit from which each single report is generated. When ignored, the report unit will be automatically set as `default` and report the results of all the users for the specified customer/project identifier.
+* **Report type**.
 
 ### Archetypes
 
