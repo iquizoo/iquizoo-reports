@@ -31,22 +31,6 @@ default:
     - 思维力是人们接收到信息后，对信息进行归纳、概括及推理的过程。生活中，我们往往不满足于耳朵所听到的、眼睛所看到的，而是要找出事物之间的内在联系和规律，解决问题并创造出新的知识。思维力可以分为思维的灵活性、深刻性和独创性这三个维度，每个维度都有对应的施测题目，学生分数越高，代表思维力越强。
     - 反应力是对各种信息、要求和指令等做出快速反应的能力。速度是衡量反应力最重要的指标，它体现了大脑各个系统的协调、整合发展的水平，与整个神经网络的效率有密切关系。反应力可以从反应速度、言语速度和思维速度三个维度来测量。本次施测下每个维度都有对应的施测题目，学生分数越高，代表反应力越强。
 
-chengdu:
-  customer.name: 成都市认知训练项目
-  report.title:
-    default: 大脑学习能力测评
-  report.subtitle:
-    default: 集体报告
-    school: 学校集体报告
-
-paoxiao:
-  customer.name: 成都市泡桐树小学
-  report.title:
-    default: 大脑学习能力测评
-  report.subtitle:
-    default: 集体报告
-    school: 学校集体报告
-
 iquizoo_high:
   customer.name: 高中
   customer.organizations:
