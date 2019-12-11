@@ -9,7 +9,7 @@ data_report <- dataset_unit %>%
   filter(!is.na({{ab_code}}))
 ```
 
-```{r {{ab_code}}-histogram, fig.cap=str_glue("总体学生{{ab_name}}测评的分数分布")}
+```{r {{ab_code}}-histogram, fig.cap=str_glue("本校学生{{ab_name}}测评的分数分布")}
 ggplot(data_report, aes({{ab_code}})) +
   geom_density(color = NA, alpha = 0.5, fill = "lightblue") +
   geom_vline(
