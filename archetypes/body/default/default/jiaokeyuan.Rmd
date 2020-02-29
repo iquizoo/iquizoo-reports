@@ -1,0 +1,244 @@
+```{r distribution, fig.cap="五种能力得分整体分布", fig.width=8, fig.height=10}
+ability_scores %>% 
+  semi_join(users_to_report, by = "user_id") %>% 
+  ggplot(aes(score)) +
+  geom_density(fill = "lightblue", color = NA) +
+  stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "red") +
+  labs(y = "", x = "得分") +
+  facet_wrap(~ ab_name, ncol = 1) +
+  theme_few(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:distribution)展示了所有学生的五种能力得分的分布，红色展示的是常模的分布情况。
+
+```{r order, fig.cap="五种能力平均分排序", fig.width=8, fig.height=5}
+stats <- ability_scores %>%
+  semi_join(users_to_report, by = "user_id") %>% 
+  group_by(ab_name) %>% 
+  summarise(
+    n = sum(!is.na(score)),
+    avg = mean(score, na.rm = TRUE),
+    std = sd(score, na.rm = TRUE)
+  ) %>% 
+  arrange(desc(avg)) %>% 
+  mutate(ab_name = as_factor(ab_name))
+ggplot(stats, aes(ab_name, avg)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  labs(x = "", y = "得分") +
+  theme_few(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:order)展示了所有学生五种能力平均分情况，从左至右平均分依次下降。
+
+```{r level, fig.width=8, fig.height=10, fig.cap="所有能力各等级人数比例"}
+expand_grid(
+  users_to_report, 
+  select(report_abilities, ab_code = code, ab_name = name)
+) %>% 
+  left_join(ability_scores, by = c("user_id", "ab_code", "ab_name")) %>%
+  filter(!is.na(score)) %>% 
+  mutate(
+    level = cut(
+      score,
+      breaks = score_levels$breaks,
+      labels = score_levels$labels
+    ) %>%
+      fct_rev()
+  ) %>% 
+  group_by(ab_name) %>% 
+  mutate(n_total = n()) %>% 
+  group_by(ab_name, n_total, level) %>% 
+  summarise(n = n()) %>%
+  mutate(ratio = n / n_total) %>% 
+  ungroup() %>% 
+  ggplot(aes(level, n, label = paste0(round(ratio * 100, 1), "%"))) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  geom_text(color = "red") +
+  facet_wrap(~ ab_name, scales = "free", ncol = 1) +
+  labs(x = "等级", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:level)为全体学生所有能力的各等级人数比例。
+
+```{r level-type, fig.cap="综合能力类型人数和比例", fig.width=8, fig.height=4}
+expand_grid(
+  users_to_report, 
+  select(report_abilities, ab_code = code, ab_name = name)
+) %>% 
+  left_join(ability_scores, by = c("user_id", "ab_code", "ab_name")) %>%
+  filter(!is.na(score)) %>% 
+  mutate(
+    level = cut(
+      score,
+      breaks = qnorm(c(0, 0.3, 0.7, 0.9, 1)) * 15 + 100,
+      labels = LETTERS[4:1]
+    ) %>%
+      fct_rev() %>% 
+      fct_explicit_na("M")
+  ) %>% 
+  arrange(level) %>% 
+  group_by(user_id) %>% 
+  summarise(ab_sum = str_c(level, collapse = "")) %>% 
+  left_join(ability_class, by = "ab_sum") %>% 
+  mutate(
+    ab_type = factor(
+      ab_type, 
+      c("杰出型", "优秀型", "有待改进型", "亟待提升型", "平衡型", "不均衡型")
+    ) %>% 
+      fct_explicit_na("部分能力未测")
+  ) %>% 
+  add_count(name = "n_total") %>% 
+  group_by(ab_type, n_total) %>% 
+  summarise(n = n()) %>% 
+  mutate(ratio = n / n_total) %>% 
+  ggplot(aes(ab_type, n, label = paste0(round(ratio * 100, 1), "%"))) +
+  geom_bar(fill = "lightblue", stat = "identity") +
+  geom_text(color = "red") +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:level-type)展示了整个区域综合能力类型的人数和比例。
+
+```{r sex-summary, fig.cap="男女性别差异", fig.width=8, fig.height=4}
+sex_summary <- users_to_report %>% 
+  add_count(name = "n_total") %>% 
+  group_by(user_sex, n_total) %>% 
+  summarise(n = n()) %>% 
+  mutate(ratio = n / n_total) %>% 
+  ungroup()
+p_sex_summary <- ggplot(
+  sex_summary, 
+  aes(user_sex, n, fill = user_sex, label = paste0(round(ratio * 100, 1), "%"))
+) +
+  geom_bar(stat = "identity") +
+  geom_text(color = "red") +
+  scale_fill_few(guide = FALSE) +
+  labs(x = "", y = "人数", title = "整个区域男女比例") +
+  theme_few(base_size = 15, base_family = text_family) +
+  theme(plot.title = element_text(hjust = 0.5))
+p_sex_score <- users_to_report %>% 
+  left_join(ability_scores, by = "user_id") %>% 
+  filter(!is.na(ab_code)) %>% 
+  ggplot(aes(ab_name, score, fill = user_sex)) +
+  stat_summary(geom = "bar", position = position_dodge(width = 0.8), width = 0.8) +
+  stat_summary(geom = "errorbar", position = position_dodge(width = 0.8), width = 0) +
+  scale_fill_few() +
+  labs(x = "", y = "得分", fill = "性别", title = "整个区域各能力男女对比") +
+  theme_few(base_size = 15, base_family = text_family) +
+  theme(plot.title = element_text(hjust = 0.5))
+plot_grid(p_sex_summary, p_sex_score, nrow = 1, rel_widths = c(1, 2))
+htests <- users_to_report %>%
+  left_join(ability_scores, by = "user_id") %>% 
+  filter(!is.na(ab_code)) %>% 
+  group_by(ab_code, ab_name) %>% 
+  nest() %>% 
+  ungroup() %>% 
+  mutate(
+    ttest = map(
+      data, 
+      ~ t.test(score ~ user_sex, .x) %>% 
+        broom::tidy()
+    )
+  ) %>% 
+  select(-data) %>% 
+  unnest(ttest) %>% 
+  mutate(
+    key_word = if_else(estimate > 0, "高", "低"),
+    sig = if_else(p.value < 0.05, "统计意义上差异显著", "统计意义上差异不显著")
+  )
+data_descr <- str_glue_data(htests, "{ab_name}方面，男生平均得分比女生{key_word}{round(abs(estimate), 2)}分（{sig}）") %>% 
+  paste(collapse = "；")
+```
+
+图\@ref(fig:sex-summary)展示了整个区域男女生的各能力表现差异。`r data_descr`。
+
+```{r treat-vs-control-district, fig.cap="各区试点校和对照校对比", fig.width=8, fig.height=10}
+users_to_report %>% 
+  left_join(ability_scores, by = "user_id") %>% 
+  filter(!is.na(ab_code)) %>% 
+  ggplot(aes(district, score, fill = school_type)) +
+  stat_summary(geom = "bar", position = position_dodge(width = 0.8), width = 0.8) +
+  stat_summary(geom = "errorbar", position = position_dodge(width = 0.8), width = 0) +
+  scale_fill_few() +
+  labs(x = "", y = "得分", fill = "") +
+  facet_wrap(~ ab_name, ncol = 1, scales = "free") +
+  theme_few(base_size = 15, base_family = text_family) +
+  theme(legend.position = "top", axis.text.x = element_text(angle = 30, vjust = 0.5))
+```
+
+```{r treat-vs-control-whole, fig.cap="试点校和对照校整体对比", fig.width=8, fig.height=6}
+users_to_report %>% 
+  left_join(ability_scores, by = "user_id") %>% 
+  filter(!is.na(ab_code)) %>% 
+  ggplot(aes(ab_name, score, fill = school_type)) +
+  stat_summary(geom = "bar", position = position_dodge(width = 0.8), width = 0.8) +
+  stat_summary(geom = "errorbar", position = position_dodge(width = 0.8), width = 0) +
+  scale_fill_few() +
+  labs(x = "", y = "得分", fill = "") +
+  theme_few(base_size = 15, base_family = text_family)
+htests <- users_to_report %>% 
+  left_join(ability_scores, by = "user_id") %>% 
+  filter(!is.na(ab_code)) %>% 
+  group_by(ab_code, ab_name) %>% 
+  nest() %>% 
+  ungroup() %>% 
+  mutate(
+    ttest = map(
+      data,
+      ~ t.test(score ~ school_type, .x) %>% 
+        broom::tidy()
+    )
+  ) %>% 
+  select(-data) %>% 
+  unnest(ttest) %>% 
+  mutate(
+    key_word = if_else(estimate > 0, "高", "低"),
+    sig = if_else(p.value < 0.05, "统计意义上差异显著", "统计意义上差异不显著")
+  )
+data_descr <- str_glue_data(htests, "{ab_name}方面，试点校平均得分比试点校{key_word}{round(abs(estimate), 2)}分（{sig}）") %>% 
+  paste(collapse = "；")
+```
+
+图\@ref(fig:treat-vs-control-district)和图\@ref(fig:treat-vs-control-whole)分别按照分区和整个区域的方式对各个能力的试点校和对照校进行对比。在整个区域的比较中：`r data_descr`。
+
+```{r compare-other, fig.cap="本地区与其他两地区同龄学生对比", fig.width=8, fig.height=6}
+users_to_compare <- user_info %>% 
+  filter(
+    user_id %in% users_to_report$user_id |
+      province %in% c("重庆市"),
+    grade %in% paste0(c(1:4, "一", "二", "三", "四"), "年级")
+  ) %>% 
+  mutate(region = recode_factor(province, 四川省 = "本区域"))
+users_to_compare %>% 
+  inner_join(ability_scores, by = "user_id") %>% 
+  ggplot(aes(ab_name, score, fill = region)) +
+  stat_summary(geom = "bar", position = position_dodge(width = 0.8), width = 0.8) +
+  stat_summary(geom = "errorbar", position = position_dodge(width = 0.8), width = 0) +
+  scale_fill_few() +
+  labs(x = "", y = "得分", fill = "") +
+  theme_few(base_size = 15, base_family = text_family)
+htests <- users_to_compare %>% 
+  inner_join(ability_scores, by = "user_id") %>% 
+  group_by(ab_code, ab_name) %>% 
+  nest() %>% 
+  ungroup() %>% 
+  mutate(
+    ttest = map(
+      data,
+      ~ t.test(score ~ region, .x) %>% 
+        broom::tidy()
+    )
+  ) %>% 
+  select(-data) %>% 
+  unnest(ttest) %>% 
+  mutate(
+    key_word = if_else(estimate > 0, "高", "低"),
+    sig = if_else(p.value < 0.05, "统计意义上差异显著", "统计意义上差异不显著")
+  )
+data_descr <- str_glue_data(htests, "{ab_name}方面，本区域平均得分比重庆市{key_word}{round(abs(estimate), 2)}分（{sig}）") %>% 
+  paste(collapse = "；")
+```
+
+图\@ref(fig:compare-other)对比了本地区和重庆市的学生各能力上的表现。`r data_descr`。

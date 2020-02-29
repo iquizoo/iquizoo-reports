@@ -66,10 +66,10 @@ if (is.null(params$customer_id)) {
 
 # load packages ----
 library(tidyverse)
-library(DBI)
 library(ggthemes)
 library(extrafont)
 library(lubridate)
+library(cowplot)
 
 # environmental settings ----
 # package options
@@ -110,73 +110,64 @@ if (hasName(subtitle_config, params$report_unit)) {
 }
 
 # dataset preparations ----
-organization_names <- str_c(
-  "\"", config::get("customer.organizations"), "\"", collapse = ", "
-)
-# connect to database
-db_server <- dbConnect(odbc::odbc(), "iquizoo-v3")
-dbExecute(db_server, "USE iquizoo_datacenter_db;")
-raw_data <- dbGetQuery(
-  db_server,
-  read_file(
-    file.path(
-      getOption("reports.mysql.querydir"),
-      "scores.sql"
-    )
+# load configurations
+norms <- read_tsv("assets/temp_dataset/norms.tsv")
+config_school <- read_csv("assets/temp_dataset/config_school.csv")
+ability_class <- read_tsv("assets/temp_dataset/ability_class.txt") %>%
+  select(ab_type = AbilityType, ab_sum = Criteria)
+# load dataset
+raw_scores <- jsonlite::read_json("assets/temp_dataset/raw_scores.json", simplifyVector = TRUE)
+user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyVector = TRUE)  %>%
+  unite("full_class", grade, class, sep = "", remove = FALSE) %>%
+  filter(
+    !str_detect(user_name, "\\d"),
+    !str_detect(full_class, "测试|体验"),
+    !is.na(user_sex)
   ) %>%
-    str_glue()
-)
-dbExecute(db_server, "USE iquizoo_user_db;")
-users <- dbGetQuery(
-  db_server,
-  read_file(
-    file.path(
-      getOption("reports.mysql.querydir"),
-      "users.sql"
-    )
-  ) %>%
-    str_glue()
-) %>%
-  filter(!str_detect(user_name, "(测试)|(体验)")) %>%
+  full_join(config_school, by = "school") %>%
   mutate(
-    grade = if_else(
-      str_detect(grade, "年级"),
-      grade, str_c(grade, "年级")
-    )
+    user_sex = factor(user_sex, c("男", "女")),
+    school_type = factor(school_type, c("试点校", "对照校"))
   )
-dbDisconnect(db_server)
-norms <- read_tsv("assets/extra/norms.tsv")
-# calculate game scores
-scores_item <- users %>%
-  inner_join(raw_data, by = c("user_id", "org_id")) %>%
-  mutate(age_int = round((user_dob %--% game_time) / dyears())) %>%
-  left_join(norms, by = c("user_sex", "age_int", "game_name")) %>%
+# calculate scores
+item_scores <- user_info %>%
+  inner_join(raw_scores, by = "user_id") %>%
+  filter(
+    ! school %in% c(
+      '成都市青白江区外国语小学',
+      '成都市双流区实验小学',
+      '成都市青白江区实验小学',
+      '成都经济技术开发区实验小学',
+      '成都市温江区鹏程小学',
+      '成都市玉林小学',
+      '成都市新都区旃檀小学',
+      '成都教科院附属学校'
+    ) | ! course_id == "71b33c52-fbc1-40e5-9750-13194d1b0acc"
+  ) %>%
   mutate(
-    std_score = (raw_score - AVG) / SD * 15 + 100,
-    std_score = case_when(
-      std_score > 150 ~ 150,
-      std_score < 50 ~ 50,
-      TRUE ~ std_score
+    age = (user_dob %--% game_time) / dyears(),
+    age_int = round(age)
+  ) %>%
+  left_join(norms, by = c("game_name", "age_int", "user_sex")) %>%
+  mutate(
+    score = (raw_score - AVG) / SD * 15 + 100,
+    score_censored = case_when(
+      score > 150 ~ 150,
+      score < 50 ~ 50,
+      TRUE ~ score
     )
   ) %>%
+  filter(!is.na(score_censored))
+ability_scores <- item_scores %>%
+  group_by(user_id, game_id) %>%
+  mutate(occur = row_number(desc(game_time))) %>%
+  # keep the latest score only
+  filter(occur == 1) %>%
   group_by(user_id) %>%
   mutate(assess_time = min(game_time)) %>%
+  group_by(user_id, assess_time, ab_code, ab_name) %>%
+  summarise(score = round(mean(score_censored))) %>%
   ungroup()
-scores_subability <- scores_item %>%
-  group_by(user_id, assess_time, ab_code) %>%
-  summarise(score = mean(std_score, na.rm = TRUE)) %>%
-  ungroup()
-scores_total <- scores_subability %>%
-  group_by(user_id, assess_time) %>%
-  summarise(score = mean(score, na.rm = TRUE)) %>%
-  ungroup() %>%
-  add_column(ab_code = "blai")
-scores <- bind_rows(scores_subability, scores_total) %>%
-  mutate(score = round(score)) %>%
-  spread(ab_code, score)
-dataset <- users %>%
-  left_join(scores, by = "user_id") %>%
-  unite(full_class, grade, class, sep = "", remove = FALSE)
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
@@ -201,7 +192,7 @@ if (!is.null(params$report_slices) &&
   if (!all(report_slices_existed)) {
     warning(
       str_glue("Some of the choosen name units are not found,
-               will use the found ones only."),
+               using the found ones only."),
       immediate. = TRUE
     )
   }
