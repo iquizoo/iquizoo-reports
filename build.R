@@ -127,7 +127,8 @@ user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyV
   full_join(config_school, by = "school") %>%
   mutate(
     user_sex = factor(user_sex, c("男", "女")),
-    school_type = factor(school_type, c("试点校", "对照校"))
+    school_type = factor(school_type, c("试点校", "对照校")),
+    grade = recode(grade, 二年级 = "2年级")
   )
 # calculate scores
 item_scores <- user_info %>%
