@@ -113,8 +113,6 @@ if (hasName(subtitle_config, params$report_unit)) {
 # load configurations
 norms <- read_tsv("assets/temp_dataset/norms.tsv")
 config_school <- read_csv("assets/temp_dataset/config_school.csv")
-ability_class <- read_tsv("assets/temp_dataset/ability_class.txt") %>%
-  select(ab_type = AbilityType, ab_sum = Criteria)
 # load dataset
 raw_scores <- jsonlite::read_json("assets/temp_dataset/raw_scores.json", simplifyVector = TRUE)
 user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyVector = TRUE)  %>%
