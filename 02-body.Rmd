@@ -16,7 +16,8 @@ if (!file.exists(body_child_file)) {
   )
 }
 score_levels <- config::get("score.level")
-report_abilities <- as_tibble(config::get("report.ability"))
+score_levels$prop <- diff(pnorm(score_levels$breaks, mean = 100, sd = 15))
+level_prop <- as_tibble(score_levels[c("labels", "prop")])
 ```
 
 ```{r get-blai-content, results='asis'}
