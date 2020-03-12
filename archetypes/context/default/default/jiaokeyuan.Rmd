@@ -107,8 +107,8 @@ tbl_grade <- ability_scores %>%
   summarise(n = sum(!is.na(assess_time)))
 tbl_grade %>%
   ggplot(aes(grade, n, label = n)) +
-  geom_bar(stat = "identity", width = 0.6, fill = "lightblue") +
-  geom_text(color = "red", family = text_family) +
+  geom_bar(stat = "identity", width = 0.6, fill = "gray") +
+  geom_text(family = text_family, size = 4) +
   labs(x = "", y = "完成测评人数") +
   theme_few(base_size = 15, base_family = text_family)
 ```
