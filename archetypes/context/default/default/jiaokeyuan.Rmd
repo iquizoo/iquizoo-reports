@@ -1,6 +1,18 @@
 ```{r assess-date-prep, include=FALSE}
+user_vars <- names(user_info)
 users_to_report <- user_info %>%
-  filter(school %in% config::get("customer.organizations"))
+  filter(school %in% config::get("customer.organizations")) %>%
+  left_join(
+    ability_scores %>%
+      select(-ab_name) %>%
+      spread(ab_code, score),
+    by = "user_id"
+  ) %>%
+  filter(grade != "1年级") %>%
+  group_by(school, full_class) %>%
+  mutate(n = sum(!is.na(assess_time))) %>%
+  filter(n > 0) %>%
+  select(one_of(user_vars))
 assess_date <- ability_scores %>%
   semi_join(users_to_report, by = "user_id") %>%
   pull(assess_time) %>%
