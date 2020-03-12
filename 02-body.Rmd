@@ -20,6 +20,5 @@ report_abilities <- as_tibble(config::get("report.ability"))
 ```
 
 ```{r get-blai-content, results='asis'}
-text_to_render_blai <- knitr::knit_expand(body_child_file)
-cat(knitr::knit(text = text_to_render_blai, quiet = TRUE))
+cat(knitr::knit(text = knitr::knit_expand(body_child_file), quiet = TRUE))
 ```
