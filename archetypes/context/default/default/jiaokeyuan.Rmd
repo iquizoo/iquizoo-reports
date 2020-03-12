@@ -34,7 +34,7 @@ if (length(assess_date) == 1) {
 
 ## 学生参加测评的情况
 
-```{r school-summary, fig.height=8, fig.width=10}
+```{r school-summary, fig.height=8, fig.width=10, fig.cap="各校测评完成情况"}
 ability_scores %>%
   select(-ab_name) %>%
   spread(ab_code, score) %>%
@@ -57,7 +57,7 @@ ability_scores %>%
     aes(
       school, n, fill = cmpl_type,
       label = if_else(
-        n == 0, NA_character_,
+        n == 0 | cmpl_type == "未完成测评", NA_character_,
         paste0(round(n / n_total * 100, 0), "%")
       )
     )
