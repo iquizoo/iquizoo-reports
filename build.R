@@ -133,18 +133,6 @@ user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyV
 # calculate scores
 item_scores <- user_info %>%
   inner_join(raw_scores, by = "user_id") %>%
-  filter(
-    ! school %in% c(
-      '成都市青白江区外国语小学',
-      '成都市双流区实验小学',
-      '成都市青白江区实验小学',
-      '成都经济技术开发区实验小学',
-      '成都市温江区鹏程小学',
-      '成都市玉林小学',
-      '成都市新都区旃檀小学',
-      '成都教科院附属学校'
-    ) | ! course_id == "71b33c52-fbc1-40e5-9750-13194d1b0acc"
-  ) %>%
   mutate(
     age = (user_dob %--% game_time) / dyears(),
     age_int = round(age)
@@ -169,6 +157,11 @@ ability_scores <- item_scores %>%
   group_by(user_id, assess_time, ab_code, ab_name) %>%
   summarise(score = round(mean(score_censored))) %>%
   ungroup()
+ability_scores_vars <- names(ability_scores)
+ability_scores <- ability_scores %>%
+  left_join(user_info, by = "user_id") %>%
+  filter(is.na(is_normal) | !(ab_name == "反应力" & !is_normal)) %>%
+  select(one_of(ability_scores_vars))
 
 # build the three parts of the report ----
 # there might be many reports based on the report unit
