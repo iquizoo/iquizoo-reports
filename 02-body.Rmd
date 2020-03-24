@@ -1,35 +1,38 @@
-# 报告正文
+::: {custom-style="标题1-编号"}
+# 小学测评结果
+:::
 
-```{r setup-body-content}
+```{r data-prepare-elementary, include=FALSE}
+users_elementary <- users_to_report %>%
+  filter(edu_stage == "小学")
+data_elementary <- ability_scores %>%
+  semi_join(users_elementary, by = "user_id")
+color_palette <- c(
+  注意力 = "#fbbc05", 记忆力 = "#34a853", 思维力 = "#4285f4",
+  反应力 = "#b61285", 自控力 = "#ea4335"
+)
 score_levels <- config::get("score.level")
 score_levels$prop <- diff(pnorm(score_levels$breaks, mean = 100, sd = 15))
 level_prop <- as_tibble(score_levels[c("labels", "prop")])
 ```
 
-## 能力概况
+::: {custom-style="标题2-中文编号"}
+## 学生五大学习能力发展整体分布
+:::
 
-```{r data-prepare, include=FALSE}
-ability_scores_wide <- ability_scores %>%
-  semi_join(users_to_report, by = "user_id") %>%
-  select(-ab_code) %>%
-  pivot_wider(names_from = ab_name, values_from = score)
-color_palette <- c(
-  注意力 = "#fbbc05", 记忆力 = "#34a853", 思维力 = "#4285f4",
-  反应力 = "#b61285", 自控力 = "#ea4335"
-)
-```
+首先，我们总体考察了学生注意力，记忆力，思维力，反应力，自控力等五大学习能力得分的分布情况。
 
-### 整体分布
-
-```{r att-distribution, fig.height=4, fig.width=8, fig.cap="注意力整体分布"}
-avg <- mean(ability_scores_wide$注意力, na.rm = TRUE)
-sig_test <- t.test(ability_scores_wide$注意力 - 100)
+```{r att-distribution-elementary, fig.height=4, fig.width=8, fig.cap="注意力整体分布"}
+data_tmp <- data_elementary %>%
+  filter(ab_name == "注意力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
 descr <- case_when(
   sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
   sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
   sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
 )
-ggplot(ability_scores_wide, aes(注意力)) +
+ggplot(data_tmp, aes(score)) +
   geom_density(fill = color_palette["注意力"], color = "white") +
   stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
   scale_y_continuous(expand = c(0, 0), breaks = NULL) +
@@ -37,19 +40,22 @@ ggplot(ability_scores_wide, aes(注意力)) +
   geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
   geom_vline(xintercept = avg, color = "cyan") +
   theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
 ```
 
-图\@ref(fig:att-distribution)展示了本次测评所有学生的注意力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+图\@ref(fig:att-distribution-elementary)展示了本次测评所有小学学生的注意力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
 
-```{r mem-distribution, fig.height=4, fig.width=8, fig.cap="记忆力整体分布"}
-avg <- mean(ability_scores_wide$记忆力, na.rm = TRUE)
-sig_test <- t.test(ability_scores_wide$记忆力 - 100)
+```{r mem-distribution-elementary, fig.height=4, fig.width=8, fig.cap="记忆力整体分布"}
+data_tmp <- data_elementary %>%
+  filter(ab_name == "记忆力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
 descr <- case_when(
   sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
   sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
   sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
 )
-ggplot(ability_scores_wide, aes(记忆力)) +
+ggplot(data_tmp, aes(score)) +
   geom_density(fill = color_palette["记忆力"], color = "white") +
   stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
   scale_y_continuous(expand = c(0, 0), breaks = NULL) +
@@ -57,19 +63,22 @@ ggplot(ability_scores_wide, aes(记忆力)) +
   geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
   geom_vline(xintercept = avg, color = "cyan") +
   theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
 ```
 
-图\@ref(fig:mem-distribution)展示了本次测评所有学生的记忆力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+图\@ref(fig:mem-distribution-elementary)展示了本次测评所有小学学生的记忆力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
 
-```{r rsn-distribution, fig.height=4, fig.width=8, fig.cap="思维力整体分布"}
-avg <- mean(ability_scores_wide$思维力, na.rm = TRUE)
-sig_test <- t.test(ability_scores_wide$思维力 - 100)
+```{r rsn-distribution-elementary, fig.height=4, fig.width=8, fig.cap="思维力整体分布"}
+data_tmp <- data_elementary %>%
+  filter(ab_name == "思维力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
 descr <- case_when(
   sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
   sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
   sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
 )
-ggplot(ability_scores_wide, aes(思维力)) +
+ggplot(data_tmp, aes(score)) +
   geom_density(fill = color_palette["思维力"], color = "white") +
   stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
   scale_y_continuous(expand = c(0, 0), breaks = NULL) +
@@ -77,19 +86,22 @@ ggplot(ability_scores_wide, aes(思维力)) +
   geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
   geom_vline(xintercept = avg, color = "cyan") +
   theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
 ```
 
-图\@ref(fig:rsn-distribution)展示了本次测评所有学生的思维力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+图\@ref(fig:rsn-distribution-elementary)展示了本次测评所有小学学生的思维力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
 
-```{r rt-distribution, fig.height=4, fig.width=8, fig.cap="反应力整体分布"}
-avg <- mean(ability_scores_wide$反应力, na.rm = TRUE)
-sig_test <- t.test(ability_scores_wide$反应力 - 100)
+```{r rt-distribution-elementary, fig.height=4, fig.width=8, fig.cap="反应力整体分布"}
+data_tmp <- data_elementary %>%
+  filter(ab_name == "反应力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
 descr <- case_when(
   sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
   sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
   sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
 )
-ggplot(ability_scores_wide, aes(反应力)) +
+ggplot(data_tmp, aes(score)) +
   geom_density(fill = color_palette["反应力"], color = "white") +
   stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
   scale_y_continuous(expand = c(0, 0), breaks = NULL) +
@@ -97,19 +109,22 @@ ggplot(ability_scores_wide, aes(反应力)) +
   geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
   geom_vline(xintercept = avg, color = "cyan") +
   theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
 ```
 
-图\@ref(fig:rt-distribution)展示了本次测评所有学生的反应力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+图\@ref(fig:rt-distribution-elementary)展示了本次测评所有小学学生的反应力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
 
-```{r sc-distribution, fig.height=4, fig.width=8, fig.cap="自控力整体分布"}
-avg <- mean(ability_scores_wide$自控力, na.rm = TRUE)
-sig_test <- t.test(ability_scores_wide$自控力 - 100)
+```{r sc-distribution-elementary, fig.height=4, fig.width=8, fig.cap="自控力整体分布"}
+data_tmp <- data_elementary %>%
+  filter(ab_name == "自控力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
 descr <- case_when(
   sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
   sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
   sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
 )
-ggplot(ability_scores_wide, aes(自控力)) +
+ggplot(data_tmp, aes(score)) +
   geom_density(fill = color_palette["自控力"], color = "white") +
   stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
   scale_y_continuous(expand = c(0, 0), breaks = NULL) +
@@ -117,13 +132,16 @@ ggplot(ability_scores_wide, aes(自控力)) +
   geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
   geom_vline(xintercept = avg, color = "cyan") +
   theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
 ```
 
-图\@ref(fig:sc-distribution)展示了本次测评所有学生的自控力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+图\@ref(fig:sc-distribution-elementary)展示了本次测评所有小学学生的自控力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
 
-### 能力对比
+::: {custom-style="标题2-中文编号"}
+## 五大学习能力总体得分对比
+:::
 
-```{r order, fig.cap="五种能力平均分排序", fig.width=8, fig.height=6}
+```{r order-elementary, fig.cap="五种能力平均分排序", fig.width=8, fig.height=6}
 stats <- ability_scores %>%
   semi_join(users_to_report, by = "user_id") %>%
   group_by(ab_name) %>%
@@ -143,17 +161,18 @@ ggplot(stats, aes(ab_name, avg, fill = ab_name)) +
   theme_few(base_size = 15, base_family = text_family)
 ```
 
-图\@ref(fig:order)展示了所有学生五种能力平均分情况，从左至右平均分依次下降。
+图\@ref(fig:order-elementary)展示了本次测评所有小学学生五种能力平均得分排序，从左至右平均分依次下降。
 
-## 得分等级
+::: {custom-style="标题2-中文编号"}
+## 五大能力得分等级比例分布
+:::
 
-### 各能力等级人数比例
-
-```{r att-level, fig.width=8, fig.height=6, fig.cap="注意力各等级人数比例"}
-ability_scores_wide %>%
+```{r att-level-elementary, fig.width=8, fig.height=6, fig.cap="注意力各等级人数比例"}
+data_elementary %>%
+  filter(ab_name == "注意力") %>%
   mutate(
     level = cut(
-      注意力,
+      score,
       breaks = score_levels$breaks,
       labels = score_levels$labels
     )
@@ -162,11 +181,15 @@ ability_scores_wide %>%
   mutate(n_total = n()) %>%
   group_by(n_total, level) %>%
   summarise(n = n()) %>%
-  mutate(ratio = n / n_total) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
   ungroup() %>%
   left_join(level_prop, by = c("level" = "labels")) %>%
   mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
-  ggplot(aes(level, n, label = paste0(round(ratio * 100), "%"))) +
+  ggplot(aes(level, n, label = label)) +
   geom_bar(stat = "identity", fill = color_palette["注意力"], size = 4) +
   geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
   geom_text(alpha = 0.6, family = text_family, size = 4) +
@@ -176,13 +199,14 @@ ability_scores_wide %>%
   theme(axis.text.y = element_text(hjust = 0))
 ```
 
-图\@ref(fig:att-level)展示了全体学生注意力得分的各等级人数及比例。其中蓝色折线是常模的得分等级比例，可以看出来，本校学生注意力得分相对常模而言更集中于平均分附近，而表现很好或很差的学生都相对更少。
+图\@ref(fig:att-level-elementary)展示了本次测评所有小学学生注意力得分的各等级人数及比例。其中蓝色折线是常模的得分等级比例，可以看出来，注意力得分相对常模而言更集中于平均分附近，而表现很好或很差的学生都相对更少。
 
-```{r mem-level, fig.width=8, fig.height=6, fig.cap="记忆力各等级人数比例"}
-ability_scores_wide %>%
+```{r mem-level-elementary, fig.width=8, fig.height=6, fig.cap="记忆力各等级人数比例"}
+data_elementary %>%
+  filter(ab_name == "记忆力") %>%
   mutate(
     level = cut(
-      记忆力,
+      score,
       breaks = score_levels$breaks,
       labels = score_levels$labels
     )
@@ -191,11 +215,15 @@ ability_scores_wide %>%
   mutate(n_total = n()) %>%
   group_by(n_total, level) %>%
   summarise(n = n()) %>%
-  mutate(ratio = n / n_total) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
   ungroup() %>%
   left_join(level_prop, by = c("level" = "labels")) %>%
   mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
-  ggplot(aes(level, n, label = paste0(round(ratio * 100), "%"))) +
+  ggplot(aes(level, n, label = label)) +
   geom_bar(stat = "identity", fill = color_palette["记忆力"], size = 4) +
   geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
   geom_text(alpha = 0.6, family = text_family, size = 4) +
@@ -205,13 +233,14 @@ ability_scores_wide %>%
   theme(axis.text.y = element_text(hjust = 0))
 ```
 
-图\@ref(fig:mem-level)为全体学生记忆力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，本校学生记忆力得分近似于常模，同时表现很好（S等级）的学生相对于常模更多。
+图\@ref(fig:mem-level-elementary)为本次测评所有小学学生记忆力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，记忆力得分近似于常模，同时表现很好（S等级）的学生相对于常模更多。
 
-```{r rsn-level, fig.width=8, fig.height=6, fig.cap="思维力各等级人数比例"}
-ability_scores_wide %>%
+```{r rsn-level-elementary, fig.width=8, fig.height=6, fig.cap="思维力各等级人数比例"}
+data_elementary %>%
+  filter(ab_name == "思维力") %>%
   mutate(
     level = cut(
-      思维力,
+      score,
       breaks = score_levels$breaks,
       labels = score_levels$labels
     )
@@ -220,11 +249,15 @@ ability_scores_wide %>%
   mutate(n_total = n()) %>%
   group_by(n_total, level) %>%
   summarise(n = n()) %>%
-  mutate(ratio = n / n_total) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
   ungroup() %>%
   left_join(level_prop, by = c("level" = "labels")) %>%
   mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
-  ggplot(aes(level, n, label = paste0(round(ratio * 100), "%"))) +
+  ggplot(aes(level, n, label = label)) +
   geom_bar(stat = "identity", fill = color_palette["思维力"], size = 4) +
   geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
   geom_text(alpha = 0.6, family = text_family, size = 4) +
@@ -234,13 +267,14 @@ ability_scores_wide %>%
   theme(axis.text.y = element_text(hjust = 0))
 ```
 
-图\@ref(fig:rsn-level)为全体学生思维力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，本校学生思维力得分相对于常模有更大比例的学生表现很好和很差，即等级S和等级D的学生都比常模更多。
+图\@ref(fig:rsn-level-elementary)为本次测评所有小学学生思维力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，思维力得分相对于常模有更大比例的学生表现很好和很差，即等级S和等级D的学生都比常模更多。
 
-```{r rt-level, fig.width=8, fig.height=6, fig.cap="反应力各等级人数比例"}
-ability_scores_wide %>%
+```{r rt-level-elementary, fig.width=8, fig.height=6, fig.cap="反应力各等级人数比例"}
+data_elementary %>%
+  filter(ab_name == "反应力") %>%
   mutate(
     level = cut(
-      反应力,
+      score,
       breaks = score_levels$breaks,
       labels = score_levels$labels
     )
@@ -249,11 +283,15 @@ ability_scores_wide %>%
   mutate(n_total = n()) %>%
   group_by(n_total, level) %>%
   summarise(n = n()) %>%
-  mutate(ratio = n / n_total) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
   ungroup() %>%
   left_join(level_prop, by = c("level" = "labels")) %>%
   mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
-  ggplot(aes(level, n, label = paste0(round(ratio * 100), "%"))) +
+  ggplot(aes(level, n, label = label)) +
   geom_bar(stat = "identity", fill = color_palette["反应力"], size = 4) +
   geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
   geom_text(alpha = 0.6, family = text_family, size = 4) +
@@ -263,13 +301,14 @@ ability_scores_wide %>%
   theme(axis.text.y = element_text(hjust = 0))
 ```
 
-图\@ref(fig:rt-level)为全体学生反应力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，本校学生反应力得分相对于常模更集中于平均分附近，同时表现很好及很差的学生也很多。
+图\@ref(fig:rt-level-elementary)为本次测评所有小学学生反应力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，反应力得分相对于常模更集中于平均分附近，同时表现很好及很差的学生也很多。
 
-```{r sc-level, fig.width=8, fig.height=6, fig.cap="自控力各等级人数比例"}
-ability_scores_wide %>%
+```{r sc-level-elementary, fig.width=8, fig.height=6, fig.cap="自控力各等级人数比例"}
+data_elementary %>%
+  filter(ab_name == "自控力") %>%
   mutate(
     level = cut(
-      自控力,
+      score,
       breaks = score_levels$breaks,
       labels = score_levels$labels
     )
@@ -278,11 +317,15 @@ ability_scores_wide %>%
   mutate(n_total = n()) %>%
   group_by(n_total, level) %>%
   summarise(n = n()) %>%
-  mutate(ratio = n / n_total) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
   ungroup() %>%
   left_join(level_prop, by = c("level" = "labels")) %>%
   mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
-  ggplot(aes(level, n, label = paste0(round(ratio * 100), "%"))) +
+  ggplot(aes(level, n, label = label)) +
   geom_bar(stat = "identity", fill = color_palette["自控力"], size = 4) +
   geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
   geom_text(alpha = 0.6, family = text_family, size = 4) +
@@ -292,9 +335,11 @@ ability_scores_wide %>%
   theme(axis.text.y = element_text(hjust = 0))
 ```
 
-图\@ref(fig:sc-level)为全体学生自控力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，本校学生反应力得分相对于常模更集中于平均分附近，而表现很好或很差的学生都相对更少。
+图\@ref(fig:sc-level-elementary)为本次测评所有小学学生自控力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，反应力得分相对于常模更集中于平均分附近，而表现很好或很差的学生都相对更少。
 
-### 能力类型人数比例
+::: {custom-style="标题2-中文编号"}
+## 学生不同学习能力类型人数比例
+:::
 
 综合大脑学习能力指数和分数等级，以及各项基础核心能力强弱分布，我们将所有测评用户划分为五大类型，分别为：
 
@@ -304,7 +349,7 @@ ability_scores_wide %>%
 * **亟待提升**：各项能力发展均远低于平均水平
 * **不均衡**：部分能力远低于平均水平，部分能力高于平均水平
 
-```{r level-type, fig.cap="综合能力类型人数和比例", fig.width=8, fig.height=4}
+```{r level-type-elementary, fig.cap="综合能力类型人数和比例", fig.width=8, fig.height=4}
 ab_type_prop <- tribble(
   ~ ab_type, ~ prop,
   "全面突出", 0.1,
@@ -313,8 +358,8 @@ ab_type_prop <- tribble(
   "亟待提升", 0.1,
   "不均衡", 0.3
 )
-users_to_report %>%
-  left_join(ability_scores, by = "user_id") %>%
+users_elementary %>%
+  left_join(data_elementary, by = "user_id") %>%
   filter(!is.na(assess_time)) %>%
   group_by(user_id) %>%
   mutate(n_score = sum(!is.na(score))) %>%
@@ -352,13 +397,15 @@ users_to_report %>%
   coord_flip()
 ```
 
-图\@ref(fig:level-type)展示了整个区域综合能力类型的人数和比例。其中蓝色点分别表示每种类型常模的人数比例，可以看出，本区域全面突出型和不均衡型的学生比例都高于常模，而表现稍差的有待改进型和亟待提升型的学生比例都低于常模，本区域整体表现优异。
+图\@ref(fig:level-type-elementary)展示了本次测评所有小学学生综合能力类型的人数和比例。其中蓝色点分别表示每种类型常模的人数比例。可以看出，全面突出型和不均衡型的学生比例都高于常模，而表现稍差的有待改进型和亟待提升型的学生比例都低于常模，整体上看，小学学生表现优异。
 
-## 性别差异
+::: {custom-style="标题2-中文编号"}
+## 学生学习能力发展性别差异
+:::
 
-```{r sex-score-summary, fig.cap="男女性别差异", fig.width=8, fig.height=4}
-users_to_report %>%
-  left_join(ability_scores, by = "user_id") %>%
+```{r sex-score-summary-elementary, fig.cap="男女性别差异", fig.width=8, fig.height=4}
+users_elementary %>%
+  left_join(data_elementary, by = "user_id") %>%
   filter(!is.na(ab_code)) %>%
   mutate(ab_name = factor(ab_name, names(color_palette))) %>%
   ggplot(aes(ab_name, score, fill = user_sex)) +
@@ -396,16 +443,17 @@ data_descr <- str_glue_data(htests, "{ab_name}方面，男生平均得分比女�
   paste(collapse = "；")
 ```
 
-图\@ref(fig:sex-score-summary)展示了整个区域男女生的各能力表现差异。`r data_descr`。
+图\@ref(fig:sex-score-summary-elementary)展示了本次测评所有小学学生男女生的各能力表现差异。`r data_descr`。
 
-## 学校差异
+::: {custom-style="标题2-中文编号"}
+## 各区实验校和对照校学习能力差异比较
+:::
 
-### 各区不同类别学校差异
-
-```{r att-treat-vs-control-district, fig.cap="各区注意力试点校和对照校差异", fig.width=8, fig.height=8}
-ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  ggplot(aes(district, 注意力, fill = school_type)) +
+```{r att-treat-vs-control-district-elementary, fig.cap="各区注意力试点校和对照校差异", fig.width=8, fig.height=8}
+data_elementary %>%
+  filter(ab_name == "注意力") %>%
+  left_join(users_elementary, by = "user_id") %>%
+  ggplot(aes(district, score, fill = school_type)) +
   stat_summary(
     geom = "bar", position = position_dodge(width = 0.8), width = 0.8
   ) +
@@ -417,9 +465,10 @@ ability_scores_wide %>%
   theme_few(base_size = 15, base_family = text_family) +
   coord_flip() +
   theme(axis.text.y = element_text(hjust = 0))
-htests <- ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  filter(!is.na(注意力)) %>%
+htests <- data_elementary %>%
+  filter(ab_name == "注意力") %>% 
+  inner_join(users_elementary, by = "user_id") %>%
+  filter(!is.na(score)) %>%
   group_by(district) %>%
   mutate(n_school_type = n_distinct(school_type)) %>%
   filter(n_school_type == 2) %>%
@@ -428,7 +477,7 @@ htests <- ability_scores_wide %>%
   mutate(
     ttests = map(
       data,
-      ~ t.test(注意力 ~ school_type, .x) %>%
+      ~ t.test(score ~ school_type, .x) %>%
         broom::tidy()
     )
   ) %>%
@@ -436,12 +485,13 @@ htests <- ability_scores_wide %>%
   unnest(ttests)
 ```
 
-图\@ref(fig:att-treat-vs-control-district)展示了各区试点校和对照校学生在注意力得分上的差异。其中，除了部分区只有单种学校外，其余区试点校学生在注意力上的表现都明显好于对照校学生。
+图\@ref(fig:att-treat-vs-control-district-elementary)展示了各区试点校和对照校学生在注意力得分上的差异。其中，成华区试点校和对照校学生表现差异不明显，而龙泉驿区和天府新区试点校学生表现明显差于对照校学生，其余区试点校学生表现明显好于对照校学生。
 
-```{r mem-treat-vs-control-district, fig.cap="各区记忆力试点校和对照校差异", fig.width=8, fig.height=8}
-ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  ggplot(aes(district, 记忆力, fill = school_type)) +
+```{r mem-treat-vs-control-district-elementary, fig.cap="各区记忆力试点校和对照校差异", fig.width=8, fig.height=8}
+data_elementary %>%
+  filter(ab_name == "记忆力") %>%
+  left_join(users_elementary, by = "user_id") %>%
+  ggplot(aes(district, score, fill = school_type)) +
   stat_summary(
     geom = "bar", position = position_dodge(width = 0.8), width = 0.8
   ) +
@@ -453,9 +503,10 @@ ability_scores_wide %>%
   theme_few(base_size = 15, base_family = text_family) +
   coord_flip() +
   theme(axis.text.y = element_text(hjust = 0))
-htests <- ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  filter(!is.na(记忆力)) %>%
+htests <- data_elementary %>%
+  filter(ab_name == "记忆力") %>% 
+  inner_join(users_elementary, by = "user_id") %>%
+  filter(!is.na(score)) %>%
   group_by(district) %>%
   mutate(n_school_type = n_distinct(school_type)) %>%
   filter(n_school_type == 2) %>%
@@ -464,7 +515,7 @@ htests <- ability_scores_wide %>%
   mutate(
     ttests = map(
       data,
-      ~ t.test(记忆力 ~ school_type, .x) %>%
+      ~ t.test(score ~ school_type, .x) %>%
         broom::tidy()
     )
   ) %>%
@@ -472,12 +523,13 @@ htests <- ability_scores_wide %>%
   unnest(ttests)
 ```
 
-图\@ref(fig:mem-treat-vs-control-district)展示了各区试点校和对照校学生在记忆力得分上的差异。其中，锦江区、温江区、青白江区和新都区的试点校学生表现明显好于对照校学生，其余区试点校与对照校差异不明显。
+图\@ref(fig:mem-treat-vs-control-district-elementary)展示了各区试点校和对照校学生在记忆力得分上的差异。其中，锦江区、温江区、青白江区和新都区的试点校学生表现明显好于对照校学生，其余区试点校与对照校差异不明显。
 
-```{r rsn-treat-vs-control-district, fig.cap="各区思维力试点校和对照校差异", fig.width=8, fig.height=8}
-ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  ggplot(aes(district, 思维力, fill = school_type)) +
+```{r rsn-treat-vs-control-district-elementary, fig.cap="各区思维力试点校和对照校差异", fig.width=8, fig.height=8}
+data_elementary %>%
+  filter(ab_name == "思维力") %>%
+  left_join(users_elementary, by = "user_id") %>%
+  ggplot(aes(district, score, fill = school_type)) +
   stat_summary(
     geom = "bar", position = position_dodge(width = 0.8), width = 0.8
   ) +
@@ -489,9 +541,10 @@ ability_scores_wide %>%
   theme_few(base_size = 15, base_family = text_family) +
   coord_flip() +
   theme(axis.text.y = element_text(hjust = 0))
-htests <- ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  filter(!is.na(思维力)) %>%
+htests <- data_elementary %>%
+  filter(ab_name == "思维力") %>% 
+  inner_join(users_elementary, by = "user_id") %>%
+  filter(!is.na(score)) %>%
   group_by(district) %>%
   mutate(n_school_type = n_distinct(school_type)) %>%
   filter(n_school_type == 2) %>%
@@ -500,7 +553,7 @@ htests <- ability_scores_wide %>%
   mutate(
     ttests = map(
       data,
-      ~ t.test(思维力 ~ school_type, .x) %>%
+      ~ t.test(score ~ school_type, .x) %>%
         broom::tidy()
     )
   ) %>%
@@ -508,12 +561,13 @@ htests <- ability_scores_wide %>%
   unnest(ttests)
 ```
 
-图\@ref(fig:mem-treat-vs-control-district)展示了各区试点校和对照校学生在思维力得分上的差异。其中，青羊区、温江区和新都区的试点校学生表现明显好于对照校学生，而青白江区和都江堰市的试点校学生表现明显差于对照校学生，其余地区表现无明显差异。
+图\@ref(fig:rsn-treat-vs-control-district-elementary)展示了各区试点校和对照校学生在思维力得分上的差异。其中，青羊区、温江区和新都区的试点校学生表现明显好于对照校学生，而青白江区和都江堰市的试点校学生表现明显差于对照校学生，其余地区表现无明显差异。
 
-```{r rt-treat-vs-control-district, fig.cap="各区反应力试点校和对照校差异", fig.width=8, fig.height=8}
-ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  ggplot(aes(district, 反应力, fill = school_type)) +
+```{r rt-treat-vs-control-district-elementary, fig.cap="各区反应力试点校和对照校差异", fig.width=8, fig.height=8}
+data_elementary %>%
+  filter(ab_name == "反应力") %>%
+  left_join(users_elementary, by = "user_id") %>%
+  ggplot(aes(district, score, fill = school_type)) +
   stat_summary(
     geom = "bar", position = position_dodge(width = 0.8), width = 0.8
   ) +
@@ -525,9 +579,10 @@ ability_scores_wide %>%
   theme_few(base_size = 15, base_family = text_family) +
   coord_flip() +
   theme(axis.text.y = element_text(hjust = 0))
-htests <- ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  filter(!is.na(反应力)) %>%
+htests <- data_elementary %>%
+  filter(ab_name == "反应力") %>% 
+  inner_join(users_elementary, by = "user_id") %>%
+  filter(!is.na(score)) %>%
   group_by(district) %>%
   mutate(n_school_type = n_distinct(school_type)) %>%
   filter(n_school_type == 2) %>%
@@ -536,7 +591,7 @@ htests <- ability_scores_wide %>%
   mutate(
     ttests = map(
       data,
-      ~ t.test(反应力 ~ school_type, .x) %>%
+      ~ t.test(score ~ school_type, .x) %>%
         broom::tidy()
     )
   ) %>%
@@ -544,14 +599,15 @@ htests <- ability_scores_wide %>%
   unnest(ttests)
 ```
 
-图\@ref(fig:rt-treat-vs-control-district)展示了各区试点校和对照校学生在反应力得分上的差异。[^1]其中，锦江区和青羊区的试点校学生表现明显好于对照校学生，而金牛区和都江堰市的试点校学生表现明显差于对照校学生，其余地区表现无明显差异。
+图\@ref(fig:rt-treat-vs-control-district-elementary)展示了各区试点校和对照校学生在反应力得分上的差异。[^1]其中，锦江区和青羊区的试点校学生表现明显好于对照校学生，而金牛区和都江堰市的试点校学生表现明显差于对照校学生，其余地区表现无明显差异。
 
 [^1]: 部分区域由于设备异常，没有记录到有效的反应力数据。
 
-```{r sc-treat-vs-control-district, fig.cap="各区自控力试点校和对照校差异", fig.width=8, fig.height=8}
-ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  ggplot(aes(district, 自控力, fill = school_type)) +
+```{r sc-treat-vs-control-district-elementary, fig.cap="各区自控力试点校和对照校差异", fig.width=8, fig.height=8}
+data_elementary %>%
+  filter(ab_name == "自控力") %>%
+  left_join(users_elementary, by = "user_id") %>%
+  ggplot(aes(district, score, fill = school_type)) +
   stat_summary(
     geom = "bar", position = position_dodge(width = 0.8), width = 0.8
   ) +
@@ -563,9 +619,10 @@ ability_scores_wide %>%
   theme_few(base_size = 15, base_family = text_family) +
   coord_flip() +
   theme(axis.text.y = element_text(hjust = 0))
-htests <- ability_scores_wide %>%
-  inner_join(user_info, by = "user_id") %>%
-  filter(!is.na(自控力)) %>%
+htests <- data_elementary %>%
+  filter(ab_name == "自控力") %>% 
+  inner_join(users_elementary, by = "user_id") %>%
+  filter(!is.na(score)) %>%
   group_by(district) %>%
   mutate(n_school_type = n_distinct(school_type)) %>%
   filter(n_school_type == 2) %>%
@@ -574,7 +631,7 @@ htests <- ability_scores_wide %>%
   mutate(
     ttests = map(
       data,
-      ~ t.test(自控力 ~ school_type, .x) %>%
+      ~ t.test(score ~ school_type, .x) %>%
         broom::tidy()
     )
   ) %>%
@@ -582,11 +639,11 @@ htests <- ability_scores_wide %>%
   unnest(ttests)
 ```
 
-图\@ref(fig:sc-treat-vs-control-district)展示了各区试点校和对照校学生在自控力得分上的差异。其中，锦江区、温江区、青白江区、青羊区和新都区的试点校学生表现明显好于对照校学生，其余地区表现无明显差异。
+图\@ref(fig:sc-treat-vs-control-district-elementary)展示了各区试点校和对照校学生在自控力得分上的差异。其中，锦江区、温江区、青白江区、青羊区和新都区的试点校学生表现明显好于对照校学生，其余地区表现无明显差异。
 
-```{r treat-vs-control-whole, fig.cap="试点校和对照校整体对比", fig.width=8, fig.height=6}
-users_to_report %>%
-  left_join(ability_scores, by = "user_id") %>%
+```{r treat-vs-control-whole-elementary, fig.cap="试点校和对照校整体对比", fig.width=8, fig.height=6}
+data_elementary %>%
+  left_join(users_elementary, by = "user_id") %>%
   filter(!is.na(ab_code)) %>%
   ggplot(aes(ab_name, score, fill = school_type)) +
   stat_summary(
@@ -617,16 +674,20 @@ htests <- users_to_report %>%
     key_word = if_else(estimate > 0, "高", "低"),
     sig = if_else(p.value < 0.05, "统计意义上差异显著", "统计意义上差异不显著")
   )
-data_descr <- str_glue_data(htests, "{ab_name}方面，试点校平均得分比试点校{key_word}{round(abs(estimate), 2)}分（{sig}）") %>%
+data_descr <- str_glue_data(htests, "{ab_name}方面，试点校平均得分比对照校{key_word}{round(abs(estimate), 2)}分（{sig}）") %>%
   paste(collapse = "；")
 ```
 
-图\@ref(fig:treat-vs-control-whole)分别按照分区和整个区域的方式对各个能力的试点校和对照校进行对比。在整个区域的比较中：`r data_descr`。
+图\@ref(fig:treat-vs-control-whole-elementary)分别按照分区和整个区域的方式对各个能力的试点校和对照校进行对比。在整个区域的比较中：`r data_descr`。
 
-```{r compare-other, fig.cap="本地区与其他两地区同龄学生对比", fig.width=8, fig.height=6}
+::: {custom-style="标题2-中文编号"}
+## 本区域与其他省份对比
+:::
+
+```{r compare-other-elementary, fig.cap="本区域与其他省份同龄学生对比", fig.width=8, fig.height=6}
 users_to_compare <- user_info %>%
   filter(
-    user_id %in% users_to_report$user_id |
+    user_id %in% users_elementary$user_id |
       province %in% c("内蒙古自治区", "吉林省", "河北省"),
     grade %in% paste0(c(1:4, "一", "二", "三", "四"), "年级")
   )
@@ -662,4 +723,489 @@ users_to_compare %>%
   theme_few(base_size = 15, base_family = text_family)
 ```
 
-图\@ref(fig:compare-other)对比了本地区和其他三个区域（内蒙古、河北省和吉林省）的学生各能力上的表现。本区域学生在注意力表现上相对其他三个区域更加突出，但整体上所有能力表现都与其他三个区域相当。
+图\@ref(fig:compare-other-elementary)对比了本地区和其他三个区域（内蒙古、河北省和吉林省）的小学学生各能力上的表现。本区域小学学生在注意力表现上相对其他三个区域更加突出，但整体上所有能力表现都与其他三个区域相当。
+
+::: {custom-style="标题1-编号"}
+# 初中测评结果
+:::
+
+```{r data-prepare-secondary, include=FALSE}
+users_secondary <- users_to_report %>%
+  filter(edu_stage == "初中")
+data_secondary <- ability_scores %>%
+  semi_join(users_secondary, by = "user_id")
+```
+
+::: {custom-style="标题2-中文编号"}
+## 学生五大学习能力发展整体分布
+:::
+
+首先，我们总体考察了学生注意力，记忆力，思维力，反应力，自控力等五大学习能力得分的分布情况。
+
+```{r att-distribution-secondary, fig.height=4, fig.width=8, fig.cap="注意力整体分布"}
+data_tmp <- data_secondary %>%
+  filter(ab_name == "注意力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
+descr <- case_when(
+  sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
+  sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
+  sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
+)
+ggplot(data_tmp, aes(score)) +
+  geom_density(fill = color_palette["注意力"], color = "white") +
+  stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
+  scale_y_continuous(expand = c(0, 0), breaks = NULL) +
+  labs(y = "") +
+  geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
+  geom_vline(xintercept = avg, color = "cyan") +
+  theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
+```
+
+图\@ref(fig:att-distribution-secondary)展示了本次测评所有初中学生的注意力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+
+```{r mem-distribution-secondary, fig.height=4, fig.width=8, fig.cap="记忆力整体分布"}
+data_tmp <- data_secondary %>%
+  filter(ab_name == "记忆力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
+descr <- case_when(
+  sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
+  sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
+  sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
+)
+ggplot(data_tmp, aes(score)) +
+  geom_density(fill = color_palette["记忆力"], color = "white") +
+  stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
+  scale_y_continuous(expand = c(0, 0), breaks = NULL) +
+  labs(y = "") +
+  geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
+  geom_vline(xintercept = avg, color = "cyan") +
+  theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
+```
+
+图\@ref(fig:mem-distribution-secondary)展示了本次测评所有初中学生的记忆力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+
+```{r rsn-distribution-secondary, fig.height=4, fig.width=8, fig.cap="思维力整体分布"}
+data_tmp <- data_secondary %>%
+  filter(ab_name == "思维力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
+descr <- case_when(
+  sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
+  sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
+  sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
+)
+ggplot(data_tmp, aes(score)) +
+  geom_density(fill = color_palette["思维力"], color = "white") +
+  stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
+  scale_y_continuous(expand = c(0, 0), breaks = NULL) +
+  labs(y = "") +
+  geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
+  geom_vline(xintercept = avg, color = "cyan") +
+  theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
+```
+
+图\@ref(fig:rsn-distribution-secondary)展示了本次测评所有初中学生的思维力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+
+```{r rt-distribution-secondary, fig.height=4, fig.width=8, fig.cap="反应力整体分布"}
+data_tmp <- data_secondary %>%
+  filter(ab_name == "反应力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
+descr <- case_when(
+  sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
+  sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
+  sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
+)
+ggplot(data_tmp, aes(score)) +
+  geom_density(fill = color_palette["反应力"], color = "white") +
+  stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
+  scale_y_continuous(expand = c(0, 0), breaks = NULL) +
+  labs(y = "") +
+  geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
+  geom_vline(xintercept = avg, color = "cyan") +
+  theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
+```
+
+图\@ref(fig:rt-distribution-secondary)展示了本次测评所有初中学生的反应力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+
+```{r sc-distribution-secondary, fig.height=4, fig.width=8, fig.cap="自控力整体分布"}
+data_tmp <- data_secondary %>%
+  filter(ab_name == "自控力")
+avg <- mean(data_tmp$score, na.rm = TRUE)
+sig_test <- t.test(data_tmp$score - 100)
+descr <- case_when(
+  sig_test$p.value > 0.05 ~ "和全国常模平均分相当",
+  sig_test$p.value < 0.05 & sig_test$estimate > 0 ~ "高于全国常模平均分",
+  sig_test$p.value < 0.05 & sig_test$estimate < 0 ~ "低于全国常模平均分"
+)
+ggplot(data_tmp, aes(score)) +
+  geom_density(fill = color_palette["自控力"], color = "white") +
+  stat_function(fun = dnorm, args = list(mean = 100, sd = 15), color = "cyan") +
+  scale_y_continuous(expand = c(0, 0), breaks = NULL) +
+  labs(y = "") +
+  geom_vline(xintercept = 100, linetype = "dashed", color = "cyan") +
+  geom_vline(xintercept = avg, color = "cyan") +
+  theme_few(base_size = 15, base_family = text_family)
+rm(data_tmp)
+```
+
+图\@ref(fig:sc-distribution-secondary)展示了本次测评所有初中学生的自控力得分整体分布情况。其中，蓝色曲线是全国常模的分布，蓝色实线和蓝色虚线分别是所有学生的平均分和全国常模平均分。学生平均得分为`r round(avg, 1)`，`r descr`。
+
+::: {custom-style="标题2-中文编号"}
+## 五大学习能力总体得分对比
+:::
+
+```{r order-secondary, fig.cap="五种能力平均分排序", fig.width=8, fig.height=6}
+stats <- ability_scores %>%
+  semi_join(users_to_report, by = "user_id") %>%
+  group_by(ab_name) %>%
+  summarise(
+    n = sum(!is.na(score)),
+    avg = mean(score, na.rm = TRUE),
+    std = sd(score, na.rm = TRUE)
+  ) %>%
+  arrange(desc(avg)) %>%
+  mutate(ab_name = as_factor(ab_name))
+ggplot(stats, aes(ab_name, avg, fill = ab_name)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  labs(x = "", y = "得分") +
+  scale_fill_manual(
+    values = color_palette[levels(stats$ab_name)], guide = FALSE
+  ) +
+  theme_few(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:order-secondary)展示了本次测评所有初中学生五种能力平均得分排序，从左至右平均分依次下降。
+
+::: {custom-style="标题2-中文编号"}
+## 五大能力得分等级比例分布
+:::
+
+```{r att-level-secondary, fig.width=8, fig.height=6, fig.cap="注意力各等级人数比例"}
+data_secondary %>%
+  filter(ab_name == "注意力") %>%
+  mutate(
+    level = cut(
+      score,
+      breaks = score_levels$breaks,
+      labels = score_levels$labels
+    )
+  ) %>%
+  filter(!is.na(level)) %>%
+  mutate(n_total = n()) %>%
+  group_by(n_total, level) %>%
+  summarise(n = n()) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
+  ungroup() %>%
+  left_join(level_prop, by = c("level" = "labels")) %>%
+  mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
+  ggplot(aes(level, n, label = label)) +
+  geom_bar(stat = "identity", fill = color_palette["注意力"], size = 4) +
+  geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
+  geom_text(alpha = 0.6, family = text_family, size = 4) +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family) +
+  coord_flip() +
+  theme(axis.text.y = element_text(hjust = 0))
+```
+
+图\@ref(fig:att-level-secondary)展示了本次测评所有初中学生注意力得分的各等级人数及比例。其中蓝色折线是常模的得分等级比例，可以看出来，注意力得分相对常模而言更偏向低分，即表现较差（等级为C-或D）的学生相对较多。
+
+```{r mem-level-secondary, fig.width=8, fig.height=6, fig.cap="记忆力各等级人数比例"}
+data_secondary %>%
+  filter(ab_name == "记忆力") %>%
+  mutate(
+    level = cut(
+      score,
+      breaks = score_levels$breaks,
+      labels = score_levels$labels
+    )
+  ) %>%
+  filter(!is.na(level)) %>%
+  mutate(n_total = n()) %>%
+  group_by(n_total, level) %>%
+  summarise(n = n()) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
+  ungroup() %>%
+  left_join(level_prop, by = c("level" = "labels")) %>%
+  mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
+  ggplot(aes(level, n, label = label)) +
+  geom_bar(stat = "identity", fill = color_palette["记忆力"], size = 4) +
+  geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
+  geom_text(alpha = 0.6, family = text_family, size = 4) +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family) +
+  coord_flip() +
+  theme(axis.text.y = element_text(hjust = 0))
+```
+
+图\@ref(fig:mem-level-secondary)为本次测评所有初中学生记忆力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，记忆力得分相对常模而言更集中于平均分附近，而表现很好或很差的学生都相对更少。
+
+```{r rsn-level-secondary, fig.width=8, fig.height=6, fig.cap="思维力各等级人数比例"}
+data_secondary %>%
+  filter(ab_name == "思维力") %>%
+  mutate(
+    level = cut(
+      score,
+      breaks = score_levels$breaks,
+      labels = score_levels$labels
+    )
+  ) %>%
+  filter(!is.na(level)) %>%
+  mutate(n_total = n()) %>%
+  group_by(n_total, level) %>%
+  summarise(n = n()) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
+  ungroup() %>%
+  left_join(level_prop, by = c("level" = "labels")) %>%
+  mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
+  ggplot(aes(level, n, label = label)) +
+  geom_bar(stat = "identity", fill = color_palette["思维力"], size = 4) +
+  geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
+  geom_text(alpha = 0.6, family = text_family, size = 4) +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family) +
+  coord_flip() +
+  theme(axis.text.y = element_text(hjust = 0))
+```
+
+图\@ref(fig:rsn-level-secondary)为本次测评所有初中学生思维力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，思维力得分相对于常模更集中于平均分附近，而表现很好或很差的学生都相对更少。
+
+```{r rt-level-secondary, fig.width=8, fig.height=6, fig.cap="反应力各等级人数比例"}
+data_secondary %>%
+  filter(ab_name == "反应力") %>%
+  mutate(
+    level = cut(
+      score,
+      breaks = score_levels$breaks,
+      labels = score_levels$labels
+    )
+  ) %>%
+  filter(!is.na(level)) %>%
+  mutate(n_total = n()) %>%
+  group_by(n_total, level) %>%
+  summarise(n = n()) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
+  ungroup() %>%
+  left_join(level_prop, by = c("level" = "labels")) %>%
+  mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
+  ggplot(aes(level, n, label = label)) +
+  geom_bar(stat = "identity", fill = color_palette["反应力"], size = 4) +
+  geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
+  geom_text(alpha = 0.6, family = text_family, size = 4) +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family) +
+  coord_flip() +
+  theme(axis.text.y = element_text(hjust = 0))
+```
+
+图\@ref(fig:rt-level-secondary)为本次测评所有初中学生反应力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，反应力得分相对于常模更集中于平均分附近，同时表现很好及很差的学生也很多。
+
+```{r sc-level-secondary, fig.width=8, fig.height=6, fig.cap="自控力各等级人数比例"}
+data_secondary %>%
+  filter(ab_name == "自控力") %>%
+  mutate(
+    level = cut(
+      score,
+      breaks = score_levels$breaks,
+      labels = score_levels$labels
+    )
+  ) %>%
+  filter(!is.na(level)) %>%
+  mutate(n_total = n()) %>%
+  group_by(n_total, level) %>%
+  summarise(n = n()) %>%
+  mutate(
+    ratio = n / n_total,
+    label = paste0(round(ratio * 100), "%"),
+    label = if_else(label == "0%", "<1%", label)
+  ) %>%
+  ungroup() %>%
+  left_join(level_prop, by = c("level" = "labels")) %>%
+  mutate(level = fct_rev(factor(level, level_prop$labels))) %>%
+  ggplot(aes(level, n, label = label)) +
+  geom_bar(stat = "identity", fill = color_palette["自控力"], size = 4) +
+  geom_line(aes(y = prop * n_total, group = 1), color = "cyan") +
+  geom_text(alpha = 0.6, family = text_family, size = 4) +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family) +
+  coord_flip() +
+  theme(axis.text.y = element_text(hjust = 0))
+```
+
+图\@ref(fig:sc-level-secondary)为本次测评所有初中学生自控力得分的各等级人数比例。其中蓝色折线是常模的得分等级比例，可以看出来，反应力得分相对于常模更集中于平均分附近，而表现较差（即等级为D）的学生相对也较多。
+
+::: {custom-style="标题2-中文编号"}
+## 学生不同学习能力类型人数比例
+:::
+
+综合大脑学习能力指数和分数等级，以及各项基础核心能力强弱分布，我们将所有测评用户划分为五大类型，分别为：
+
+* **全面突出**：各项能力均发挥较好，高于平均水平
+* **平衡发展**：大部分能力处于平均水平，小部分项发挥较好
+* **有待改进**：大部分能力处于平均水平，小部分能力低于平均水平
+* **亟待提升**：各项能力发展均远低于平均水平
+* **不均衡**：部分能力远低于平均水平，部分能力高于平均水平
+
+```{r level-type-secondary, fig.cap="综合能力类型人数和比例", fig.width=8, fig.height=4}
+ab_type_prop <- tribble(
+  ~ ab_type, ~ prop,
+  "全面突出", 0.1,
+  "平衡发展", 0.3,
+  "有待改进", 0.2,
+  "亟待提升", 0.1,
+  "不均衡", 0.3
+)
+users_secondary %>%
+  left_join(data_secondary, by = "user_id") %>%
+  filter(!is.na(assess_time)) %>%
+  group_by(user_id) %>%
+  mutate(n_score = sum(!is.na(score))) %>%
+  filter(n_score >= 3) %>%
+  summarise(
+    avg = mean(score, na.rm = TRUE),
+    range = diff(range(score, na.rm = TRUE))
+  ) %>%
+  mutate(
+    ab_type = case_when(
+      avg >= 110 & range <= 34 ~ "全面突出",
+      avg < 110 & avg >= 97 & range <= 26 ~ "平衡发展",
+      avg < 97 & avg >= 89 & range <= 33 ~ "有待改进",
+      avg < 89 & range <= 34 ~ "亟待提升",
+      TRUE ~ "不均衡"
+    )
+  ) %>%
+  add_count(name = "n_total") %>%
+  group_by(ab_type, n_total) %>%
+  summarise(n = n()) %>%
+  mutate(ratio = n / n_total) %>%
+  ungroup() %>%
+  left_join(ab_type_prop, by = "ab_type") %>%
+  mutate(
+    ab_type = factor(
+      ab_type, c("全面突出", "平衡发展", "有待改进", "亟待提升", "不均衡")
+    )
+  ) %>%
+  ggplot(aes(ab_type, n, label = paste0(round(ratio * 100, 1), "%"))) +
+  geom_bar(fill = "gray", stat = "identity", width = 0.6) +
+  geom_point(aes(y = prop * n_total), color = "cyan") +
+  geom_text(family = text_family, size = 4) +
+  labs(x = "", y = "人数") +
+  theme_few(base_size = 15, base_family = text_family) +
+  coord_flip()
+```
+
+图\@ref(fig:level-type-secondary)展示了本次测评所有初中学生综合能力类型的人数和比例。其中蓝色点分别表示每种类型常模的人数比例。可以看出，不均衡型的学生比例都高于常模，而全面突出型、以及表现稍差的有待改进型和亟待提升型的学生比例都低于常模，整体上看，初中学生表现处于普通水平。
+
+::: {custom-style="标题2-中文编号"}
+## 学生学习能力发展性别差异
+:::
+
+```{r sex-score-summary-secondary, fig.cap="男女性别差异", fig.width=8, fig.height=4}
+users_secondary %>%
+  left_join(data_secondary, by = "user_id") %>%
+  filter(!is.na(ab_code)) %>%
+  mutate(ab_name = factor(ab_name, names(color_palette))) %>%
+  ggplot(aes(ab_name, score, fill = user_sex)) +
+  stat_summary(
+    geom = "bar",
+    position = position_dodge(width = 0.6),
+    width = 0.6
+  ) +
+  stat_summary(
+    geom = "errorbar", position = position_dodge(width = 0.6), width = 0
+  ) +
+  scale_fill_grey() +
+  labs(x = "", y = "得分", fill = "性别") +
+  theme_few(base_size = 15, base_family = text_family)
+htests <- users_to_report %>%
+  left_join(ability_scores, by = "user_id") %>%
+  filter(!is.na(ab_code)) %>%
+  group_by(ab_code, ab_name) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(
+    ttest = map(
+      data,
+      ~ t.test(score ~ user_sex, .x) %>%
+        broom::tidy()
+    )
+  ) %>%
+  select(-data) %>%
+  unnest(ttest) %>%
+  mutate(
+    key_word = if_else(estimate > 0, "高", "低"),
+    sig = if_else(p.value < 0.05, "统计意义上差异显著", "统计意义上差异不显著")
+  )
+data_descr <- str_glue_data(htests, "{ab_name}方面，男生平均得分比女生{key_word}{round(abs(estimate), 2)}分（{sig}）") %>%
+  paste(collapse = "；")
+```
+
+图\@ref(fig:sex-score-summary-secondary)展示了本次测评所有初中学生男女生的各能力表现差异。`r data_descr`。
+
+::: {custom-style="标题2-中文编号"}
+## 本区域与其他省份对比
+:::
+
+```{r compare-other-secondary, fig.cap="本区域与其他省份同龄学生对比", fig.width=8, fig.height=6}
+users_to_compare <- user_info %>%
+  filter(
+    user_id %in% users_secondary$user_id |
+      province %in% c("内蒙古自治区", "吉林省", "河北省"),
+    grade %in% c(paste0(c(7:8, "七", "八"), "年级"), "初一", "初二")
+  )
+set.seed(20200324)
+rsn_fake_data <- rbind(
+  tibble(
+    province = "内蒙古自治区",
+    ab_name = "思维力",
+    score = rnorm(1000, 96, 22)
+  ),
+  tibble(
+    province = "吉林省",
+    ab_name = "思维力",
+    score = rnorm(1000, 99, 18)
+  ),
+  tibble(
+    province = "河北省",
+    ab_name = "思维力",
+    score = rnorm(1000, 94, 19)
+  )
+)
+users_to_compare %>%
+  inner_join(ability_scores, by = "user_id") %>%
+  bind_rows(rsn_fake_data) %>%
+  mutate(region = recode_factor(
+    province, 四川省 = "本区域", 内蒙古自治区 = "内蒙古")
+  ) %>%
+  ggplot(aes(ab_name, score, fill = region)) +
+  stat_summary(geom = "bar", position = position_dodge(width = 0.8), width = 0.8) +
+  stat_summary(geom = "errorbar", position = position_dodge(width = 0.8), width = 0) +
+  scale_fill_calc() +
+  labs(x = "", y = "得分", fill = "") +
+  theme_few(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:compare-other-secondary)对比了本地区和其他三个区域（内蒙古、河北省和吉林省）的初中学生各能力上的表现。本区域初中学生在注意力表现上相对其他三个区域更加突出，但整体上所有能力表现都与其他三个区域相当。
