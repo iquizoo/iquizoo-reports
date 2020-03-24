@@ -116,17 +116,12 @@ config_school <- read_csv("assets/temp_dataset/config_school.csv")
 # load dataset
 raw_scores <- jsonlite::read_json("assets/temp_dataset/raw_scores.json", simplifyVector = TRUE)
 user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyVector = TRUE)  %>%
-  unite("full_class", grade, class, sep = "", remove = FALSE) %>%
-  filter(
-    !str_detect(user_name, "\\d"),
-    !str_detect(full_class, "测试|体验"),
-    !is.na(user_sex)
-  ) %>%
   full_join(config_school, by = "school") %>%
   mutate(
     user_sex = factor(user_sex, c("男", "女")),
     school_type = factor(school_type, c("试点校", "对照校")),
     grade = recode(grade, 二年级 = "2年级", 初一 = "7年级"),
+    full_class = str_c(grade, class),
     district = factor(
       district,
       c("锦江区", "青羊区", "金牛区", "武侯区", "成华区",
@@ -135,6 +130,11 @@ user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyV
         "都江堰市", "邛崃市", "崇州市", "彭州市", "简阳市",
         "大邑县", "新津县", "浦江县", "金堂县")
     )
+  ) %>%
+  filter(
+    !str_detect(user_name, "\\d"),
+    !str_detect(full_class, "测试|体验"),
+    !is.na(user_sex)
   )
 # calculate scores
 item_scores <- user_info %>%
