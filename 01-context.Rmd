@@ -1,19 +1,156 @@
+::: {custom-style="标题1-编号"}
 # 报告说明
+:::
 
-```{r get-context-content, results='asis'}
-# child file pattern: {part}/{report_unit}/{report_type}/{customer_id}.Rmd
-# TODO: use `region_id` to replace `customer_id`
-context_child_file <- file.path(
-  getOption("reports.archytype"),
-  "context", params$report_unit, params$report_type,
-  str_c(params$customer_id, ".Rmd")
-)
-# if the file not found, use a default one
-if (!file.exists(context_child_file)) {
-  context_child_file <- file.path(
-    getOption("reports.archytype"),
-    "context", params$report_unit, params$report_type, "default.Rmd"
-  )
+```{r assess-date-prep, include=FALSE}
+user_vars <- names(user_info)
+users_to_report <- user_info %>%
+  filter(school %in% config::get("customer.organizations")) %>%
+  left_join(
+    ability_scores %>%
+      select(-ab_name) %>%
+      spread(ab_code, score),
+    by = "user_id"
+  ) %>%
+  filter(grade != "1年级") %>%
+  group_by(school, full_class) %>%
+  mutate(n = sum(!is.na(assess_time))) %>%
+  filter(n > 0) %>%
+  ungroup() %>%
+  select(one_of(user_vars)) %>%
+  arrange(school_type, district) %>%
+  mutate(school = as_factor(school))
+assess_date <- ability_scores %>%
+  semi_join(users_to_report, by = "user_id") %>%
+  pull(assess_time) %>%
+  range(finite = TRUE) %>%
+  format.Date("%Y年%m月")
+if (any(duplicated(assess_date))) assess_date <- assess_date[1]
+if (length(assess_date) == 1) {
+  assess_date_inline <- assess_date
+} else {
+  assess_date_inline <- paste(assess_date, collapse = "到")
 }
-cat(knitr::knit(text = knitr::knit_expand(context_child_file), quiet = TRUE))
+
 ```
+
+::: {custom-style="标题2-中文编号"}
+## 项目背景介绍
+:::
+
+这份报告描述了于`r assess_date_inline`在成都市教育科学研究院主持下进行的“脑科学与未来教育”（简称“脑·育”）项目中学生的表现。本次测评主要为了了解成都地区实验学校和区域的学习能力发展的总体情况，为“脑·育”项目的实施方案制定提供数据支撑，并为“脑·育”项目的实施效果评估打下前期的基础。
+
+::: {custom-style="标题2-中文编号"}
+## 各学校学生参加测评的情况
+:::
+
+```{r total-summary, results='asis'}
+n_total <- users_to_report %>%
+  add_count(name = "whole") %>%
+  group_by(school_type, whole) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = "school_type", values_from = "n")
+n_assessed <- users_to_report %>%
+  semi_join(ability_scores, by = "user_id") %>%
+  add_count(name = "whole") %>%
+  group_by(school_type, whole) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = "school_type", values_from = "n")
+cat(
+  str_glue(
+    "\n\n本次测评计划测评**{n_total$whole}**名学生，实际完成测评学生数目为**{n_assessed$whole}**名。其中，试点校计划测评**{n_total$试点校}**名学生，实际完成测评**{n_assessed$试点校}**名学生；而对照校计划测评**{n_total$对照校}**名学生，实际完成测评**{n_assessed$对照校}**名学生。"
+  )
+)
+```
+
+```{r school-summary, fig.height=8, fig.width=10, fig.cap="各校测评完成情况"}
+ability_scores %>%
+  select(-ab_name) %>%
+  spread(ab_code, score) %>%
+  right_join(users_to_report, by = "user_id") %>%
+  group_by(school, school_type) %>%
+  summarise(
+    n_total = n(),
+    assessed = sum(!is.na(assess_time)),
+    missing = n() - assessed
+  ) %>%
+  ungroup() %>%
+  pivot_longer(assessed:missing, names_to = "cmpl_type", values_to = "n") %>%
+  mutate(
+    cmpl_type = recode_factor(
+      cmpl_type,
+      missing = "未完成测评",
+      assessed = "已完成测评"
+    )
+  ) %>%
+  ggplot(
+    aes(
+      school, n, fill = cmpl_type,
+      label = if_else(
+        n == 0 | cmpl_type == "未完成测评", NA_character_,
+        paste0(round(n / n_total * 100, 1), "%")
+      )
+    )
+  ) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(color = cmpl_type),
+    position = position_stack(vjust = 0.5)
+  ) +
+  scale_y_continuous() +
+  scale_fill_brewer(palette = "Paired") +
+  scale_color_brewer(palette = "Spectral", guide = FALSE) +
+  coord_flip() +
+  labs(x = "", y = "人数", fill = "") +
+  theme_few(base_size = 15, base_family = text_family) +
+  theme(legend.position = "top", ) +
+  facet_wrap(~ school_type, scales = "free_y", ncol = 1, strip.position = "right")
+```
+
+图\@ref(fig:school-summary)中展示了参与本次测评的**`r n_distinct(users_to_report$school)`**所学校完成情况。其中未完成测评的人数是指没有任何测评数据的学生数目，这些学生将不包括在后面的报告中。
+
+::: {custom-style="标题2-中文编号"}
+## 参评学生性别分布
+:::
+
+```{r sex-summary, fig.width=4, fig.height=4, fig.cap="已测学生男女人数比例"}
+tbl_sex <- ability_scores %>%
+  select(-ab_name) %>%
+  spread(ab_code, score) %>%
+  right_join(users_to_report, by = "user_id") %>%
+  mutate(n_total = sum(!is.na(assess_time))) %>%
+  group_by(user_sex, n_total) %>%
+  summarise(n = sum(!is.na(assess_time)))
+tbl_sex %>%
+  ggplot(aes("", n / n_total, fill = user_sex,
+             label = str_glue("{user_sex}（{n}，{round(n / n_total * 100)}%）"))) +
+  geom_bar(width = 1, stat = "identity", color = "white") +
+  geom_text(position = position_stack(vjust = 0.5), color = "white", family = text_family) +
+  scale_fill_brewer(palette = "Accent", guide = FALSE) +
+  coord_polar("y", start = 0) +
+  theme_void(base_size = 15, base_family = text_family)
+```
+
+图\@ref(fig:sex-summary)展示了实际参与测评的学生男女人数比例。其中，`r with(tbl_sex, user_sex[which.max(n)])`生占比相对更大。
+
+::: {custom-style="标题2-中文编号"}
+## 参评学生年级分布
+:::
+
+```{r grade-summary, fig.width=4, fig.height=3, fig.cap="各年级完成测评人数情况"}
+tbl_grade <- ability_scores %>%
+  select(-ab_name) %>%
+  spread(ab_code, score) %>%
+  right_join(users_to_report, by = "user_id") %>%
+  group_by(grade) %>%
+  summarise(n = sum(!is.na(assess_time)))
+tbl_grade %>%
+  ggplot(aes(grade, n, label = n)) +
+  geom_bar(stat = "identity", width = 0.6, fill = "gray") +
+  geom_text(family = text_family, size = 3) +
+  labs(x = "", y = "完成测评人数") +
+  theme_few(base_size = 12, base_family = text_family)
+```
+
+图\@ref(fig:grade-summary)展示了整个区域各年级完成测评人数比例。本次项目中，小学部分主要从二、三年学生开始实施，只有两个学校分别测量了四年级的两个班的学生；初中部份则只有七年级学生参与。
