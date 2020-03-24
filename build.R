@@ -126,7 +126,15 @@ user_info <- jsonlite::read_json("assets/temp_dataset/user_info.json", simplifyV
   mutate(
     user_sex = factor(user_sex, c("男", "女")),
     school_type = factor(school_type, c("试点校", "对照校")),
-    grade = recode(grade, 二年级 = "2年级")
+    grade = recode(grade, 二年级 = "2年级", 初一 = "7年级"),
+    district = factor(
+      district,
+      c("锦江区", "青羊区", "金牛区", "武侯区", "成华区",
+        "龙泉驿区", "青白江区", "新都区", "郫都区", "温江区", "双流区",
+        "高新区", "天府新区",
+        "都江堰市", "邛崃市", "崇州市", "彭州市", "简阳市",
+        "大邑县", "新津县", "浦江县", "金堂县")
+    )
   )
 # calculate scores
 item_scores <- user_info %>%
